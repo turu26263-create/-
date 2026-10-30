@@ -137,7 +137,9 @@ ul.dots{margin:0;padding-left:1.1em;display:grid;gap:1px;font-size:13.5px}
 .legend{display:flex;flex-wrap:wrap;gap:6px}
 .legend span{display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 8px;background:#0b0418}
 .legend i{display:inline-block;width:24px;height:4px;border-radius:2px}
-.graphBox{}
+.graphBox{}.cvWrap{position:relative}
+.nowDot{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:var(--green);border:3px solid #fff;box-shadow:0 0 0 0 #58e08acc;animation:nowBlink 1.1s ease-in-out infinite;pointer-events:none}
+@keyframes nowBlink{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 #58e08acc}50%{opacity:.25;transform:scale(1.35);box-shadow:0 0 0 12px #58e08a00}}
 canvas{display:block;width:100%;height:auto}
 .baseIn{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--sub);margin-top:4px}
 .baseIn input{width:5em;padding:4px 6px;font-size:14px}
@@ -181,7 +183,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  ul.dots,.life ul,.chara ul,.jobs ul,.care ul{font-size:14.5px;gap:4px}
  .lucky th{width:auto;font-size:13px;white-space:normal}.lucky td{font-size:14px}
  .graphBox{overflow-x:auto;-webkit-overflow-scrolling:touch}
- .graphBox canvas{width:760px;max-width:none}
+ .graphBox canvas{width:760px;max-width:none}.cvWrap{width:760px}
  .baseIn{font-size:13.5px}
  .zoomHint{display:none}
  .who{grid-template-columns:1fr}
@@ -190,7 +192,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .photo{min-height:200px}
  .badge{writing-mode:horizontal-tb;letter-spacing:0;padding:4px 8px;white-space:nowrap}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.nowDot{animation:none}}
 </style>
 
 <div class="wrap">
@@ -436,7 +438,7 @@ function renderResult(){
  /* 3段目：グラフ */
  if(on.bio)h+=`<div class="box bio"><div class="bioHead"><h3>総合運勢バイオリズムグラフ</h3>
    <div class="legend"><span><i style="background:var(--yellow)"></i>親の運気（生まれてから親の運に乗る）</span><span><i style="background:var(--blue)"></i>自分の運気</span><span><i style="background:var(--red)"></i>下降運気</span><span><i style="background:#e8e8f0"></i>準備・中立期</span></div></div>
-   <div class="graphBox"><canvas id="cv" width="1600" height="640" aria-label="年齢ごとの運気の波"></canvas></div>
+   <div class="graphBox"><div class="cvWrap"><canvas id="cv" width="1600" height="640" aria-label="年齢ごとの運気の波"></canvas><span class="nowDot" id="nowDot" hidden aria-hidden="true"></span></div></div>
    <div class="baseIn"><label for="base">基準数（占成人の年齢）</label><input id="base" type="number" min="15" max="40" value="${s.base}"><span>前厄＝基準数−9、本厄＝＋9、二回目成人＝＋18、後厄＝＋27、三回目成人＝＋36、死前厄＝＋45</span></div></div>`;
  /* 4段目：四つの札 */
  const b=s.base;
@@ -492,9 +494,11 @@ function drawBio(){
  cx.strokeStyle=css("--pink");cx.lineWidth=3;cx.beginPath();cx.moveTo(55,T+56);cx.lineTo(55,Y(0)-34);cx.stroke();
  cx.strokeStyle=css("--blue");cx.beginPath();cx.moveTo(55,Y(0)+32);cx.lineTo(55,H-B-56);cx.stroke();
  const b=S.base;
- /* 自分の運気：10歳ごろが山、占成人で谷、その後は厄の年が山・成人の年が谷。年とともに波が小さくなる */
+ /* 自分の運気：厄の年（前厄・本厄・後厄・死前厄）が山、成人の年が谷。18年の波で、年とともに小さくなる。
+    前厄の前（基準数−18まで）は、生まれてから一度上がって谷へ下りる */
  const amp=a=>Math.max(.08,.62*(1-a/125));
- const self=a=>{if(a<=10)return amp(a)*Math.sin(Math.PI/2*a/10);if(a<=b)return amp(a)*Math.cos(Math.PI*(a-10)/(b-10));return -amp(a)*Math.cos(2*Math.PI*(a-b)/18)};
+ const st=b-18;
+ const self=a=>{if(st>2&&a<st)return amp(a)*Math.sin(1.5*Math.PI*a/st);return -amp(a)*Math.cos(2*Math.PI*(a-b)/18)};
  const parent=a=>a<=12?.25+.62*Math.sin(Math.PI/2*a/12):Math.max(-.08,.87-Math.pow((a-12)/88,1.15)*.95);
  /* 親の運気（塗り＋線） */
  const g=cx.createLinearGradient(0,T,0,H-B);g.addColorStop(0,"#ffd84a66");g.addColorStop(1,"#ffd84a00");
@@ -502,7 +506,7 @@ function drawBio(){
  cx.lineWidth=5;cx.strokeStyle=css("--yellow");cx.shadowColor=css("--yellow");cx.shadowBlur=12;cx.beginPath();
  for(let a=0;a<=100;a+=.5){const v=parent(a);a?cx.lineTo(X(a),Y(v)):cx.moveTo(X(a),Y(v))}cx.stroke();
  /* 自分の運気：上り青・下り赤・谷の前後は白（準備・中立期） */
- const lows=[b,b+18,b+36,b+54];
+ const lows=[b,b+18,b+36,b+54].concat(st>=3?[st]:[]);
  cx.lineWidth=6;let prev=self(0);
  for(let a=.5;a<=100;a+=.5){const v=self(a),near=lows.some(t=>Math.abs(a-t)<=3)||a<1.5;const c=near?"#e8e8f0":(v>=prev?css("--blue"):css("--red"));
   cx.strokeStyle=c;cx.shadowColor=c;cx.shadowBlur=10;cx.beginPath();cx.moveTo(X(a-.5),Y(prev));cx.lineTo(X(a),Y(v));cx.stroke();prev=v}
@@ -516,12 +520,15 @@ function drawBio(){
   cx.fillStyle="#fff";cx.beginPath();cx.moveTo(X(a),y-18);cx.lineTo(X(a)+16,y+10);cx.lineTo(X(a)-16,y+10);cx.closePath();cx.fill();
   cx.fillStyle=css("--blue");cx.beginPath();cx.moveTo(X(a),y-11);cx.lineTo(X(a)+10,y+6);cx.lineTo(X(a)-10,y+6);cx.closePath();cx.fill();
   cx.fillStyle=css("--fg");cx.fillText(n,X(a),y+36);cx.fillText(`（${a}歳）`,X(a),y+60)});
- /* 現在 */
+ /* 現在：緑の点滅する印を上に重ねる（ほかの色とかぶらない） */
  const now=Math.min(100,Math.max(0,S.age)),ny=Y(self(now));
- cx.setLineDash([4,6]);cx.strokeStyle=css("--pink");cx.lineWidth=2;cx.beginPath();cx.moveTo(X(now),ny);cx.lineTo(X(now),H-B);cx.stroke();cx.setLineDash([]);
- cx.fillStyle="#fff";cx.beginPath();cx.arc(X(now),ny,15,0,7);cx.fill();cx.fillStyle=css("--mag");cx.beginPath();cx.arc(X(now),ny,10,0,7);cx.fill();
- cx.font="800 34px "+css("--disp");cx.fillStyle="#fff";cx.shadowColor=css("--pink");cx.shadowBlur=12;cx.fillText("現在",X(now)+(now<8?40:0),Math.max(36,ny-56));
- cx.font="800 24px "+css("--disp");cx.fillText(`${S.age}歳`,X(now)+(now<8?40:0),Math.max(60,ny-28));cx.shadowBlur=0;
+ cx.setLineDash([4,6]);cx.strokeStyle=css("--green");cx.lineWidth=2;cx.beginPath();cx.moveTo(X(now),ny);cx.lineTo(X(now),H-B);cx.stroke();cx.setLineDash([]);
+ /* 厄や成人の文字と重なる時は、現在の文字を反対側へ */
+ const nearYaku=[b-9,b+9,b+27,b+45].some(x=>Math.abs(x-now)<=5),nearSei=[b,b+18,b+36].some(x=>Math.abs(x-now)<=5);
+ const below=nearYaku&&!nearSei,lx=X(now)+(now<8?40:0),ly1=below?ny+56:Math.max(36,ny-56),ly2=below?ny+82:Math.max(60,ny-28);
+ cx.font="800 34px "+css("--disp");cx.fillStyle=css("--green");cx.shadowColor="#000";cx.shadowBlur=8;cx.fillText("現在",lx,ly1);
+ cx.font="800 24px "+css("--disp");cx.fillText(`${S.age}歳`,lx,ly2);cx.shadowBlur=0;
+ const nd=$("nowDot");if(nd){nd.style.left=(X(now)/W*100)+"%";nd.style.top=(ny/H*100)+"%";nd.hidden=false}
  /* 下の時期の帯 */
  const bands=[[0,b-3,"親の運気に乗る時期","（人生で最高潮の運）",css("--yellow")],[b-3,b+13,"親から離れ","自分の運気へ",css("--red")],[b+13,b+50,"自分の運気で生きる時期","",css("--blue")],[b+50,100,"波が小さくなる時期","（老年期・死に向けて平坦化）","#b67aff"]];
  const by=H-B+24;
