@@ -15,6 +15,7 @@
   - ロウソクの帯は hM2=MirrorBandTF(初期値5分足)・9は5分足EMA → 5分足どうしで合う。MirrorBandTF を変えるとずれる【注意】
   - HistorySelectByPosition を足すが、元のEAはほかで履歴を読まないので影響なし
 - まだ:MT5でのコンパイル(エラー0か)/③で +111,993円・21%・PF1.83 と同じになるか/①②④/tame_tobi.py・rousoku_counter.py を本物のログで
+- 10-30 夜:たくちん「スリープ前にMT5にEAセット・デモで走らせて」→ クラウドからは触れないので手順を渡した(v5のex5・ドル円・自動売買ON・スリープ「なし」)。走ったかは【まだ】=次のチャットで操作ログの「EA」タブを見せてもらう
 - パソコン「shynet」は Remote Control の一覧に出るが Windows なのでクラウドからつなげない → MT5の作業はパソコンのクロードコードでやる
 
 ## 置いた物(Drive フォルダ 1izpPoOGTy6yW2eeNR8-0RKUcXN5vYKHV)
