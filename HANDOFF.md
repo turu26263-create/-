@@ -23,7 +23,8 @@
 - クラウドのこのチャットは Windows の shynet に乗れない。常駐させるなら shynet の上で動く Claude(Desktop アプリ or `claude remote-control`)を起こしておき、スマホの Claude Code アプリからそれを開く
 - パソコンが寝れば Claude も寝る → ザメハ(起こし)と組み合わせる
 - スカイネット常駐_準備.ps1(Drive とリポジトリ):HKCU Run「SkynetClaudeJochu」→ %LOCALAPPDATA%\SkynetJochu\jochu.ps1 が働く場所(既定 Downloads\キャッスル防衛AI)で `claude remote-control` を回し、落ちたら30秒で起こし直す。-Yameru で外す。照らし済み:なし(PowerShell 無し)。まだ:Windows で流す・スマホに出るか・ログイン後に自動で起きるか
-- remote-control は Windows でも動くと第三者記事にあり(公式ページでは未照らし)。有料プラン・v2.1.51以上が要るとの記事あり
+- 公式 code.claude.com/docs/en/remote-control で照らし済み(10-30):Pro/Max 等の有料プラン・claude.ai でログイン要(APIキー不可)/初回だけ `Enable Remote Control? (y/n)` と `Trust <dir>? [y/N]` を窓で答える(窓が無いと Workspace not trusted で止まる→最小化窓にしたのは正解)/寝ても起きれば自動で再接続/server mode はネット断10分ほどで終了→30秒起こし直しが要る(入れてある)。Windows 対応の明記は公式ページに無し(記事では動く)
+- 10-30 再確認:shynet はまだ cannot_be_used。クラウドからは流せない → たくちんが家で流す
 
 ## 次にやる順番(帰宅後)
 0a. スカイネット常駐_準備.ps1 を流す(先に claude を入れてログイン済みにしておく)
