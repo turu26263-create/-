@@ -501,11 +501,13 @@ function drawBio(){
  cx.fillStyle=css("--fg");cx.textAlign="center";for(let a=0;a<=100;a+=10)cx.fillText(a+"歳",X(a),H-14);
  cx.setLineDash([6,8]);cx.strokeStyle="#6a5a8a";cx.beginPath();cx.moveTo(L,Y(0));cx.lineTo(W-R,Y(0));cx.stroke();cx.setLineDash([]);
  cx.font="bold 21px "+css("--body");cx.textAlign="center";
- cx.fillStyle=css("--pink");cx.fillText("運気",55,T+20);cx.fillText("（プラス）",55,T+44);
+ /* 左の縦は運の高低。線の青（陽運気）・赤（下降運気）とは別の色 */
+ const HI="#ffa64d",LO="#a08cff";
+ cx.fillStyle=HI;cx.fillText("運気",55,T+20);cx.fillText("（高い）",55,T+44);
  cx.fillStyle=css("--fg");cx.fillText("基準",55,Y(0)-4);cx.fillText("（中間）",55,Y(0)+20);
- cx.fillStyle=css("--blue");cx.fillText("運気",55,H-B-30);cx.fillText("（マイナス）",55,H-B-6);
- cx.strokeStyle=css("--pink");cx.lineWidth=3;cx.beginPath();cx.moveTo(55,T+56);cx.lineTo(55,Y(0)-34);cx.stroke();
- cx.strokeStyle=css("--blue");cx.beginPath();cx.moveTo(55,Y(0)+32);cx.lineTo(55,H-B-56);cx.stroke();
+ cx.fillStyle=LO;cx.fillText("運気",55,H-B-30);cx.fillText("（低い）",55,H-B-6);
+ cx.strokeStyle=HI;cx.lineWidth=3;cx.beginPath();cx.moveTo(55,T+56);cx.lineTo(55,Y(0)-34);cx.stroke();
+ cx.strokeStyle=LO;cx.beginPath();cx.moveTo(55,Y(0)+32);cx.lineTo(55,H-B-56);cx.stroke();
  const b=S.base;
  /* 自分の運気：厄の年（前厄・本厄・後厄・死前厄）が山、成人の年が谷。18年の波で、年とともに小さくなる。
     前厄の前（基準数−18まで）は、生まれてから一度上がって谷へ下りる */
