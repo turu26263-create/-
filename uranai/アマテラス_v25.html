@@ -138,6 +138,7 @@ ul.dots{margin:0;padding-left:1.1em;display:grid;gap:1px;font-size:13.5px}
 .bio{--c:#7a5ad0}
 .bioHead{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:space-between}
 .legend{display:flex;flex-wrap:wrap;gap:6px}
+.bioNote{display:grid;gap:4px;margin:8px 0 4px}.bioNote p{margin:0;font-size:13.5px;line-height:1.55;padding-left:32px;position:relative}.bioNote i{position:absolute;left:0;top:.7em;width:24px;height:5px;border-radius:2px}
 .legend span{display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 8px;background:#0b0418}
 .legend i{display:inline-block;width:24px;height:4px;border-radius:2px}
 .graphBox{}.cvWrap{position:relative}
@@ -445,8 +446,9 @@ function renderResult(){
  h+=`</div>`;
  /* 3段目：グラフ */
  if(on.bio)h+=`<div class="box bio"><div class="bioHead"><h3>総合運勢バイオリズムグラフ</h3>
-   <div class="legend"><span><i style="background:var(--yellow)"></i>親の運気（生まれてから親の運に乗る）</span><span><i style="background:var(--blue)"></i>自分の運気</span><span><i style="background:var(--red)"></i>下降運気</span><span><i style="background:#e8e8f0"></i>準備・中立期</span></div></div>
+   <div class="legend"><span><i style="background:var(--yellow)"></i>親の運気（生まれてから親の運に乗る）</span><span><i style="background:var(--blue)"></i>陽運気</span><span><i style="background:var(--red)"></i>下降運気</span><span><i style="background:#e8e8f0"></i>準備・中立期</span></div></div>
    <div class="graphBox"><div class="cvWrap"><canvas id="cv" width="1600" height="640" aria-label="年齢ごとの運気の波"></canvas><span class="nowDot" id="nowDot" hidden aria-hidden="true"></span></div></div>
+   <div class="bioNote"><p><i style="background:var(--blue)"></i><b style="color:var(--blue)">青＝陽運気</b>　少ない力で大きな成果が出やすい時期</p><p><i style="background:var(--red)"></i><b style="color:var(--red)">赤＝下降運気</b>　物事が表に出にくく、大きな力を使っても成果が出にくい時期。病気も進行に気づきにくいので、検診や体の声に気をつけて</p></div>
    <div class="baseIn"><label for="base">基準数（占成人の年齢）</label><input id="base" type="number" min="15" max="40" value="${s.base}"><span>前厄＝基準数−9、本厄＝＋9、二回目成人＝＋18、後厄＝＋27、三回目成人＝＋36、死前厄＝＋45</span></div></div>`;
  /* 4段目：四つの札 */
  const b=s.base;
