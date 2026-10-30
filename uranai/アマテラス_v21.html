@@ -87,21 +87,21 @@ td small{display:block;font-weight:400;color:var(--sub);font-size:12px}
 .seimeiBox{--c:var(--mag)}
 .sm{display:grid;grid-template-columns:.8fr auto 1.6fr;gap:10px;align-items:center}
 .gai{display:grid;gap:4px;justify-items:center;text-align:center;border:1.5px solid var(--teal);border-radius:8px;padding:8px 6px;background:#071a20}
-.gai b{font:800 18px var(--disp);color:#fff}.gai em{font-style:normal;font-size:12px;color:var(--sub);line-height:1.4}
+.gai b{font:800 21px var(--disp);color:#fff}.gai em{font-style:normal;font-size:13.5px;color:var(--sub);line-height:1.4}
 .col{display:grid;gap:2px;justify-items:center;position:relative;padding-inline:16px}
 .col::before,.col::after{content:"";position:absolute;top:14%;bottom:14%;width:10px;border:2px solid var(--sub);opacity:.6}
 .col::before{left:2px;border-right:0}.col::after{right:2px;border-left:0}
-.cb{display:grid;justify-items:center;width:62px;padding:3px 0 2px;background:#fff;border-radius:2px}
-.cb span{font:800 34px/1.15 var(--disp);color:#111}
-.cb input{width:52px;padding:0 2px;border:0;border-top:1px solid #ccc;background:transparent;color:#444;font:700 12px var(--body);text-align:center;border-radius:0}
+.cb{display:grid;justify-items:center;width:66px;padding:3px 0 2px;background:#fff;border-radius:2px}
+.cb span{font:800 38px/1.15 var(--disp);color:#111}
+.cb input{width:56px;padding:0 2px;border:0;border-top:1px solid #ccc;background:transparent;color:#444;font:700 14px var(--body);text-align:center;border-radius:0}
 .cb input::placeholder{color:#c33}
-.kaku{display:grid;gap:5px}
+.kaku{display:grid;gap:6px;align-self:stretch}
 .kk{--k:var(--mag);display:grid;grid-template-columns:3.6em 1fr auto;gap:6px;align-items:center;border:1.5px solid var(--k);border-radius:6px;padding:4px 6px;background:color-mix(in srgb,var(--k) 12%,#0b0418)}
-.kk b{font:800 15px/1.2 var(--disp);color:#fff;text-align:center}
-.kk b small{display:block;font:700 12px var(--body);color:var(--sub)}
-.kk em{font-style:normal;font-size:11.5px;line-height:1.45;color:#eee}
-.kk em i{font-style:normal;font-weight:700;color:var(--k)}
-.badge{display:grid;place-items:center;min-width:2.2em;padding:2px 4px;border-radius:4px;font:800 15px/1.15 var(--disp);writing-mode:vertical-rl;letter-spacing:.1em}
+.kk b{font:800 18px/1.2 var(--disp);color:#fff;text-align:center}
+.kk b small{display:block;font:700 13.5px var(--body);color:var(--sub)}
+.kk em{font-style:normal;font-size:13px;line-height:1.45;color:#eee}
+.kk em i{font-style:normal;font-weight:700;color:var(--k)}.ks{display:none}
+.badge{display:grid;place-items:center;min-width:2.2em;padding:2px 4px;border-radius:4px;font:800 17px/1.15 var(--disp);writing-mode:vertical-rl;letter-spacing:.1em}
 .badge.toku{background:linear-gradient(180deg,#fff3b0,#ffd84a 45%,#ff9ad0);color:#3a1d00;box-shadow:0 0 10px #ffd84a}
 .badge.dai{background:var(--yellow);color:#3a1d00}.badge.kichi{background:#f3cf7a;color:#3a1d00}.badge.kyo{background:#5a1020;color:#ffb3bd;border:1px solid var(--red)}.badge.na{color:var(--sub);writing-mode:horizontal-tb}
 .k1{--k:#c46bff}.k2{--k:#3fa6ff}.k3{--k:#ff4fa3}.k4{--k:#ff4fa3}
@@ -175,9 +175,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .stack{gap:12px}
  .box{padding:12px}
  .box h3{font-size:19px}
- .sm{grid-template-columns:auto 1fr;gap:10px}
- .sm .kaku{grid-column:1/-1}
- .kk em{font-size:13px}
+ .sm{grid-template-columns:auto auto 1fr;gap:6px;align-items:stretch}
+ .gai{align-self:center;padding:8px 4px}.gai em{display:none}.gai b{font-size:19px}
+ .col{padding-inline:11px;align-self:center}.cb{width:54px}.cb span{font-size:32px}.cb input{width:46px;font-size:13px}
+ .kk{grid-template-columns:auto 1fr auto;gap:4px;padding:4px 5px}.kk b{font-size:17px}.kk b small{font-size:13px}
+ .kk em{font-size:13.5px;line-height:1.3}.kd,.kl{display:none}.ks{display:inline}.kk em i{display:block;white-space:nowrap}.badge{font-size:16px;min-width:1.9em}
  .pl p{font-size:12px}
  .pl .ani{font-size:30px}
  ul.dots,.life ul,.chara ul,.jobs ul,.care ul{font-size:14.5px;gap:4px}
@@ -192,6 +194,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .photo{min-height:200px}
  .badge{writing-mode:horizontal-tb;letter-spacing:0;padding:4px 8px;white-space:nowrap}
 }
+@media (max-width:360px){.kk em{display:none}.kk{grid-template-columns:1fr auto}.kk b{white-space:nowrap}.gai b{font-size:16px;white-space:nowrap}.cb{width:48px}.cb span{font-size:28px}.cb input{width:42px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}.nowDot{animation:none}}
 </style>
 
@@ -473,7 +476,7 @@ function drawGaku(){
  const {all,g,gai}=gakuOf(S.strokes,[...S.sei].length);
  const [gc,gl]=kk(gai);
  $("gai").innerHTML=`<b>外格<br>${gai?gai+"画":"—"}</b><em>対人運・社交性<br>援助・良縁<br>周囲からの支え</em><span class="badge ${gc}" style="writing-mode:horizontal-tb">${gl}</span>`;
- $("kaku").innerHTML=GAKU.map(([n,t,x,c],i)=>{const [k,l]=kk(g[i]);return `<div class="kk ${c}"><b>${n}<small>${g[i]?g[i]+"画":"—"}</small></b><em><i>${t}</i><br>${br(x)}</em><span class="badge ${k}">${l}</span></div>`}).join("");
+ $("kaku").innerHTML=GAKU.map(([n,t,x,c],i)=>{const [k,l]=kk(g[i]);return `<div class="kk ${c}"><b>${n}<small>${g[i]?g[i]+"画":"—"}</small></b><em><i><span class="kl">${t}</span><span class="ks">${["先祖運","性格・仕事","若年期運","人生全体"][i]}</span></i><span class="kd"><br>${br(x)}</span></em><span class="badge ${k}">${l}</span></div>`}).join("");
  if($("gRead"))$("gRead").innerHTML=bookRows(g,gai,S.sex);
  drawAisho();
  $("gHint").textContent=all?"画数は自動で入れています（新字体）。違う時は白い札の下の数字を直せます。吉凶は流派で差があります。":"画数が分からない字があります。白い札の下の赤い所に画数を入れてください。";
