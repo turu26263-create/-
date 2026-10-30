@@ -21,9 +21,12 @@
 
 ## 常駐の話(10-30)
 - クラウドのこのチャットは Windows の shynet に乗れない。常駐させるなら shynet の上で動く Claude(Desktop アプリ or `claude remote-control`)を起こしておき、スマホの Claude Code アプリからそれを開く
-- パソコンが寝れば Claude も寝る → ザメハ(起こし)と組み合わせる。アプリの自動起動の設定場所はまだ照らしていない
+- パソコンが寝れば Claude も寝る → ザメハ(起こし)と組み合わせる
+- スカイネット常駐_準備.ps1(Drive とリポジトリ):HKCU Run「SkynetClaudeJochu」→ %LOCALAPPDATA%\SkynetJochu\jochu.ps1 が働く場所(既定 Downloads\キャッスル防衛AI)で `claude remote-control` を回し、落ちたら30秒で起こし直す。-Yameru で外す。照らし済み:なし(PowerShell 無し)。まだ:Windows で流す・スマホに出るか・ログイン後に自動で起きるか
+- remote-control は Windows でも動くと第三者記事にあり(公式ページでは未照らし)。有料プラン・v2.1.51以上が要るとの記事あり
 
 ## 次にやる順番(帰宅後)
+0a. スカイネット常駐_準備.ps1 を流す(先に claude を入れてログイン済みにしておく)
 0. 玄関しらべ_レミーラ.ps1 を流して結果を送ってもらう → skynet が A(名前変え)か B(別ルーター)か決まる → 設定画面で鍵かけ
 1. パソコンを起こしてログイン → http://127.0.0.1:8765 が開けば城は起きている。開かなければ castle_defense.py を直接起動して照らす
 2. Remote Control でこのチャットにパソコンをつなぐ(たくちんは許可を押すだけ)
