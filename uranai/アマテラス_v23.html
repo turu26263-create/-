@@ -96,6 +96,8 @@ td small{display:block;font-weight:400;color:var(--sub);font-size:12px}
 .cb input{width:56px;padding:0 2px;border:0;border-top:1px solid #ccc;background:transparent;color:#444;font:700 14px var(--body);text-align:center;border-radius:0}
 .cb input::placeholder{color:#c33}
 .kaku{display:grid;gap:6px;align-self:stretch}
+.souRow{grid-column:2;justify-self:center;width:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.souRow .kk{width:290px;flex:none}.souArrow{font-style:normal;font:800 20px/1 var(--body);color:var(--sub)}
 .kk{--k:var(--mag);display:grid;grid-template-columns:3.6em 1fr auto;gap:6px;align-items:center;border:1.5px solid var(--k);border-radius:6px;padding:4px 6px;background:color-mix(in srgb,var(--k) 12%,#0b0418)}
 .kk b{font:800 18px/1.2 var(--disp);color:#fff;text-align:center}
 .kk b small.age50{color:var(--yellow);font-size:12px;margin-bottom:1px}
@@ -177,6 +179,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .box{padding:12px}
  .box h3{font-size:19px}
  .sm{grid-template-columns:auto auto 1fr;gap:6px;align-items:stretch}
+ .souRow .kk{width:220px}
  .gai{align-self:center;padding:8px 4px}.gai em{display:none}.gai b{font-size:19px}
  .col{padding-inline:11px;align-self:center}.cb{width:54px}.cb span{font-size:32px}.cb input{width:46px;font-size:13px}
  .kk{grid-template-columns:auto 1fr auto;gap:4px;padding:4px 5px}.kk b{font-size:17px}.kk b small{font-size:13px}
@@ -195,7 +198,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
  .photo{min-height:200px}
  .badge{writing-mode:horizontal-tb;letter-spacing:0;padding:4px 8px;white-space:nowrap}
 }
-@media (max-width:360px){.kk em{display:none}.kk{grid-template-columns:1fr auto}.kk b{white-space:nowrap}.gai b{font-size:16px;white-space:nowrap}.cb{width:48px}.cb span{font-size:28px}.cb input{width:42px}}
+@media (max-width:360px){.souRow .kk{width:160px}.kk em{display:none}.kk{grid-template-columns:1fr auto}.kk b{white-space:nowrap}.gai b{font-size:16px;white-space:nowrap}.cb{width:48px}.cb span{font-size:28px}.cb input{width:42px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}.nowDot{animation:none}}
 </style>
 
@@ -422,7 +425,8 @@ function renderResult(){
  if(on.seimei)h+=`<div class="box seimeiBox"><h3>姓名判断 <small>（新字体）</small></h3>
    <div class="sm"><div class="gai" id="gai"></div>
     <div class="col">${chars.map((c,i)=>`<label class="cb"><span>${esc(c)}</span><input id="st${i}" type="number" min="1" max="40" inputmode="numeric" placeholder="画数?" value="${s.strokes[i]}" aria-label="${esc(c)}の画数"></label>`).join("")}</div>
-    <div class="kaku" id="kaku"></div></div>
+    <div class="kaku" id="kaku"></div>
+    <div class="souRow" id="sou"></div></div>
    <p class="hint" id="gHint"></p></div>`;
  h+=`</div>`;
  if(on.seimei)h+=`<div class="box gRead"><h3>画数の意味 <small>（手持ちの本の写真から要約・1〜65画）</small></h3><div id="gRead"></div></div>`;
@@ -477,7 +481,10 @@ function drawGaku(){
  const {all,g,gai}=gakuOf(S.strokes,[...S.sei].length);
  const [gc,gl]=kk(gai);
  $("gai").innerHTML=`<b>外格<br>${gai?gai+"画":"—"}</b><em>対人運・社交性<br>援助・良縁<br>周囲からの支え</em><span class="badge ${gc}" style="writing-mode:horizontal-tb">${gl}</span>`;
- $("kaku").innerHTML=GAKU.map(([n,t,x,c],i)=>{const [k,l]=kk(g[i]);return `<div class="kk ${c}"><b>${n}${i===3?`<small class="age50">50歳〜</small>`:""}<small>${g[i]?g[i]+"画":"—"}</small></b><em><i><span class="kl">${t}</span><span class="ks">${["先祖運","性格・仕事","若年期運","晩年の運"][i]}</span></i><span class="kd"><br>${br(x)}</span></em><span class="badge ${k}">${l}</span></div>`}).join("");
+ const card=([n,t,x,c],i)=>{const [k,l]=kk(g[i]);return `<div class="kk ${c}"><b>${n}${i===3?`<small class="age50">50歳〜</small>`:""}<small>${g[i]?g[i]+"画":"—"}</small></b><em><i><span class="kl">${t}</span><span class="ks">${["先祖運","性格・仕事","若年期運","晩年の運"][i]}</span></i><span class="kd"><br>${br(x)}</span></em><span class="badge ${k}">${l}</span></div>`};
+ /* 天・人・地は名前の右、総格は縦の名前の下 */
+ $("kaku").innerHTML=GAKU.slice(0,3).map(card).join("");
+ $("sou").innerHTML=`<i class="souArrow" aria-hidden="true">↓</i>`+card(GAKU[3],3);
  if($("gRead"))$("gRead").innerHTML=bookRows(g,gai,S.sex);
  drawAisho();
  $("gHint").textContent=all?"画数は自動で入れています（新字体）。違う時は白い札の下の数字を直せます。吉凶は流派で差があります。":"画数が分からない字があります。白い札の下の赤い所に画数を入れてください。";
