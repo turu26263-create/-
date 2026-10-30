@@ -149,7 +149,7 @@ canvas{display:block;width:100%;height:auto}
 .lucky th{width:7.5em;font-size:12px}.lucky td{font-size:12.5px}
 .face{display:grid;gap:8px}
 .gRead{--c:var(--gold2)}.gr{display:grid;grid-template-columns:7.5em 1fr;gap:4px 10px;align-items:start;padding:6px 0;border-top:1px dashed #3a2a5a}.gr:first-of-type{border-top:0}
-.gr b{font:800 14px/1.3 var(--disp);color:#fff}.gr b small{display:block;font:700 12px var(--body);color:var(--gold)}.gr p{margin:0;font-size:13px;line-height:1.6}.gr .kyo{color:#ffb3bd}.gr .tk{display:inline-block;margin:0 4px 2px 0;padding:0 8px;border-radius:99px;background:linear-gradient(90deg,#ffd84a,#ff9ad0);color:#3a1d00;font-weight:800}.gr .tka{color:#ffe9a8}.gr .gk{display:inline-block;margin:4px 4px 0 0;padding:0 8px;border-radius:99px;background:#5a1020;color:#ffd6ec;border:1px solid var(--red);font-weight:800}.gr .note2{display:block;margin-top:3px;font-size:12.5px;color:#ffd6ec}.gr .dai{color:var(--yellow)}
+.gr b{font:800 14px/1.3 var(--disp);color:#fff}.gr b small{display:block;font:700 12px var(--body);color:var(--gold)}.gr p{margin:0;font-size:13px;line-height:1.6}.gr .kyo{color:#ffb3bd}.gr .tk{display:inline-block;margin:0 4px 2px 0;padding:0 8px;border-radius:99px;background:linear-gradient(90deg,#ffd84a,#ff9ad0);color:#3a1d00;font-weight:800}.gr .tq{display:inline-block;margin-top:2px;padding:0 8px;border-radius:99px;border:1px solid var(--teal);color:#bff6ef;font-weight:800}.gr .tka{color:#ffe9a8}.gr .gk{display:inline-block;margin:4px 4px 0 0;padding:0 8px;border-radius:99px;background:#5a1020;color:#ffd6ec;border:1px solid var(--red);font-weight:800}.gr .note2{display:block;margin-top:3px;font-size:12.5px;color:#ffd6ec}.gr .dai{color:var(--yellow)}
 .aisho{--c:var(--pink)}.aiTop{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center}
 .aiTop .who2 b{display:block;font:800 22px var(--disp);color:#fff}.aiTop .who2 small{color:var(--sub);font-size:12px}
 .heart{display:grid;place-items:center;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,#ff4fa355,#14061e 70%);border:2px solid var(--pink)}
@@ -336,6 +336,13 @@ const TOKU_W={
  35:{0:"家庭を温かくまとめる力が受け継がれる家。男性でも家庭を大事にするほど運が伸びる",2:"家族を思う気持ちが強く、家庭を温かくまとめる",3:"家族ぐるみの良いつき合いが広がる",4:"温かい家庭で育ち、自分も温かい家庭を作る",5:"生涯、家庭運に恵まれ、家族に囲まれて幸せを育てる"},
  45:{0:"天に向かって伸びる二本の柱のように、志と運が一緒に育つ家",2:"志が高く、障害を突き抜けて進む行動力",3:"勢いのある人脈が広がり、大きな舞台に呼ばれる",4:"若いうちから伸びる力が強く、才能と運が二本柱で育つ",5:"志と運の二本柱で、大業を成し遂げる一生"},
  77:{0:"人と違う特別な質（個性・才能）を受け継ぐ家",2:"人と違う特別な才能や感性を持ち、それを生かすと光る",3:"個性的な人や特別な分野の人と縁ができる",4:"子どもの頃から独特の感性が目立つ",5:"普通の道より、自分だけの道で運が開ける一生"}};
+/* たくちん流の見方（引用＋格ごとの付け足し。0:天格 2:人格 3:外格 4:地格 5:総格） */
+const TQ={10:"一発勝負運／ここ一発のギャンブル運",20:"運の乱高下・諸刃の剣",9:"孤独相・研究者・占い"};
+const TQ_W={
+ 10:{0:"ここ一番に賭ける気質を受け継ぐ家",2:"勝負どころで一気に出る人。賭けは小さく区切るのが吉",3:"勝負好きな仲間が集まりやすい。お金の貸し借りは避けて",4:"若い頃から一発逆転を夢見やすい。地道な一歩と組み合わせると強い",5:"一生に何度か大勝負の時が来る。引き際を先に決めておくと運が残る"},
+ 20:{0:"上がり下がりの大きい運を受け継ぐ家",2:"良い時は大きく伸び、悪い時は大きく下がる。勢いに任せず守りも持つ",3:"人の縁にも波があり、味方にも敵にもなりうる",4:"若い頃の運に波が多い。浮き沈みが打たれ強さを育てる",5:"諸刃の剣の一生。攻める力を正しく使えば大きく伸び、誤ると自分も傷つく"},
+ 9:{0:"一人で深く考える気質を受け継ぐ家",2:"一人の時間に力が出る。研究・分析・占いなど深く掘る仕事で光る",3:"人づき合いは少数精鋭。わかり合える仲間とは深く長く",4:"子どもの頃から一人遊びや調べ物が好き。独自の感性が育つ",5:"孤独を力に変えると、研究者や占い師のように一つの道を極める"}};
+const tqTag=(n,col)=>!TQ[n]?"":`<br><span class="tq">たくちん流「${TQ[n]}」</span><br><span class="tka">＋${TQ_W[n][col==null?0:col]}</span><br>`;
 const KAKU_N={2:"性格・仕事",3:"人づき合い",4:"若い頃・家庭",5:"人生全体"};
 const tokuTag=(n,col)=>!TOKU[n]?"":`<span class="tk">特大吉${TOKU_Q[n]===TOKU[n][0]?"":"・"+TOKU[n][0]}</span>「${TOKU_Q[n]}」<br><span class="tka">＋${TOKU_W[n][col==null?0:col]}</span>`;
 const gokeTag=(n,sex)=>GOKE.has(n)&&sex!=="男性"?`<span class="gk">後家数</span>`:"";
@@ -350,7 +357,7 @@ function bookRows(g,gai,sex){
  const NOTE={2:"人格",4:"地格"};
  const one=(name,n,col)=>{if(!n)return`<div class="gr"><b>${name}<small>—</small></b><p>画数が入ると出ます</p></div>`;
   const b=BOOK[n],[c,l]=kk(n),gk=col==null?"":gokeTag(n,sex);
-  const tag=TOKU[n]?tokuTag(n,col):`<span class="${c}">${b?esc(b[1]):l}</span>`;
+  const tag=(TOKU[n]?tokuTag(n,col):`<span class="${c}">${b?esc(b[1]):l}</span>`)+tqTag(n,col);
   if(!b)return`<div class="gr"><b>${name}<small>${n}画${TOKU[n]?"　"+TOKU[n][0]:""}</small></b><p>${tag}　${name}の${n}画は、本の写真（1〜65画）に無いため、くわしい説明はまだありません${gk}</p></div>`;
   const nm=b[0].replace(/（.*/,""),typ=(b[0].match(/（.*）/)||[""])[0];
   const txt=col==null?`家系・先祖から受け継ぐ「${nm}」の数。天格だけで吉凶は見ず、人格・地格との組み合わせで見ます${GOKE.has(n)?"（天格は先祖からの引き継ぎなので、後家数としては見ません）":""}`
