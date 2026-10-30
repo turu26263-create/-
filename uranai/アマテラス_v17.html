@@ -222,7 +222,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="frame" style="margin-top:30px">
    <div class="ttl"><span>気になる相手（相性）</span></div>
    <div class="form">
-    <p class="note" style="margin:0 0 6px">入れると「自分×相手」の相性も鑑定に入ります。入れなくても鑑定できます</p>
+    <p class="note" style="margin:0 0 6px">入れると「自分×相手」の相性も鑑定に入ります。入れなくても一人で鑑定できます</p>
+    <button type="button" class="back" id="pClear" style="justify-self:start;margin-bottom:6px">相手の欄を空にする</button>
     <div class="row"><label for="psei">相手の姓</label>
      <div class="two"><input id="psei" type="text" autocomplete="off" placeholder="例 月島">
       <div class="row" style="grid-template-columns:4em 1fr"><label for="pmei">名</label><input id="pmei" type="text" autocomplete="off" placeholder="例 葵"></div></div></div>
@@ -264,6 +265,7 @@ const on=Object.fromEntries(TILES.map(t=>[t[0],true]));
  $("tiles").innerHTML=TILES.map(([k,n,x])=>`<button type="button" class="tile sprite" id="t_${k}" aria-pressed="true" aria-label="${n}" style="background-position:${(x/(1080-145)*100).toFixed(2)}% ${(1276/(2400-225)*100).toFixed(2)}%"></button>`).join("");
  TILES.forEach(([k])=>$("t_"+k).addEventListener("click",e=>{on[k]=!on[k];e.currentTarget.setAttribute("aria-pressed",on[k])}));
  $("go").addEventListener("click",start);
+ $("pClear").addEventListener("click",()=>{["psei","pmei"].forEach(i=>$(i).value="");["py","pm","pd"].forEach(i=>$(i).selectedIndex=0);const r=document.querySelector("input[name=psex][value='']");if(r)r.checked=true});
 })();
 
 /* ===== 計算 ===== */
@@ -375,9 +377,10 @@ function start(){
   strokes:[],base:28,photo:null,p:null,sex:(document.querySelector("input[name=sex]:checked")||{}).value||""};
  {const ps=$("psei").value.trim(),pm=$("pmei").value.trim(),py=+$("py").value,pmo=+$("pm").value,pd=+$("pd").value;
   if(ps||pm||py){
-   if(!ps||!pm||!py||!pmo||!pd){$("err").textContent="相手の姓・名・生年月日をぜんぶ入れてください（相性を見ない時は相手の欄を空にします）";return}
-   if(new Date(py,pmo-1,pd).getMonth()!==pmo-1){$("err").textContent="相手の日付がありません。日を選び直してください";return}
-   let pv=0;S.p={sei:ps,mei:pm,y:py,m:pmo,d:pd,sex:(document.querySelector("input[name=psex]:checked")||{}).value||"",strokes:[...ps+pm].map(c=>{const v=strokeOf(c,pv);pv=+v||pv;return v===""?"":String(v)})}}}
+   /* 相手が足りなくても止めない：一人で鑑定して、相性だけ省く */
+   if(!ps||!pm||!py||!pmo||!pd)S.pNote="相手の姓・名・生年月日のどれかが空なので、相性は省いて一人で鑑定しました。";
+   else if(new Date(py,pmo-1,pd).getMonth()!==pmo-1)S.pNote="相手の日付がない日なので、相性は省いて一人で鑑定しました。";
+   else{let pv=0;S.p={sei:ps,mei:pm,y:py,m:pmo,d:pd,sex:(document.querySelector("input[name=psex]:checked")||{}).value||"",strokes:[...ps+pm].map(c=>{const v=strokeOf(c,pv);pv=+v||pv;return v===""?"":String(v)})}}}}
  {let pv=0;S.strokes=[...sei+mei].map(c=>{const v=strokeOf(c,pv);pv=+v||pv;return v===""?"":String(v)})}
  renderResult();
  $("top").hidden=true;$("result").hidden=false;fitSheet();window.scrollTo(0,0);
@@ -411,6 +414,7 @@ function renderResult(){
    <p class="hint" id="gHint"></p></div>`;
  h+=`</div>`;
  if(on.seimei)h+=`<div class="box gRead"><h3>画数の意味 <small>（手持ちの本の写真から要約・1〜65画）</small></h3><div id="gRead"></div></div>`;
+ if(s.pNote)h+=`<p class="small" style="margin:0;padding:6px 10px;border:1px dashed var(--pink);border-radius:8px">${esc(s.pNote)}</p>`;
  if(s.p)h+=`<div class="box aisho"><h3>相性鑑定 <small>（自分 × 気になる相手）</small></h3><div id="aisho"></div></div>`;
  /* 2段目：四柱推命／数秘術 */
  h+=`<div class="r2">`;
