@@ -348,7 +348,7 @@ function bookRows(g,gai,sex){
   const tag=TOKU[n]?tokuTag(n,col):`<span class="${c}">${b?esc(b[1]):l}</span>`;
   if(!b)return`<div class="gr"><b>${name}<small>${n}画${TOKU[n]?"　"+TOKU[n][0]:""}</small></b><p>${tag}　${name}の${n}画は、本の写真（1〜65画）に無いため、くわしい説明はまだありません${gk}</p></div>`;
   const nm=b[0].replace(/（.*/,""),typ=(b[0].match(/（.*）/)||[""])[0];
-  const txt=col==null?`家系・先祖から受け継ぐ「${nm}」の数。天格だけで吉凶は見ず、人格・地格との組み合わせで見ます`
+  const txt=col==null?`家系・先祖から受け継ぐ「${nm}」の数。天格だけで吉凶は見ず、人格・地格との組み合わせで見ます${GOKE.has(n)?"（天格は先祖からの引き継ぎなので、後家数としては見ません）":""}`
    :b[col]||`本には${n}画の${NOTE[col]}の説明がなく、外格・総格だけ載っています。「${nm}」の性質が${KAKU_N[col]}に出ます`;
   return`<div class="gr"><b>${name}<small>${n}画　${esc(nm)}${TOKU[n]?"・"+TOKU[n][0]:""}</small></b><p>${tag}${TOKU[n]?`<br><small>本では${esc(b[1])}</small>`:""}　${esc(typ)} ${esc(txt)}${gk}</p></div>`};
  const hit=sex==="男性"?[]:[["人格",g[1]],["地格",g[2]],["外格",gai],["総格",g[3]]].filter(x=>GOKE.has(x[1]));
