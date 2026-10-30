@@ -98,6 +98,7 @@ td small{display:block;font-weight:400;color:var(--sub);font-size:12px}
 .kaku{display:grid;gap:6px;align-self:stretch}
 .kk{--k:var(--mag);display:grid;grid-template-columns:3.6em 1fr auto;gap:6px;align-items:center;border:1.5px solid var(--k);border-radius:6px;padding:4px 6px;background:color-mix(in srgb,var(--k) 12%,#0b0418)}
 .kk b{font:800 18px/1.2 var(--disp);color:#fff;text-align:center}
+.kk b small.age50{color:var(--yellow);font-size:12px;margin-bottom:1px}
 .kk b small{display:block;font:700 13.5px var(--body);color:var(--sub)}
 .kk em{font-style:normal;font-size:13px;line-height:1.45;color:#eee}
 .kk em i{font-style:normal;font-weight:700;color:var(--k)}.ks{display:none}
@@ -348,7 +349,7 @@ const TQ_W={
  20:{0:"上がり下がりの大きい運を受け継ぐ家",2:"良い時は大きく伸び、悪い時は大きく下がる。勢いに任せず守りも持つ",3:"人の縁にも波があり、味方にも敵にもなりうる",4:"若い頃の運に波が多い。浮き沈みが打たれ強さを育てる",5:"諸刃の剣の一生。攻める力を正しく使えば大きく伸び、誤ると自分も傷つく"},
  9:{0:"一人で深く考える気質を受け継ぐ家",2:"一人の時間に力が出る。研究・分析・占いなど深く掘る仕事で光る",3:"人づき合いは少数精鋭。わかり合える仲間とは深く長く",4:"子どもの頃から一人遊びや調べ物が好き。独自の感性が育つ",5:"孤独を力に変えると、研究者や占い師のように一つの道を極める"}};
 const tqTag=(n,col)=>!TQ[n]?"":`<br><span class="tq">たくちん流「${TQ[n]}」</span><br><span class="tka">＋${TQ_W[n][col==null?0:col]}</span><br>`;
-const KAKU_N={2:"性格・仕事",3:"人づき合い",4:"若い頃・家庭",5:"人生全体"};
+const KAKU_N={2:"性格・仕事",3:"人づき合い",4:"若い頃・家庭",5:"50歳からの運気"};
 const tokuTag=(n,col)=>!TOKU[n]?"":`<span class="tk">特大吉${TOKU_Q[n]===TOKU[n][0]?"":"・"+TOKU[n][0]}</span>「${TOKU_Q[n]}」<br><span class="tka">＋${TOKU_W[n][col==null?0:col]}</span>`;
 const gokeTag=(n,sex)=>GOKE.has(n)&&sex!=="男性"?`<span class="gk">後家数</span>`:"";
 const kk=n=>{if(!n)return["na","—"];if(TOKU[n])return["toku","特大吉"];const b=BOOK[n];if(b){const l=b[1].replace("数","");return[/凶/.test(l)?"kyo":/大吉|特別/.test(l)?"dai":"kichi",l]}return DAI.has(n)?["dai","大吉"]:KICHI.has(n)?["kichi","吉"]:["kyo","凶"]};
@@ -360,10 +361,10 @@ function gakuOf(strokes,ns){const st=strokes.map(v=>+v||0),a=st.slice(0,ns),b=st
 const GOKU=["天格","人格","地格","総格"];
 function bookRows(g,gai,sex){
  const NOTE={2:"人格",4:"地格"};
- const one=(name,n,col)=>{if(!n)return`<div class="gr"><b>${name}<small>—</small></b><p>画数が入ると出ます</p></div>`;
+ const one=(name0,n,col)=>{const name=col===5?`${name0}<small style="color:var(--yellow)">50歳からの運気</small>`:name0;if(!n)return`<div class="gr"><b>${name}<small>—</small></b><p>画数が入ると出ます</p></div>`;
   const b=BOOK[n],[c,l]=kk(n),gk=col==null?"":gokeTag(n,sex);
   const tag=(TOKU[n]?tokuTag(n,col):`<span class="${c}">${b?esc(b[1]):l}</span>`)+tqTag(n,col);
-  if(!b)return`<div class="gr"><b>${name}<small>${n}画${TOKU[n]?"　"+TOKU[n][0]:""}</small></b><p>${tag}　${name}の${n}画は、本の写真（1〜65画）に無いため、くわしい説明はまだありません${gk}</p></div>`;
+  if(!b)return`<div class="gr"><b>${name}<small>${n}画${TOKU[n]?"　"+TOKU[n][0]:""}</small></b><p>${tag}　${name0}の${n}画は、本の写真（1〜65画）に無いため、くわしい説明はまだありません${gk}</p></div>`;
   const nm=b[0].replace(/（.*/,""),typ=(b[0].match(/（.*）/)||[""])[0];
   const txt=col==null?`家系・先祖から受け継ぐ「${nm}」の数。天格だけで吉凶は見ず、人格・地格との組み合わせで見ます${GOKE.has(n)?"（天格は先祖からの引き継ぎなので、後家数としては見ません）":""}`
    :b[col]||`本には${n}画の${NOTE[col]}の説明がなく、外格・総格だけ載っています。「${nm}」の性質が${KAKU_N[col]}に出ます`;
@@ -371,7 +372,7 @@ function bookRows(g,gai,sex){
  const hit=sex==="男性"?[]:[["人格",g[1]],["地格",g[2]],["外格",gai],["総格",g[3]]].filter(x=>GOKE.has(x[1]));
  const gNote=hit.length?`<div class="gr"><b>後家数<small>${hit.map(x=>x[0]+x[1]+"画").join("・")}</small></b><p><span class="gk">後家数</span>${sex==="女性"?"":"女性の場合："}${GOKE_T}</p></div>`:"";
  return one("天格",g[0],null)+one("人格",g[1],2)+one("地格",g[2],4)+one("外格",gai,3)+one("総格",g[3],5)+gNote}
-const GAKU=[["天格","家系・先祖運","意志・継続力\n目上からの引き立て","k1"],["人格","性格・人間関係","人望・協調性・誠実\n周囲からの信頼","k2"],["地格","才能・若年期運","発展・創造性・努力\n基礎が強く成長運","k3"],["総格","人生全体の運勢","良縁・機会運・発展\n積み上げた努力が実る","k4"]];
+const GAKU=[["天格","家系・先祖運","意志・継続力\n目上からの引き立て","k1"],["人格","性格・人間関係","人望・協調性・誠実\n周囲からの信頼","k2"],["地格","才能・若年期運","発展・創造性・努力\n基礎が強く成長運","k3"],["総格","50歳からの運気","良縁・機会運・発展\n積み上げた努力が実る","k4"]];
 
 /* ===== 鑑定開始 ===== */
 let S=null;
@@ -476,7 +477,7 @@ function drawGaku(){
  const {all,g,gai}=gakuOf(S.strokes,[...S.sei].length);
  const [gc,gl]=kk(gai);
  $("gai").innerHTML=`<b>外格<br>${gai?gai+"画":"—"}</b><em>対人運・社交性<br>援助・良縁<br>周囲からの支え</em><span class="badge ${gc}" style="writing-mode:horizontal-tb">${gl}</span>`;
- $("kaku").innerHTML=GAKU.map(([n,t,x,c],i)=>{const [k,l]=kk(g[i]);return `<div class="kk ${c}"><b>${n}<small>${g[i]?g[i]+"画":"—"}</small></b><em><i><span class="kl">${t}</span><span class="ks">${["先祖運","性格・仕事","若年期運","人生全体"][i]}</span></i><span class="kd"><br>${br(x)}</span></em><span class="badge ${k}">${l}</span></div>`}).join("");
+ $("kaku").innerHTML=GAKU.map(([n,t,x,c],i)=>{const [k,l]=kk(g[i]);return `<div class="kk ${c}"><b>${n}${i===3?`<small class="age50">50歳〜</small>`:""}<small>${g[i]?g[i]+"画":"—"}</small></b><em><i><span class="kl">${t}</span><span class="ks">${["先祖運","性格・仕事","若年期運","晩年の運"][i]}</span></i><span class="kd"><br>${br(x)}</span></em><span class="badge ${k}">${l}</span></div>`}).join("");
  if($("gRead"))$("gRead").innerHTML=bookRows(g,gai,S.sex);
  drawAisho();
  $("gHint").textContent=all?"画数は自動で入れています（新字体）。違う時は白い札の下の数字を直せます。吉凶は流派で差があります。":"画数が分からない字があります。白い札の下の赤い所に画数を入れてください。";
