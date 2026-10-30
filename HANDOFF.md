@@ -1,4 +1,4 @@
-# 引き継ぎ(自動で読み込まれる) — 最終更新 2026-10-30 13:40
+# 引き継ぎ(自動で読み込まれる) — 最終更新 2026-10-30 (玄関の鍵の問い)
 
 ## いま進めている事:スカイネット(パソコン起こし=ザメハ と キャッスル防衛AI)
 - 家のルーター名「skynet」。キャッスル防衛AI(Downloads\キャッスル防衛AI\castle_defense.py)は skynet につながる家のパソコン(有線LAN)にある
@@ -6,6 +6,8 @@
 - 自動起動は登録済み・照らし済み(10-27 19:58:58 castle_log.txt / castle_jidou_kekka.txt)。HKCU\...\Run\CastleDefenseAI → WindowsApps\pythonw.exe castle_defense.py --no-browser
 - なので「起きてない」一番の見込み:パソコン自体が寝ている/切れている。次:ログインしていない(Run はログイン後に動く)
 - 10-30 13:35 時点で Remote Control でつなげるパソコンは0台 → 実機作業は帰宅待ち
+- 10-30 後:Remote Control の一覧にパソコン「shynet」・フォルダ「Experts」が出た。ただし cannot_be_used(Windows機はクラウドから使えない／Gitの根でない等)。→ このチャットからは触れない。今オンラインかは不明
+- 玄関の鍵(ルーター)はまだ何も確かめていない。機種名待ち
 
 ## 置いた物(Drive フォルダ 1izpPoOGTy6yW2eeNR8-0RKUcXN5vYKHV)
 - パソコン起こし_準備_v2.ps1:管理者で1回流す。失敗を「入れた」と言わない版。最後に読み直して表示、デスクトップ「パソコン起こし_住所.txt」に書き出し。照らし済み:同報先の計算。まだ:Windows で実際に流すこと
