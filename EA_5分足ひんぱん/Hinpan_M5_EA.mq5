@@ -18,7 +18,7 @@ input int    MaFast        = 9;
 input int    MaSlow        = 21;
 input ENUM_MA_METHOD MaMethod = MODE_SMA;
 input int    BandPeriod    = 21;
-input int    ChikouShift   = 26;     // 遅行スパン(5分足スパンモデル側=26本前)
+input int    ChikouShift   = 21;     // 遅行スパン(21本前。たくちん 10-30「遅行スパン21や」)
 //--- 入1 ポン(貯め)
 input int    TameBars      = 12;     // 直近N本
 input int    TameMin       = 8;      // うちK本以上で遅行スパンが絡む
