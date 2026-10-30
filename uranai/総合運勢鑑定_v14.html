@@ -146,7 +146,7 @@ canvas{display:block;width:100%;height:auto}
 .lucky th{width:7.5em;font-size:12px}.lucky td{font-size:12.5px}
 .face{display:grid;gap:8px}
 .gRead{--c:var(--gold2)}.gr{display:grid;grid-template-columns:7.5em 1fr;gap:4px 10px;align-items:start;padding:6px 0;border-top:1px dashed #3a2a5a}.gr:first-of-type{border-top:0}
-.gr b{font:800 14px/1.3 var(--disp);color:#fff}.gr b small{display:block;font:700 12px var(--body);color:var(--gold)}.gr p{margin:0;font-size:13px;line-height:1.6}.gr .kyo{color:#ffb3bd}.gr .tk{display:inline-block;margin:0 4px 2px 0;padding:0 8px;border-radius:99px;background:linear-gradient(90deg,#ffd84a,#ff9ad0);color:#3a1d00;font-weight:800}.gr .gk{display:inline-block;margin:4px 4px 0 0;padding:0 8px;border-radius:99px;background:#5a1020;color:#ffd6ec;border:1px solid var(--red);font-weight:800}.gr .note2{display:block;margin-top:3px;font-size:12.5px;color:#ffd6ec}.gr .dai{color:var(--yellow)}
+.gr b{font:800 14px/1.3 var(--disp);color:#fff}.gr b small{display:block;font:700 12px var(--body);color:var(--gold)}.gr p{margin:0;font-size:13px;line-height:1.6}.gr .kyo{color:#ffb3bd}.gr .tk{display:inline-block;margin:0 4px 2px 0;padding:0 8px;border-radius:99px;background:linear-gradient(90deg,#ffd84a,#ff9ad0);color:#3a1d00;font-weight:800}.gr .tka{color:#ffe9a8}.gr .gk{display:inline-block;margin:4px 4px 0 0;padding:0 8px;border-radius:99px;background:#5a1020;color:#ffd6ec;border:1px solid var(--red);font-weight:800}.gr .note2{display:block;margin-top:3px;font-size:12.5px;color:#ffd6ec}.gr .dai{color:var(--yellow)}
 .aisho{--c:var(--pink)}.aiTop{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;text-align:center}
 .aiTop .who2 b{display:block;font:800 22px var(--disp);color:#fff}.aiTop .who2 small{color:var(--sub);font-size:12px}
 .heart{display:grid;place-items:center;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,#ff4fa355,#14061e 70%);border:2px solid var(--pink)}
@@ -322,10 +322,17 @@ const TOKU={6:["母の星","良い物にして返す"],15:["徳望","初対面�
 const GOKE=new Set([21,23,33]);
 const GOKE_T="女性には運が強すぎるため、男性を必要とせず、未亡人となりやすいといわれる数";
 /* 同じ画数でも格ごとに言い方を変える（2:人格 3:外格 4:地格 5:総格） */
-const TOKU_W={6:{2:"人から受けた物を、良い物にして返せる人柄",3:"もらった縁を、もっと良い縁にして返す",4:"家族から受けた愛を、良い形にして返す",5:"一生を通じて、受けた恩を良い物にして返す"},
- 15:{2:"初対面でも壁が低く、自然と人が寄ってくる人柄",3:"初めて会う人ともすぐ打ち解け、人の輪が広がる",4:"子どもの頃から人に好かれ、まわりに人が集まる",5:"生涯を通じて徳望を集め、人に慕われる"}};
+/* 「」はたくちんの言葉（引用）、そのあとは付け足し。格ごとに言い方を変える（null:天格 2:人格 3:外格 4:地格 5:総格） */
+const TOKU_Q={6:"良い物にして返す",15:"初対面の壁が低く人を寄せる",24:"財運",35:"女性の家庭運",45:"天を貫く双運",77:"特質系の運"};
+const TOKU_W={
+ 6:{0:"母のように受け止めて育て、もっと良くして返す星。与えた分が巡って戻ってくる",2:"人から受けた物を、良い物にして返せる人柄",3:"もらった縁を、もっと良い縁にして返す",4:"家族から受けた愛を、良い形にして返す",5:"一生を通じて、受けた恩を良い物にして返す"},
+ 15:{0:"飾らない人柄が信用を呼び、人の縁がそのまま財産になる",2:"初対面でも壁が低く、自然と人が寄ってくる人柄",3:"初めて会う人ともすぐ打ち解け、人の輪が広がる",4:"子どもの頃から人に好かれ、まわりに人が集まる",5:"生涯を通じて徳望を集め、人に慕われる"},
+ 24:{0:"四方からお金が集まり、無駄なく残って増えていく流れを持つ家",2:"お金の流れを読む力があり、働くほど財が残る",3:"縁のある人から、お金の話や良い仕事が舞い込む",4:"若い頃から金運に恵まれ、暮らしに困りにくい",5:"一生を通じて財が集まり、晩年まで豊かに暮らせる"},
+ 35:{0:"家庭を温かくまとめる力が受け継がれる家。男性でも家庭を大事にするほど運が伸びる",2:"家族を思う気持ちが強く、家庭を温かくまとめる",3:"家族ぐるみの良いつき合いが広がる",4:"温かい家庭で育ち、自分も温かい家庭を作る",5:"生涯、家庭運に恵まれ、家族に囲まれて幸せを育てる"},
+ 45:{0:"天に向かって伸びる二本の柱のように、志と運が一緒に育つ家",2:"志が高く、障害を突き抜けて進む行動力",3:"勢いのある人脈が広がり、大きな舞台に呼ばれる",4:"若いうちから伸びる力が強く、才能と運が二本柱で育つ",5:"志と運の二本柱で、大業を成し遂げる一生"},
+ 77:{0:"人と違う特別な質（個性・才能）を受け継ぐ家",2:"人と違う特別な才能や感性を持ち、それを生かすと光る",3:"個性的な人や特別な分野の人と縁ができる",4:"子どもの頃から独特の感性が目立つ",5:"普通の道より、自分だけの道で運が開ける一生"}};
 const KAKU_N={2:"性格・仕事",3:"人づき合い",4:"若い頃・家庭",5:"人生全体"};
-const tokuTag=(n,col)=>!TOKU[n]?"":`<span class="tk">特大吉・${TOKU[n][0]}</span>${(TOKU_W[n]&&TOKU_W[n][col])?`（${TOKU_W[n][col]}）`:col?`（${TOKU[n][0]}の力が${KAKU_N[col]}に出る）`:TOKU[n][1]?`（${TOKU[n][1]}）`:""}`;
+const tokuTag=(n,col)=>!TOKU[n]?"":`<span class="tk">特大吉${TOKU_Q[n]===TOKU[n][0]?"":"・"+TOKU[n][0]}</span>「${TOKU_Q[n]}」<br><span class="tka">＋${TOKU_W[n][col==null?0:col]}</span>`;
 const gokeTag=(n,sex)=>GOKE.has(n)&&sex!=="男性"?`<span class="gk">後家数</span>`:"";
 const kk=n=>{if(!n)return["na","—"];if(TOKU[n])return["toku","特大吉"];const b=BOOK[n];if(b){const l=b[1].replace("数","");return[/凶/.test(l)?"kyo":/大吉|特別/.test(l)?"dai":"kichi",l]}return DAI.has(n)?["dai","大吉"]:KICHI.has(n)?["kichi","吉"]:["kyo","凶"]};
 /* 五格（天・人・地・総）と外格 */
