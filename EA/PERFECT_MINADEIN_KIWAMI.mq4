@@ -1,14 +1,19 @@
 //+------------------------------------------------------------------+
 //|                                       PERFECT_MINADEIN_KIWAMI.mq4|
 //|                                            Skill Host Strategist |
-//| v10.1 (2026-11-03) 売り買いの決まりは v10.0 のまま。                |
+//| v10.2 (2026-11-03) たくちん「直して」で決まりを3つ直した:           |
+//|   ①斥候は一度9MAの上に出てから死神の対象(生まれてすぐ刈られない)  |
+//|     斥候は1本の足で1回まで                                        |
+//|   ②本隊の条件 ma9>ma5 → ma5>ma9(上向きの並び)                    |
+//|   ③bb丸まりは確定足で見る(+2σの足1 < 足2)                        |
+//| v10.1 売り買いの決まりは v10.0 のまま。                             |
 //|   直した所: コンパイルが通らない所(Time/Close の [ ])、戻り値の確認、 |
 //|   注文コメントの読み方(後ろに付け足されても読める)、建値網の StopLevel、|
 //|   カウンター常備(降りた理由・網に掛かった足)を OnDeinit で書き出し。  |
 //|   決まりを変えるかもしれない所は input にして、既定値=v10.0 と同じ動き。|
 //+------------------------------------------------------------------+
 #property copyright "Skill Host Strategist"
-#property version   "10.1"
+#property version   "10.2"
 #property strict
 
 //--- 外部パラメータ(v10.0 と同じ)
@@ -16,8 +21,9 @@ input double ScoutLots   = 0.05;       // 【斥候4】の偵察ロット数（�
 input double MainLots    = 0.10;       // 【バンドブレイク】本隊1本あたりのロット（×4本投入）
 input int    MagicNumber = 888999;     // 究極ミナデイン識別番号
 //--- たくちんの「ご」待ちのスイッチ(既定値は v10.0 と同じ動き)
-input bool   ScoutDieBy9MA   = true;   // 斥候も9MA割れで死神に刈らせる(v10.0=true)
-input bool   ScoutOncePerBar = false;  // 斥候は1本の足で1回まで(v10.0=false)
+input bool   ScoutDieBy9MA   = true;   // 斥候も9MA割れで死神に刈らせる
+input bool   ScoutArmAbove9  = true;   // ↑は斥候が一度9MAの上に出てから(v10.0=false)
+input bool   ScoutOncePerBar = true;   // 斥候は1本の足で1回まで(v10.0=false)
 
 #define C_SCOUT "Scout_4"
 #define C_MAIN  "Main_BrakEOUT"
@@ -25,6 +31,7 @@ input bool   ScoutOncePerBar = false;  // 斥候は1本の足で1回まで(v10.0
 //--- 内部制御用変数
 static datetime last_bar_time  = 0;
 static datetime last_scout_bar = 0;
+static bool     scout_armed    = false;   // 斥候が一度9MAの上に出たか
 
 //--- カウンター用(売り買いには使わない)
 int    g_tk[];      // 自分で閉じた玉のチケット
@@ -83,8 +90,17 @@ void OnTick()
    }
 
    double ma9_current = iMA(NULL, 0, 9, 0, MODE_SMA, PRICE_CLOSE, 0);
-   double bb_upper_0  = iBands(NULL, 0, 20, 2, 0, PRICE_CLOSE, MODE_UPPER, 0);
    double bb_upper_1  = iBands(NULL, 0, 20, 2, 0, PRICE_CLOSE, MODE_UPPER, 1);
+   double bb_upper_2  = iBands(NULL, 0, 20, 2, 0, PRICE_CLOSE, MODE_UPPER, 2);
+
+   // 斥候の「死神の対象になったか」: 一度9MAの上に出たら対象。建値網が付いていれば(再起動後も)対象
+   if(scout_ticket < 0) scout_armed = false;
+   else if(!scout_armed)
+   {
+      if(Bid > ma9_current) scout_armed = true;
+      else if(OrderSelect(scout_ticket, SELECT_BY_TICKET) && OrderStopLoss() > 0) scout_armed = true;
+   }
+   bool scout_die = ScoutDieBy9MA && (!ScoutArmAbove9 || scout_armed);
 
    // 💀【スペル：はやぶさの死神】現在値が9MAを割ったら一括全決済
    if(total_positions > 0 && Bid < ma9_current)
@@ -94,10 +110,10 @@ void OnTick()
       {
          if(!OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) continue;
          if(OrderMagicNumber() != MagicNumber || OrderSymbol() != Symbol()) continue;
-         if(!ScoutDieBy9MA && IsScout(OrderComment())) continue;
+         if(!scout_die && IsScout(OrderComment())) continue;
          if(CloseSelected("死神9MA割れ")) closed_any = true;
       }
-      if(ScoutDieBy9MA || closed_any) return;
+      if(scout_die || closed_any) return;
    }
 
    // 🛡️【スペル：しあわせセット（建値即座ロック） ＆ 竿先bb丸まりポジコン】
@@ -114,8 +130,8 @@ void OnTick()
          }
       }
 
-      // 💡【スペル：竿先bb丸まりポジコン】+2σが1本前より下がった→本隊4本だけ利確
-      if(main_count > 0 && bb_upper_0 < bb_upper_1)
+      // 💡【スペル：竿先bb丸まりポジコン】確定足で+2σが1本前より下がった→本隊4本だけ利確
+      if(main_count > 0 && bb_upper_1 < bb_upper_2)
       {
          for(int i = OrdersTotal() - 1; i >= 0; i--)
          {
@@ -156,7 +172,7 @@ void OnTick()
    // 🐎【スペル：押し目買い無限4 バンドブレイクで4】
    if(total_positions == 1 && scout_ticket > 0 && main_count == 0)
    {
-      if(close_1 > bb_up_1 && ma9_1 > ma5_1 && ma21_1 > ma200_1)   // ← ma9_1 > ma5_1 は v10.0 のまま(要確認)
+      if(close_1 > bb_up_1 && ma5_1 > ma9_1 && ma21_1 > ma200_1)   // v10.2: ma9>ma5 → ma5>ma9
       {
          int ok = 0;
          for(int k = 0; k < 4; k++)

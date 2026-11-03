@@ -1,13 +1,12 @@
 # 引き継ぎ(自動で読み込まれる) — 最終更新 2026-11-03
 
-## 2026-11-03 追加:PERFECT_MINADEIN_KIWAMI v10.1(EA/PERFECT_MINADEIN_KIWAMI.mq4)
-- たくちんが貼った v10.0 を直した。売り買いの決まりは変えていない(変えそうな所は input、既定値=v10.0 の動き)
-- 直した:Time/Close に[0][1](このままだとコンパイルが通らない)、戻り値の確認、コメントを前方一致で読む、建値網に StopLevel、カウンター常備(OnDeinit)
-- まだ:MetaEditor でのコンパイル(ここは Linux で MT4 が無い)、テスター
-- たくちんに聞くこと(ご待ち):
-  1. 斥候は200MA・RSI35以下で入る=ほぼ必ず9MAの下 → 次のティックで死神に刈られ、入る→刈る を繰り返す。ScoutDieBy9MA=false か ScoutOncePerBar=true にするか
-  2. 本隊の条件 ma9 > ma5 は「短い線が下」=弱い形。ma5 > ma9 の書き間違いか
-  3. bb丸まりを足0(動いている足)で見ているので、入った直後の足でも揺れで降りうる。確定足(1と2)で見るか
+## 2026-11-03:PERFECT_MINADEIN_KIWAMI v10.2(EA/PERFECT_MINADEIN_KIWAMI.mq4)
+- v10.1:コンパイル直し(Time[0]/Close[1])・戻り値確認・コメント前方一致・建値網StopLevel・カウンター常備(OnDeinit)
+- v10.2(たくちん「直して」で決まり変更・承認済み):
+  ①斥候は一度9MAの上に出てから死神の対象(ScoutArmAbove9)、斥候は1本の足で1回まで(ScoutOncePerBar)
+  ②本隊条件 ma9>ma5 → ma5>ma9 ③bb丸まりは確定足(+2σ 足1<足2)
+- 注意:斥候は建値網が付くまで網なし(v10.0のまま)。9MAの上に出る前に下へ走ると網が無い。要るなら非常網を足すか聞く
+- まだ:MetaEditor でコンパイル(ここに MT4 無し)、テスター、カウンターの数を見る
 
 ## いま進めている事:スカイネット(パソコン起こし=ザメハ と キャッスル防衛AI)
 - 家のルーター名「skynet」。キャッスル防衛AI(Downloads\キャッスル防衛AI\castle_defense.py)は skynet につながる家のパソコン(有線LAN)にある
