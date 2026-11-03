@@ -11,6 +11,7 @@
 - Remote Control の一覧にパソコン「shynet」(skynet ではなく shynet 表記)・フォルダ「Experts」が出た → その PC で Claude アプリ/Remote Control が動いていた形跡=起きてログインしている見込み(ただし online か否かは一覧に出ず、まだ確定ではない)
 - ただし「Experts」はクラウドから使えない(not_available)。見込み:MT5 の Experts = AppData(ホーム直下の隠しフォルダ)の中なので弾かれる。または Claude アプリが古い
 - 直し方:Remote Control に AppData の外のフォルダ(例 C:\Users\<名前>\Downloads\キャッスル防衛AI)を足す+Claude アプリ最新化
+- 11-03 たくちん「パソコンオッケー」→ 一覧を読み直したが、まだ Experts だけ(キャッスル防衛AI フォルダは出ていない)
 - まだ:127.0.0.1:8765 が開くか(城が起きているか)は照らせていない
 
 ## 置いた物(Drive フォルダ 1izpPoOGTy6yW2eeNR8-0RKUcXN5vYKHV)
