@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>鶴見卓志 鑑定書</title>
+<title>総合運勢鑑定書</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -246,7 +246,7 @@ function wareki(y,m,d){const v=y*10000+m*100+d;const E=[[20190501,"令和",2019]
 <script>
 (function () {
   const $ = (id) => document.getElementById(id);
-  const KEY = "kanteisho_v2";
+  const KEY = "kanteisho_hinagata";
   const isAndroid = /Android/i.test(navigator.userAgent);
   const NOWD = new Date();
 
@@ -266,7 +266,7 @@ function wareki(y,m,d){const v=y*10000+m*100+d;const E=[[20190501,"令和",2019]
   $("facegrid").innerHTML = FACE_ORDER.map((k, i) => `<label for="face${i}">${k}<select id="face${i}" data-k="${k}"><option value="">選ばない</option>${Object.keys(FACE2[k]).map(x => `<option>${x}</option>`).join("")}</select></label>`).join("");
 
   // ── 上書き保存 ──
-  const DEF = { sei: "鶴見", mei: "卓志", kana: "つるみ たくし", alias: "Takuchin", sex: "m", by: "", bm: "", bd: "", blood: "", tk: "0", th: "12", tm: "0", face: {}, base: "" };
+  const DEF = { sei: "", mei: "", kana: "", alias: "", sex: "", by: "", bm: "", bd: "", blood: "", tk: "0", th: "12", tm: "0", face: {}, base: "" };
   function load() { try { return Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { return Object.assign({}, DEF); } }
   function readForm() {
     const q = (n) => { const r = document.querySelector(`input[name=${n}]:checked`); return r ? r.value : ""; };
@@ -522,7 +522,7 @@ function wareki(y,m,d){const v=y*10000+m*100+d;const E=[[20190501,"令和",2019]
       P.facePhoto.innerHTML = '<div class="ph" style="font-size:15px">写真待ち</div>';
       crops.forEach(([id]) => { P[id].style.backgroundImage = "none"; });
     }
-    $("resNote").textContent = `${S.sei} ${S.mei}さんの鑑定書`;
+    $("resNote").textContent = "鑑定書";
   }
 
   // ── 画面の切り替え ──
