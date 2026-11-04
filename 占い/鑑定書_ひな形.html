@@ -49,7 +49,8 @@ input[type="number"] { width: 7em; }
 .facegrid label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
 .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 18px; border-radius: 999px; font: inherit; font-weight: 700; cursor: pointer; background: var(--pink); color: #1a0b19; border: 0; user-select: none; -webkit-user-select: none; }
 .btn.sub2 { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-.btn input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.btn input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 100px; z-index: 1; }
+.btn:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
 .thumb { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 1px solid var(--line); }
 .go { display: block; width: 100%; margin-top: 14px; font-family: var(--display); font-weight: 800; font-size: clamp(24px, 5.5vw, 38px); letter-spacing: .08em; color: #fff7dc; padding: 12px; border-radius: 14px; cursor: pointer; border: 2px solid var(--gold); background: linear-gradient(90deg, #ff4f9a, #ffb347, #ffe66b, #5cf0a0, #45b8ff, #9b6cff, #ff4f9a); background-size: 300% 100%; text-shadow: 0 2px 0 #5a2a00, 0 0 12px rgba(0, 0, 0, .6); animation: rainbow 8s linear infinite; }
 @keyframes rainbow { to { background-position: 300% 0; } }
@@ -106,8 +107,8 @@ ul.l li::marker { color: var(--c, #ff8fd0); }
         <label class="radio"><input type="radio" name="tk" value="1">入れる</label>
         <select id="th" aria-label="時"></select><select id="tm" aria-label="分"></select></div></div>
       <div class="row"><span class="lab">顔写真</span><div class="fld">
-        <label class="btn" id="camBtn" for="camIn" tabindex="0" role="button">カメラで撮る</label><input id="camIn" type="file" accept="image/*" capture="user" hidden>
-        <label class="btn sub2" for="pickIn" tabindex="0" role="button">写真を選ぶ</label><input id="pickIn" type="file" accept="image/*" hidden>
+        <span class="btn" id="camBtn">カメラで撮る<input id="camIn" type="file" accept="image/*" capture="user" aria-label="カメラで撮る"></span>
+        <span class="btn sub2">写真を選ぶ・撮る<input id="pickIn" type="file" accept="image/*" aria-label="写真を選ぶ・撮る"></span>
         <button class="btn sub2" id="readFace" type="button" hidden>写真から人相を読む</button>
         <button class="btn sub2" id="clearPhoto" type="button">写真を消す</button>
         <img class="thumb" id="thumb" alt="入れた写真" hidden>
@@ -316,7 +317,7 @@ function wareki(y,m,d){const v=y*10000+m*100+d;const E=[[20190501,"令和",2019]
       $("camNote").textContent = m[e && e.code] || "写真を読めませんでした。人相は手で選んでください。";
     } finally { btn.disabled = false; }
   });
-  const ANDROID_NOTE = "カメラが開かない時は「写真を選ぶ」から撮るか、撮った写真を選んでください。";
+  const ANDROID_NOTE = "カメラが開かない時は「写真を選ぶ・撮る」を押して、出てきた画面の「カメラ」から撮るか、撮った写真を選んでください。";
   if (isAndroid) $("camNote").textContent = ANDROID_NOTE;
   function showThumb() { const t = $("thumb"); if (photoURL) { t.src = photoURL; t.hidden = false; } else { t.hidden = true; t.removeAttribute("src"); } }
   function viaImg(file) {
@@ -345,7 +346,6 @@ function wareki(y,m,d){const v=y*10000+m*100+d;const E=[[20190501,"令和",2019]
       localStorage.setItem(KEY + "_photo", c2.toDataURL("image/jpeg", 0.85));
     } catch (e) {}
   }
-  document.querySelectorAll("label[for=camIn],label[for=pickIn]").forEach(l => l.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $(l.htmlFor).click(); } }));
   ["camIn", "pickIn"].forEach(id => $(id).addEventListener("change", (e) => {
     const f = e.target.files && e.target.files[0];
     loadFile(f).catch(() => { $("camNote").textContent = "この写真は読めませんでした。別の写真を選んでください。"; });
