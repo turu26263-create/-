@@ -8,6 +8,8 @@
 - 10-30 13:35 時点で Remote Control でつなげるパソコンは0台 → 実機作業は帰宅待ち
 
 ## 11-03 占いの鑑定書(このチャット)
+- 【決まり・たくちん 11-04】ホームページ(入力画面)と2ページ目(鑑定書)は固定。見た目も中身も勝手に変えない。変える時は先に聞いて「ご」をもらう
+- 11-04 勝手に変えた分は元に戻した: 鑑定書ひな形 8xoG5bdYurkNg4NZBmEBah は別の作業の版18と同じ中身(版20・sample 込み)、総合運勢鑑定 TPU2FHH1dB44yGXkoM4jev は最初の版と同じ中身(版4・capabilities なし)。戻した元は 占い/modoshi/
 - 入力画面→鑑定書(ひな形)を1ページにつないだ: https://claude.ai/artifact/8xoG5bdYurkNg4NZBmEBah (版7: 個人名なしのひな形。カメラは「label for+隠した入力 capture=user」= 11-03 アマテラスでたくちんのスマホで撮れた形にそろえ、Android でも出す。写真から人相を読む=sample(images) を足した)
 - 作り方: 占い/src/page.html + src/engine.js(「総合運勢鑑定」TPU2FHH1dB44yGXkoM4jev の計算部分をそのまま抜いた物)→ python3 占い/src/build.py で 占い/鑑定書_ひな形.html を作る。土台画像 hinagata4.jpg(グラフ基準線より下は灰色。見本の名前・写真・顔・数字・文言を全部消した無地、版10)
 - 姓名判断は入力画面と同じ BOOK(本の写真)の吉凶。ただし15画だけ、たくちんの決め(11-04)で「福寿円満運・大吉」に上書き(page.html の BOOK["15"] の行。版11)
