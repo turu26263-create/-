@@ -1,0 +1,432 @@
+<title>鶴見卓志 鑑定書</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* 見本の鑑定書の並び：上=名前と写真＋顔占い／中=基本情報・姓名判断・四柱推命／グラフ／下=五つの札。夜の祭りの一色で通す */
+:root {
+  --bg: #120a1f;
+  --panel: #1c1230;
+  --panel2: #251840;
+  --ink: #f3ecff;
+  --muted: #b9a9d6;
+  --line: #4b3470;
+  --pink: #ff5fae;
+  --gold: #f5c86a;
+  --blue: #5fb4ff;
+  --red: #ff5a5a;
+  --kyo: #9aa6c4;
+  --display: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: 14px; line-height: 1.65;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+main { max-width: 1040px; margin: 0 auto; display: grid; gap: 14px; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+.box h2 { font-family: var(--display); font-weight: 800; font-size: 1.25rem; margin: 0 0 8px; color: var(--ink); letter-spacing: .06em; text-wrap: balance; }
+.box h2 small { font-family: var(--body); font-size: .75rem; color: var(--muted); font-weight: 500; margin-left: 6px; }
+.muted { color: var(--muted); }
+.wait { color: var(--muted); font-size: .85rem; border: 1px dashed var(--line); border-radius: 6px; padding: 10px; }
+
+/* 上段 */
+.top { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 14px; }
+.hero { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: stretch; background: radial-gradient(120% 90% at 70% 20%, #3a2050 0%, var(--panel) 70%); }
+.namev { writing-mode: vertical-rl; font-family: var(--display); font-weight: 800; font-size: clamp(54px, 9vw, 84px); line-height: 1.05; color: var(--pink); text-shadow: 0 0 14px rgba(255, 95, 174, .55); letter-spacing: .04em; }
+.namev rt { font-size: 14px; color: var(--ink); text-shadow: none; font-weight: 600; letter-spacing: .3em; }
+.photo { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; min-height: 300px; display: grid; place-items: center; background: var(--panel2); }
+.photo img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.photo label { position: relative; z-index: 1; cursor: pointer; background: var(--pink); color: #1a0b19; font-weight: 700; padding: 8px 14px; border-radius: 999px; font-size: .9rem; }
+.photo label:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
+.photo input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.photo.has label { position: absolute; bottom: 10px; right: 10px; background: rgba(18, 10, 31, .8); color: var(--ink); border: 1px solid var(--line); }
+.alias { position: absolute; left: 14px; bottom: 8px; font-family: var(--display); font-style: italic; color: var(--gold); font-size: 1.6rem; opacity: .85; }
+
+.face { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.part { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.part b { font-family: var(--display); font-size: 1.05rem; }
+.part .k { color: var(--gold); font-weight: 700; font-size: .85rem; display: block; }
+.part p { margin: 2px 0 0; font-size: .82rem; color: var(--muted); }
+
+/* 中段 */
+.mid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+table.info { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: .9rem; }
+table.info td { overflow-wrap: anywhere; }
+table.info th, table.info td { border-bottom: 1px solid var(--line); padding: 7px 6px; text-align: left; vertical-align: top; }
+table.info th { color: var(--muted); font-weight: 500; white-space: nowrap; width: 5.5em; }
+table.info td { font-variant-numeric: tabular-nums; }
+.big { font-size: 1.4rem; font-weight: 700; }
+input[type="date"], input[type="number"] { background: var(--panel2); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; font: inherit; max-width: 100%; }
+input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+.seimei { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.15fr); gap: 8px; align-items: center; }
+.side { display: grid; gap: 6px; }
+.kaku { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; position: relative; }
+.kaku h3 { margin: 0; font-family: var(--display); font-size: 1rem; display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
+.kaku .n { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kaku p { margin: 2px 0 0; font-size: .78rem; color: var(--muted); line-height: 1.5; }
+.tag { font-family: var(--body); font-size: .72rem; font-weight: 700; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+.tag.dai { background: var(--pink); color: #1a0b19; }
+.tag.kichi { background: var(--gold); color: #241600; }
+.tag.kyo { background: var(--kyo); color: #141a26; }
+.chars { display: grid; gap: 4px; background: #f6efe0; color: #20140c; border-radius: 4px; padding: 6px 8px; }
+.chars div { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; text-align: center; }
+.chars small { display: block; font-family: var(--body); font-size: 10px; font-weight: 500; color: #6b5a48; margin-top: 2px; }
+.total { grid-column: 1 / -1; }
+
+.pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pil { background: #f6efe0; color: #20140c; border-radius: 6px; padding: 8px 4px; text-align: center; }
+.pil .h { font-size: .75rem; color: #6b5a48; }
+.pil .g { font-family: var(--display); font-weight: 800; font-size: 1.9rem; line-height: 1.15; }
+.pil .r { font-size: .72rem; color: #6b5a48; }
+.pil .e { font-size: .78rem; font-weight: 700; margin-top: 4px; }
+.nikkan { margin-top: 8px; }
+.nikkan b { color: var(--gold); font-family: var(--display); font-size: 1.05rem; }
+.note { font-size: .75rem; color: var(--muted); margin: 6px 0 0; }
+
+/* グラフ */
+.graphwrap { overflow-x: auto; }
+#graph { display: block; width: 100%; min-width: 640px; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .8rem; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+.gctrl { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: .85rem; margin-bottom: 6px; }
+
+/* 下段 */
+.cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.card { border-top: 3px solid var(--c); }
+.card h2 { color: var(--c); font-size: 1.05rem; }
+.card ul { margin: 0; padding-left: 1.1em; font-size: .84rem; display: grid; gap: 4px; }
+.card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; font-size: .82rem; }
+.card dt { color: var(--muted); white-space: nowrap; }
+.card dd { margin: 0; }
+.foot { font-size: .75rem; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .top, .mid { grid-template-columns: minmax(0, 1fr); }
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .cards, .face { grid-template-columns: minmax(0, 1fr); }
+  .seimei { grid-template-columns: auto minmax(0, 1fr); }
+  .seimei .side.left { grid-column: 1 / -1; grid-row: 2; }
+  .pil .g { font-size: 1.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<main>
+  <!-- 上段：名前と写真 / 顔占い -->
+  <section class="top">
+    <div class="box hero">
+      <div class="namev"><ruby>鶴見<rt>つるみ</rt></ruby><ruby>卓志<rt>たくし</rt></ruby></div>
+      <div class="photo" id="photoBox">
+        <label for="photoIn">顔写真を入れる（撮る・選ぶ）<input id="photoIn" type="file" accept="image/*" capture="user"></label>
+      </div>
+      <div class="alias">Takuchin</div>
+    </div>
+
+    <div class="box">
+      <h2>顔占い<small>観相学</small></h2>
+      <div class="face">
+        <div class="part"><b>額</b><span class="k">知性・思考力</span><p>未鑑定（写真待ち）</p></div>
+        <div class="part"><b>鼻</b><span class="k">行動力・財運</span><p>未鑑定（写真待ち）</p></div>
+        <div class="part"><b>眉</b><span class="k">優しさ・協調性</span><p>未鑑定（写真待ち）</p></div>
+        <div class="part"><b>口</b><span class="k">対話・コミュニケーション</span><p>未鑑定（写真待ち）</p></div>
+        <div class="part"><b>目</b><span class="k">直感・表現力</span><p>未鑑定（写真待ち）</p></div>
+        <div class="part"><b>顎</b><span class="k">忍耐力・晩年運</span><p>未鑑定（写真待ち）</p></div>
+      </div>
+      <p class="note">写真はこの画面の中だけで表示し、どこにも送りません。顔の読み取りはまだ入れていないので、各部位は「未鑑定」のままです。</p>
+    </div>
+  </section>
+
+  <!-- 中段：基本情報 / 姓名判断 / 四柱推命 -->
+  <section class="mid">
+    <div class="box">
+      <h2>基本情報</h2>
+      <table class="info">
+        <tr><th>氏名</th><td>鶴見 卓志（つるみ たくし）</td></tr>
+        <tr><th>生年月日</th><td><input id="bd" type="date" min="1900-01-01" max="2026-12-31" aria-label="生年月日"><div id="wareki" class="muted"></div></td></tr>
+        <tr><th>現在の年齢</th><td id="age" class="muted">生年月日待ち</td></tr>
+        <tr><th>数秘術</th><td id="lp" class="muted">生年月日待ち</td></tr>
+        <tr><th>星座</th><td id="sei" class="muted">生年月日待ち</td></tr>
+        <tr><th>血液型</th><td>不明</td></tr>
+        <tr><th>出生時間</th><td>不明（時柱は未確定）</td></tr>
+      </table>
+      <p class="note">生年月日は記録に無いので空けてあります。入れると年齢・数秘・星座・四柱・グラフが出ます（この端末にだけ覚えます）。</p>
+    </div>
+
+    <div class="box">
+      <h2>姓名判断<small>熊﨑式・旧字体も新字体も同じ画数</small></h2>
+      <div class="seimei">
+        <div class="side left">
+          <div class="kaku"><h3>外格 <span class="tag kyo">凶</span></h3><div class="n">28画</div><p>鶴21＋志7。家庭不安定運。家族と離れる・もめごと・人のことで苦労</p></div>
+        </div>
+        <div class="chars" aria-label="名前の画数">
+          <div>鶴<small>21画</small></div>
+          <div>見<small>7画</small></div>
+          <div>卓<small>8画</small></div>
+          <div>志<small>7画</small></div>
+        </div>
+        <div class="side">
+          <div class="kaku"><h3>天格 <span class="tag kyo">凶</span></h3><div class="n">28画</div><p>鶴21＋見7。家の流れ。姓の数なので吉凶は強く見ない</p></div>
+          <div class="kaku"><h3>人格 <span class="tag dai">大吉</span></h3><div class="n">15画</div><p>見7＋卓8。福寿円満運。人に好かれ福を呼ぶ。性格・仕事の芯</p></div>
+          <div class="kaku"><h3>地格 <span class="tag dai">大吉</span></h3><div class="n">15画</div><p>卓8＋志7。若い頃の運と家の土台が安定</p></div>
+        </div>
+        <div class="kaku total"><h3>総格 <span class="tag kyo">凶寄り</span></h3><div class="n">43画</div><p>全部の画数。散財運。外からは華やかでも、お金が出ていきやすい。人生後半に強く出る</p></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>四柱推命<small>出生時間不明のため三柱</small></h2>
+      <div id="shichu"><div class="wait">生年月日を入れると、年柱・月柱・日柱と日干の説明が出ます。</div></div>
+    </div>
+  </section>
+
+  <!-- グラフ -->
+  <section class="box">
+    <h2>総合運勢バイオリズムグラフ<small>親の運気の上に乗り、成人から自分の運気へ。年齢とともに波が小さくなる（イメージ）</small></h2>
+    <div class="gctrl">
+      <label for="base">占成人（基準数）</label>
+      <input id="base" type="number" min="10" max="60" step="1" placeholder="例 29">
+      <span class="muted">記録の形：前厄＝基準−9／本厄＝＋9／二回目成人＝＋18／後厄＝＋27／三回目成人＝＋36／死前厄＝＋45（上がり始め＝厄−3、下がり始め＝厄＋3）</span>
+    </div>
+    <div class="graphwrap"><svg id="graph" viewBox="0 0 1000 340" role="img" aria-label="年齢ごとの運勢の波"></svg></div>
+    <div class="legend">
+      <span><i style="background:var(--gold)"></i>親の運気</span>
+      <span><i style="background:var(--blue)"></i>自分の運気（プラス）</span>
+      <span><i style="background:var(--red)"></i>下降の運気（マイナス）</span>
+      <span><i style="background:var(--pink)"></i>現在</span>
+    </div>
+    <p class="note">基準数の出し方（生年月日やライフパスからどう決めるか）はまだ記録に無いので、手で入れる形にしてあります。波の高さは絵としてのイメージで、数字の根拠はありません。</p>
+  </section>
+
+  <!-- 下段：五つの札 -->
+  <section class="cards">
+    <div class="box card" style="--c: var(--pink)">
+      <h2>人生の流れと運勢の特徴</h2>
+      <ul>
+        <li>若い頃：地格15（大吉）。足元が安定し、早くから目立つ</li>
+        <li>中心：人格15（大吉）。人に好かれ、仕事は堅実に伸びる</li>
+        <li>まわり：外格28（凶）。家族・人間関係で苦労しやすい</li>
+        <li>後半：総格43（凶寄り）。お金の出入りに波が出やすい</li>
+        <li>強い人格15が、外格28の不安定さを支える形</li>
+      </ul>
+    </div>
+    <div class="box card" style="--c: var(--blue)">
+      <h2>性格・才能</h2>
+      <ul>
+        <li>管理能力があり堅実。無理なく冷静に物事に対処する（人格15）</li>
+        <li>大らかでソフトな人あたり。視野が広い（地格15）</li>
+        <li>何かと何かを組み合わせて、自分にしかない物を作るのが好き</li>
+        <li>金属加工・うどん屋・営業・魚の養殖と、畑違いを渡り歩いて身につけた引き出しの多さ</li>
+      </ul>
+    </div>
+    <div class="box card" style="--c: #6fe0a0">
+      <h2>適職・才能の傾向</h2>
+      <ul>
+        <li>経理・管理・事業の運営（人格15：事業も成功する数）</li>
+        <li>通訳・翻訳など国際的な仕事（地格15）</li>
+        <li>ものづくり×商い：作る腕と売る口の両方を使う仕事</li>
+        <li>仕組み作り：EA・アプリなど、決まりを組んで回す仕事</li>
+      </ul>
+    </div>
+    <div class="box card" style="--c: var(--red)">
+      <h2>注意点と開運のポイント</h2>
+      <ul>
+        <li>家族・身内のもめごとは早めに話す（外格28）</li>
+        <li>人の世話で自分が倒れない線を決めておく</li>
+        <li>華やかな出費に注意。入る前に使い道を決める（総格43）</li>
+        <li>お金は「使う・貯める・試す」に分けて置く</li>
+      </ul>
+    </div>
+    <div class="box card" style="--c: var(--gold)">
+      <h2>呪文にたとえると</h2>
+      <dl>
+        <dt>人格15</dt><dd>ベホマズン：まわり全員を回復させる人徳</dd>
+        <dt>地格15</dt><dd>スカラ：土台の守りが固い</dd>
+        <dt>外格28</dt><dd>メダパニ注意：身内のごたごたで混乱しやすい</dd>
+        <dt>総格43</dt><dd>レミラーマ：出ていくゴールドを照らして見つける</dd>
+        <dt>得意技</dt><dd>ミナデイン：畑違いの経験を合わせて一発</dd>
+      </dl>
+      <p class="note">呪文の札は遊びです。占いの根拠はありません。</p>
+    </div>
+  </section>
+
+  <p class="foot">姓名判断の出典：Drive「占い／総合占術記録_鶴見卓志.md」「鑑定_鶴見卓志.html」、人格15・地格15の文は「占い画数／DSC_0091.JPG」（本の写真）。四柱推命は節入りを毎年の目安日で切っているので、節入りの前後1日に生まれた場合は暦で確かめが要ります。</p>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const STEM = "甲乙丙丁戊己庚辛壬癸", BR = "子丑寅卯辰巳午未申酉戌亥";
+  const STEM_YOMI = ["きのえ","きのと","ひのえ","ひのと","つちのえ","つちのと","かのえ","かのと","みずのえ","みずのと"];
+  const BR_YOMI = ["ね","うし","とら","う","たつ","み","うま","ひつじ","さる","とり","いぬ","い"];
+  const STEM_GOGYO = ["木","木","火","火","土","土","金","金","水","水"];
+  const BR_GOGYO = ["水","土","木","木","土","火","火","土","金","金","土","水"];
+  const NIKKAN = [
+    "陽の木。大樹にたとえられ、まっすぐ伸びる向上心と、人を引っぱる力があるタイプ。",
+    "陰の木。草花にたとえられ、柔らかく、まわりに合わせながら粘り強く根を張るタイプ。",
+    "陽の火。太陽にたとえられ、明るく開けっぴろげで、まわりを照らすタイプ。",
+    "陰の火。灯火にたとえられ、細やかな気配りと内に秘めた情熱を持つタイプ。",
+    "陽の土。山にたとえられ、どっしりと構え、頼られる包容力のあるタイプ。",
+    "陰の土。田畑にたとえられ、人や物を育てる面倒見のよさがあるタイプ。",
+    "陽の金。鉄や刀にたとえられ、決断が早く、筋を通す強さのあるタイプ。",
+    "陰の金。宝石や磨かれた金属にたとえられ、繊細さと美意識、芯の強さを持つタイプ。",
+    "陽の水。大河や海にたとえられ、スケールが大きく、自由に流れる行動力のあるタイプ。",
+    "陰の水。雨や露にたとえられ、知恵があり、しみ込むように人の心に届くタイプ。"
+  ];
+  // 節入りの目安日（1月=小寒 … 12月=大雪）
+  const SETSU = [6, 4, 6, 5, 6, 6, 7, 8, 8, 8, 7, 7];
+
+  const sexa = (i) => ({ s: i % 10, b: i % 12 });
+  function pillars(y, m, d) {
+    let near = false;
+    const sd = SETSU[m - 1];
+    if (Math.abs(d - sd) <= 1) near = true;
+    const afterSetsu = d >= sd;
+    // 年柱：立春（2/4）前は前の年
+    const py = (m < 2 || (m === 2 && !afterSetsu)) ? y - 1 : y;
+    const yi = ((py - 4) % 60 + 60) % 60;
+    // 月柱：節入り後はその月の支（1月=丑…12月=子）、前は一つ前
+    const mb = ((m - (afterSetsu ? 0 : 1)) % 12 + 12) % 12; // 1月の節後=丑、節前=子、12月の節後=子
+    const n = (mb - 2 + 12) % 12; // 寅月を0とした順番
+    const ys = ((py - 4) % 10 + 10) % 10;
+    const ms = ((ys % 5) * 2 + 2 + n) % 10;
+    // 日柱：2014-01-10=辛巳、2000-01-01=戊午 で確かめた式
+    const days = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+    const di = ((days + 719163 + 14) % 60 + 60) % 60;
+    return { year: sexa(yi), month: { s: ms, b: mb }, day: sexa(di), near };
+  }
+  function lifePath(str) {
+    let n = str.replace(/\D/g, "").split("").reduce((a, c) => a + +c, 0);
+    const steps = [n];
+    while (n > 9) { n = String(n).split("").reduce((a, c) => a + +c, 0); steps.push(n); }
+    return { n, steps };
+  }
+  function seiza(m, d) {
+    const t = [[1,20,"山羊座"],[2,19,"水瓶座"],[3,21,"魚座"],[4,20,"牡羊座"],[5,21,"牡牛座"],[6,22,"双子座"],[7,23,"蟹座"],[8,23,"獅子座"],[9,23,"乙女座"],[10,24,"天秤座"],[11,23,"蠍座"],[12,22,"射手座"]];
+    const [, cut, name] = t[m - 1];
+    if (d < cut) return name;
+    return t[m % 12][2];
+  }
+  function wareki(y, m, d) {
+    const v = y * 10000 + m * 100 + d;
+    if (v >= 20190501) return "令和" + (y - 2018) + "年";
+    if (v >= 19890108) return "平成" + (y - 1988) + "年";
+    if (v >= 19261225) return "昭和" + (y - 1925) + "年";
+    return "";
+  }
+  const pcell = (h, p) => `<div class="pil"><div class="h">${h}</div><div class="g">${STEM[p.s]}${BR[p.b]}</div><div class="r">${STEM_YOMI[p.s]}・${BR_YOMI[p.b]}</div><div class="e">${STEM_GOGYO[p.s]}・${BR_GOGYO[p.b]}</div></div>`;
+
+  let birth = null;
+  function render() {
+    const v = $("bd").value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { birth = null; drawGraph(); return; }
+    const [y, m, d] = v.split("-").map(Number);
+    birth = { y, m, d };
+    const now = new Date();
+    let age = now.getFullYear() - y;
+    if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) age--;
+    $("wareki").textContent = wareki(y, m, d) ? `（${wareki(y, m, d)}${m}月${d}日）` : "";
+    $("age").textContent = `${age}歳（${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 時点）`;
+    $("age").className = "";
+    const lp = lifePath(v);
+    $("lp").innerHTML = `<span class="big">${lp.n}</span> <span class="muted">（${v.replace(/-/g, "").split("").join("+")}=${lp.steps.join("→")}）</span>`;
+    $("lp").className = "";
+    $("sei").textContent = seiza(m, d);
+    $("sei").className = "";
+    const p = pillars(y, m, d);
+    $("shichu").innerHTML = `<div class="pillars">${pcell("年柱（先祖・幼少期）", p.year)}${pcell("月柱（社会・青年期）", p.month)}${pcell("日柱（本質・中年期）", p.day)}</div>
+      <div class="nikkan"><b>日干 ${STEM[p.day.s]}</b>（${STEM_YOMI[p.day.s]}）<br>${NIKKAN[p.day.s]}</div>
+      ${p.near ? '<p class="note">節入りの境目に近い日なので、年柱・月柱は暦で確かめてください。</p>' : ""}`;
+    drawGraph();
+  }
+
+  // ── グラフ ──
+  const W = 1000, H = 340, L = 60, R = 980, T = 30, B = 290;
+  const X = (a) => L + (R - L) * a / 100;
+  const Y = (v) => (T + B) / 2 - v * (B - T) / 2 / 10;
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function drawGraph() {
+    const svg = $("graph");
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line");
+    let s = "";
+    for (let a = 0; a <= 100; a += 10) {
+      s += `<line x1="${X(a)}" y1="${T}" x2="${X(a)}" y2="${B}" stroke="${line}" stroke-width="1"/>`;
+      s += `<text x="${X(a)}" y="${B + 20}" fill="${muted}" font-size="13" text-anchor="middle">${a}歳</text>`;
+    }
+    s += `<line x1="${L}" y1="${Y(0)}" x2="${R}" y2="${Y(0)}" stroke="${muted}" stroke-dasharray="4 5"/>`;
+    s += `<text x="${L - 8}" y="${Y(7)}" fill="${css("--red")}" font-size="12" text-anchor="end">運気＋</text>`;
+    s += `<text x="${L - 8}" y="${Y(0) + 4}" fill="${muted}" font-size="12" text-anchor="end">基準</text>`;
+    s += `<text x="${L - 8}" y="${Y(-7)}" fill="${css("--blue")}" font-size="12" text-anchor="end">運気−</text>`;
+    // 親の運気（若い頃に高く、成人後ゆっくり下がる）
+    let pp = "";
+    for (let a = 0; a <= 100; a++) {
+      const v = a < 12 ? 4 + 4 * Math.sin(a / 12 * Math.PI / 2) : 8 * Math.exp(-(a - 12) / 45);
+      pp += (a ? "L" : "M") + X(a).toFixed(1) + " " + Y(v).toFixed(1);
+    }
+    s += `<path d="${pp}" fill="none" stroke="${css("--gold")}" stroke-width="3" opacity=".85"/>`;
+
+    const base = parseInt($("base").value, 10);
+    if (!birth || !(base >= 10 && base <= 60)) {
+      s += `<text x="${(L + R) / 2}" y="${Y(-4)}" fill="${ink}" font-size="16" text-anchor="middle">${!birth ? "生年月日" : ""}${!birth && !(base >= 10) ? "と" : ""}${!(base >= 10 && base <= 60) ? "占成人（基準数）" : ""}を入れると自分の運気の波が出ます</text>`;
+      svg.innerHTML = s; return;
+    }
+    const peaks = [[base - 9, "前厄"], [base + 9, "本厄"], [base + 27, "後厄"], [base + 45, "死前厄"]];
+    const troughs = [[base, "占成人"], [base + 18, "二回目成人"], [base + 36, "三回目成人"]];
+    // 自分の運気：厄で山、成人で谷。年齢で波が小さくなる
+    const amp = (a) => 7 * Math.exp(-a / 70);
+    const own = (a) => amp(a) * Math.cos((a - (base - 9)) / 18 * 2 * Math.PI);
+    let prev = null;
+    for (let a = 0; a <= 100; a += .5) {
+      const v = own(a);
+      if (prev) s += `<line x1="${X(prev[0]).toFixed(1)}" y1="${Y(prev[1]).toFixed(1)}" x2="${X(a).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="${v >= prev[1] ? css("--blue") : css("--red")}" stroke-width="3.5" stroke-linecap="round"/>`;
+      prev = [a, v];
+    }
+    peaks.forEach(([a, n]) => { if (a < 0 || a > 100) return;
+      s += `<circle cx="${X(a)}" cy="${Y(own(a))}" r="7" fill="${css("--pink")}" stroke="${ink}" stroke-width="2"/>`;
+      s += `<text x="${X(a)}" y="${Y(own(a)) - 26}" fill="${ink}" font-size="13" font-weight="700" text-anchor="middle">${n}</text>`;
+      s += `<text x="${X(a)}" y="${Y(own(a)) - 12}" fill="${muted}" font-size="12" text-anchor="middle">${a}歳</text>`; });
+    troughs.forEach(([a, n]) => { if (a < 0 || a > 100) return;
+      const y = Y(own(a));
+      s += `<path d="M${X(a)} ${y - 9} L${X(a) - 8} ${y + 6} L${X(a) + 8} ${y + 6} Z" fill="${ink}"/>`;
+      s += `<text x="${X(a)}" y="${y + 24}" fill="${ink}" font-size="13" font-weight="700" text-anchor="middle">${n}</text>`;
+      s += `<text x="${X(a)}" y="${y + 38}" fill="${muted}" font-size="12" text-anchor="middle">${a}歳</text>`; });
+    const now = new Date();
+    let age = now.getFullYear() - birth.y;
+    if (now.getMonth() + 1 < birth.m || (now.getMonth() + 1 === birth.m && now.getDate() < birth.d)) age--;
+    if (age >= 0 && age <= 100) {
+      s += `<line x1="${X(age)}" y1="${T}" x2="${X(age)}" y2="${B}" stroke="${css("--pink")}" stroke-dasharray="3 4" stroke-width="2"/>`;
+      s += `<circle cx="${X(age)}" cy="${Y(own(age))}" r="9" fill="${ink}" stroke="${css("--pink")}" stroke-width="4"/>`;
+      s += `<text x="${X(age) + 12}" y="${T + 14}" fill="${css("--pink")}" font-size="15" font-weight="700">現在 ${age}歳</text>`;
+    }
+    svg.innerHTML = s;
+  }
+
+  // 写真（この画面の中だけ）
+  $("photoIn").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const box = $("photoBox");
+    let img = box.querySelector("img");
+    if (!img) { img = document.createElement("img"); img.alt = "鶴見卓志さんの顔写真"; box.prepend(img); }
+    img.src = URL.createObjectURL(f);
+    box.classList.add("has");
+  });
+
+  // 入力を覚える（この端末だけ）
+  const KEY = "kanteisho_tsurumi";
+  try { const s = JSON.parse(localStorage.getItem(KEY) || "{}"); if (s.bd) $("bd").value = s.bd; if (s.base) $("base").value = s.base; } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify({ bd: $("bd").value, base: $("base").value })); } catch (e) {} }
+  $("bd").addEventListener("input", () => { save(); render(); });
+  $("base").addEventListener("input", () => { save(); drawGraph(); });
+  render();
+})();
+</script>
