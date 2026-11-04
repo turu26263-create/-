@@ -112,7 +112,13 @@ ul.l li::marker { color: var(--c, #ff8fd0); }
         <button class="btn sub2" id="readFace" type="button" hidden>写真から人相を読む</button>
         <button class="btn sub2" id="clearPhoto" type="button">写真を消す</button>
         <img class="thumb" id="thumb" alt="入れた写真" hidden>
-        <span class="sub" id="camNote"></span></div></div>
+        <span class="sub" id="camNote"></span>
+        <div style="width:100%;display:grid;gap:6px">
+          <label class="sub" for="plainIn">ボタンで開かない時は、こちらの欄を押してください（そのままの入力欄）</label>
+          <input id="plainIn" type="file" accept="image/*" style="color:var(--ink);max-width:100%">
+          <div id="pasteBox" contenteditable="true" role="textbox" aria-label="写真を貼り付ける所" style="border:1px dashed var(--line);border-radius:8px;padding:10px;color:var(--muted);font-size:13px;min-height:44px">ここを長押しして「貼り付け」でも写真を入れられます（写真をコピーしてから）</div>
+          <p class="sub" id="diag" style="margin:0;font-size:12px"></p>
+        </div></div></div>
       <div class="row"><span class="lab">人相</span><div class="fld"><div class="facegrid" id="facegrid"></div></div></div>
       <div class="row"><label class="lab" for="baseNum">占成人<br>(基準数)</label><div class="fld"><input id="baseNum" type="number" inputmode="numeric" min="10" max="60" step="1" placeholder="任意"><span class="sub">入れるとグラフの厄・成人の年齢が出ます（前厄＝−9／本厄＝＋9／二回目成人＝＋18／後厄＝＋27／三回目成人＝＋36／死前厄＝＋45）</span></div></div>
       <button class="go" type="submit">鑑定書を作る ▶</button>
@@ -240,11 +246,31 @@ ul.l li::marker { color: var(--c, #ff8fd0); }
       localStorage.setItem(KEY + "_photo", c2.toDataURL("image/jpeg", 0.85));
     } catch (e) {}
   }
-  ["camIn", "pickIn"].forEach(id => $(id).addEventListener("change", (e) => {
-    const f = e.target.files && e.target.files[0];
-    loadFile(f).catch(() => { $("camNote").textContent = "この写真は読めませんでした。別の写真を選んでください。"; });
-    e.target.value = "";
-  }));
+  // 動きの記録（どこで止まったか見えるように）
+  const diag = (t) => { const d = $("diag"); d.textContent = "記録: " + t + "（" + new Date().toLocaleTimeString() + "）"; };
+  const NAMES = { camIn: "カメラで撮る", pickIn: "写真を選ぶ・撮る", plainIn: "そのままの入力欄" };
+  function takeFile(f, from) {
+    if (!f) { diag(from + "：写真が選ばれずに戻りました"); return; }
+    diag(from + "：受け取り " + (f.type || "種類不明") + " " + Math.round(f.size / 1024) + "KB");
+    loadFile(f).then(() => diag(from + "：写真を入れました")).catch((err) => {
+      diag(from + "：読めない写真（" + (f.type || "種類不明") + "）");
+      $("camNote").textContent = "この写真は読めませんでした。別の写真を選んでください。";
+    });
+  }
+  ["camIn", "pickIn", "plainIn"].forEach(id => {
+    const el = $(id);
+    el.addEventListener("click", () => diag(NAMES[id] + "：押した"));
+    el.addEventListener("change", (e) => { takeFile(e.target.files && e.target.files[0], NAMES[id]); e.target.value = ""; });
+  });
+  // 貼り付け
+  function onPaste(e) {
+    const items = (e.clipboardData && e.clipboardData.items) || [];
+    for (const it of items) { if (it.kind === "file" && /^image\//.test(it.type)) { e.preventDefault(); takeFile(it.getAsFile(), "貼り付け"); return; } }
+    diag("貼り付け：写真が入っていませんでした");
+  }
+  $("pasteBox").addEventListener("paste", onPaste);
+  $("pasteBox").addEventListener("input", () => { const im = $("pasteBox").querySelector("img"); if (im && im.src && im.src.startsWith("data:")) { const b = dataURLtoBlob(im.src); if (b) takeFile(b, "貼り付け"); } $("pasteBox").textContent = "ここを長押しして「貼り付け」でも写真を入れられます（写真をコピーしてから）"; });
+  diag("準備できました（" + (isAndroid ? "Android" : /iPhone|iPad/.test(navigator.userAgent) ? "iPhone" : "パソコン") + "）");
   $("clearPhoto").addEventListener("click", () => { photoURL = null; photoBlob = null; updateReadBtn(); showThumb(); $("camNote").textContent = isAndroid ? ANDROID_NOTE : ""; try { localStorage.removeItem(KEY + "_photo"); } catch (e) {} });
 
   // ── 鑑定書の札（位置は 1024×1536 の画像の上）──
