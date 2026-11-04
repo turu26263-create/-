@@ -1,0 +1,454 @@
+<meta charset="utf-8">
+<title>鶴見卓志 鑑定書</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* 入力画面 → 鑑定書（見本の画像を固定し、数字と文言だけ重ねる）。2画面を行き来する */
+:root {
+  --bg: #0d0716;
+  --panel: #1b1129;
+  --panel2: #261839;
+  --ink: #f4eefc;
+  --muted: #b7a8d0;
+  --line: #4a3468;
+  --pink: #ff5fae;
+  --gold: #f5c86a;
+  --bad: #ff7d8f;
+  --display: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--ink); }
+body {
+  font-family: var(--body); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 40px;
+}
+main { max-width: 1024px; margin: 0 auto; display: grid; gap: 14px; }
+h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(30px, 7vw, 54px); text-align: center; letter-spacing: .08em; color: var(--gold); text-shadow: 0 0 16px rgba(180, 108, 255, .6); text-wrap: balance; }
+.lead { margin: 0; text-align: center; color: var(--muted); font-size: .9rem; }
+
+/* 入力画面 */
+form.box { background: var(--panel); border: 1.5px solid #8a6a2e; border-radius: 12px; padding: 8px clamp(12px, 3vw, 26px) 18px; }
+.row { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 8px 14px; align-items: center; padding-block: 10px; border-bottom: 1px solid rgba(201, 162, 75, .25); }
+.row:last-of-type { border-bottom: 0; }
+.lab { font-family: var(--display); font-weight: 800; color: var(--gold); font-size: 16px; }
+.fld { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; min-width: 0; }
+input[type="text"], input[type="number"], select { font: inherit; font-size: 16px; color: var(--ink); background: #07030e; border: 1px solid #8a6a2e; border-radius: 8px; padding: 8px 10px; min-width: 0; max-width: 100%; }
+input[type="text"] { flex: 1 1 9em; }
+input[type="number"] { width: 7em; }
+.radio { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; min-height: 32px; }
+.radio input { width: 18px; height: 18px; accent-color: var(--pink); }
+.sub { color: var(--muted); font-size: 13px; }
+.facegrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; width: 100%; }
+.facegrid label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 18px; border-radius: 999px; font: inherit; font-weight: 700; cursor: pointer; background: var(--pink); color: #1a0b19; border: 0; user-select: none; -webkit-user-select: none; }
+.btn.sub2 { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.thumb { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; border: 1px solid var(--line); }
+.go { display: block; width: 100%; margin-top: 14px; font-family: var(--display); font-weight: 800; font-size: clamp(24px, 5.5vw, 38px); letter-spacing: .08em; color: #fff7dc; padding: 12px; border-radius: 14px; cursor: pointer; border: 2px solid var(--gold); background: linear-gradient(90deg, #ff4f9a, #ffb347, #ffe66b, #5cf0a0, #45b8ff, #9b6cff, #ff4f9a); background-size: 300% 100%; text-shadow: 0 2px 0 #5a2a00, 0 0 12px rgba(0, 0, 0, .6); animation: rainbow 8s linear infinite; }
+@keyframes rainbow { to { background-position: 300% 0; } }
+@media (prefers-reduced-motion: reduce) { .go { animation: none; } }
+.err { color: var(--bad); font-weight: 700; text-align: center; margin: 10px 0 0; }
+input:focus-visible, select:focus-visible, button:focus-visible, .btn:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* 鑑定書 */
+.bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.wrap { position: relative; width: 100%; overflow: hidden; border-radius: 6px; }
+.stage { position: absolute; left: 0; top: 0; width: 1024px; height: 1536px; transform-origin: 0 0; }
+.stage > img.base { position: absolute; left: 0; top: 0; width: 1024px; height: 1536px; max-width: none; }
+.p { position: absolute; overflow: hidden; display: flex; flex-direction: column; justify-content: center; color: #fff; font-family: var(--body); font-weight: 500; line-height: 1.32; word-break: break-all; }
+.p.c { align-items: center; text-align: center; }
+.p.v { writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl; flex-direction: row; justify-content: center; align-items: center; }
+.p .b { font-family: var(--display); font-weight: 800; }
+.p .s { font-size: .62em; opacity: .9; display: block; }
+.p.dark { color: #22160c; }
+.p.photo { background: #1a1024; padding: 0; align-items: center; }
+.p.photo img { width: 100%; height: 100%; object-fit: cover; display: block; max-width: none; }
+.p.photo .ph { color: #e9dcf7; font-size: 22px; font-weight: 700; text-align: center; line-height: 1.5; }
+.p.crop { background-repeat: no-repeat; background-color: #1a1024; }
+.badge { border-radius: 6px; font-family: var(--display); font-weight: 800; }
+ul.l { margin: 0; padding: 0 0 0 1em; }
+ul.l li { margin: 0 0 .16em; }
+ul.l li::marker { color: var(--c, #ff8fd0); }
+.note { color: var(--muted); font-size: .8rem; margin: 0; }
+@media (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
+</style>
+
+<main>
+  <!-- 入力画面 -->
+  <section id="inputView">
+    <h1>総合運勢鑑定</h1>
+    <p class="lead">入れた内容で、下の鑑定書のひな形に数字と文言を割り当てます</p>
+    <form class="box" id="f" autocomplete="off" novalidate>
+      <div class="row"><span class="lab">姓(名字)</span><div class="fld"><input type="text" id="sei" aria-label="姓"><span class="lab">名</span><input type="text" id="mei" aria-label="名"></div></div>
+      <div class="row"><label class="lab" for="kana">ふりがな</label><div class="fld"><input type="text" id="kana"></div></div>
+      <div class="row"><label class="lab" for="alias">呼び名</label><div class="fld"><input type="text" id="alias"><span class="sub">名前の下の飾り文字（ローマ字など）</span></div></div>
+      <div class="row"><span class="lab">性別</span><div class="fld">
+        <label class="radio"><input type="radio" name="sex" value="m">男性</label>
+        <label class="radio"><input type="radio" name="sex" value="f">女性</label>
+        <label class="radio"><input type="radio" name="sex" value="n">答えない</label>
+        <span class="sub">厄年が男女で違うため</span></div></div>
+      <div class="row"><span class="lab">生年月日</span><div class="fld"><select id="by" aria-label="年"></select><select id="bm" aria-label="月"></select><select id="bd" aria-label="日"></select></div></div>
+      <div class="row"><span class="lab">血液型</span><div class="fld">
+        <label class="radio"><input type="radio" name="blood" value="A">A型</label>
+        <label class="radio"><input type="radio" name="blood" value="B">B型</label>
+        <label class="radio"><input type="radio" name="blood" value="O">O型</label>
+        <label class="radio"><input type="radio" name="blood" value="AB">AB型</label>
+        <label class="radio"><input type="radio" name="blood" value="">不明</label></div></div>
+      <div class="row"><span class="lab">出生時間</span><div class="fld">
+        <label class="radio"><input type="radio" name="tk" value="0">分からない</label>
+        <label class="radio"><input type="radio" name="tk" value="1">入れる</label>
+        <select id="th" aria-label="時"></select><select id="tm" aria-label="分"></select></div></div>
+      <div class="row"><span class="lab">顔写真</span><div class="fld">
+        <label class="btn" id="camBtn">カメラで撮る<input id="camIn" type="file" accept="image/*" capture="user"></label>
+        <label class="btn sub2">写真を選ぶ<input id="pickIn" type="file" accept="image/*"></label>
+        <button class="btn sub2" id="clearPhoto" type="button">写真を消す</button>
+        <img class="thumb" id="thumb" alt="入れた写真" hidden>
+        <span class="sub" id="camNote"></span></div></div>
+      <div class="row"><span class="lab">人相</span><div class="fld"><div class="facegrid" id="facegrid"></div></div></div>
+      <div class="row"><label class="lab" for="baseNum">占成人<br>(基準数)</label><div class="fld"><input id="baseNum" type="number" inputmode="numeric" min="10" max="60" step="1" placeholder="任意"><span class="sub">入れるとグラフの厄・成人の年齢が出ます（前厄＝−9／本厄＝＋9／二回目成人＝＋18／後厄＝＋27／三回目成人＝＋36／死前厄＝＋45）</span></div></div>
+      <button class="go" type="submit">鑑定書を作る ▶</button>
+      <p class="err" id="err" hidden></p>
+      <p class="note" style="margin-top:10px">入れた内容と写真はこの端末に上書き保存され、次に開いた時もそのまま出ます。どこにも送りません。姓名判断は旧字体（康熙字典の形）・熊崎式で数えます。</p>
+    </form>
+  </section>
+
+  <!-- 鑑定書 -->
+  <section id="resultView" hidden>
+    <div class="bar">
+      <button class="btn sub2" id="back" type="button">◀ 入力に戻る</button>
+      <span class="note" id="resNote"></span>
+    </div>
+    <div class="wrap" id="wrap" style="margin-top:10px">
+      <div class="stage" id="stage">
+        <img class="base" id="base" src="hinagata2.jpg" alt="鑑定書">
+      </div>
+    </div>
+    <p class="note" style="margin-top:8px">グラフの線は見本の絵のままで、年齢の数字と「現在」の線だけが動きます。四柱推命は太陽の位置から節入りを計算しています。顔占いは入力画面で選んだ人相から出しています（写真を読み取る仕組みはまだありません）。</p>
+  </section>
+</main>
+
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const KEY = "kanteisho_v2";
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const NOWD = new Date();
+
+  // ── 入力欄の準備 ──
+  function opts(sel, from, to, suf, blank) {
+    sel.innerHTML = (blank ? '<option value="">--</option>' : "");
+    for (let i = from; i <= to; i++) { const o = document.createElement("option"); o.value = i; o.textContent = i + suf; sel.appendChild(o); }
+  }
+  opts($("by"), 1920, NOWD.getFullYear(), "年", true); opts($("bm"), 1, 12, "月", true); opts($("bd"), 1, 31, "日", true);
+  opts($("th"), 0, 23, "時"); opts($("tm"), 0, 59, "分");
+  // 人相（入力画面の5つに、額と顎を足す）
+  const FACE2 = Object.assign({
+    "額": { "広い額": "知性が高く計画的。物事を筋道立てて考えられる。", "狭い額": "行動派で直感が鋭い。考えるより先に動ける。", "丸い額": "温和で発想が柔らかい。人に好かれる。", "角ばった額": "実務に強く堅実。約束を守る。" },
+    "顎": { "丸い顎": "人情に厚く、晩年は人に囲まれて安定する。", "角ばった顎": "忍耐強く実行力がある。最後までやり抜く。", "細い顎": "繊細で感性が豊か。美しいものを作る力。", "しっかりした顎": "粘り強く、年を重ねるほど運が固まる。" }
+  }, FACE);
+  const FACE_ORDER = ["額", "眉", "目", "鼻", "口", "顎", "顔の形"];
+  $("facegrid").innerHTML = FACE_ORDER.map((k, i) => `<label for="face${i}">${k}<select id="face${i}" data-k="${k}"><option value="">選ばない</option>${Object.keys(FACE2[k]).map(x => `<option>${x}</option>`).join("")}</select></label>`).join("");
+
+  // ── 上書き保存 ──
+  const DEF = { sei: "鶴見", mei: "卓志", kana: "つるみ たくし", alias: "Takuchin", sex: "m", by: "", bm: "", bd: "", blood: "", tk: "0", th: "12", tm: "0", face: {}, base: "" };
+  function load() { try { return Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { return Object.assign({}, DEF); } }
+  function readForm() {
+    const q = (n) => { const r = document.querySelector(`input[name=${n}]:checked`); return r ? r.value : ""; };
+    const face = {}; document.querySelectorAll("#facegrid select").forEach(s => { if (s.value) face[s.dataset.k] = s.value; });
+    return { sei: $("sei").value.trim().replace(/\s/g, ""), mei: $("mei").value.trim().replace(/\s/g, ""), kana: $("kana").value.trim(), alias: $("alias").value.trim(),
+      sex: q("sex"), by: $("by").value, bm: $("bm").value, bd: $("bd").value, blood: q("blood"), tk: q("tk") || "0", th: $("th").value, tm: $("tm").value, face, base: $("baseNum").value };
+  }
+  function fillForm(S) {
+    $("sei").value = S.sei; $("mei").value = S.mei; $("kana").value = S.kana; $("alias").value = S.alias;
+    const setR = (n, v) => { const r = document.querySelector(`input[name=${n}][value="${v}"]`); if (r) r.checked = true; };
+    setR("sex", S.sex); setR("blood", S.blood); setR("tk", S.tk);
+    $("by").value = S.by; $("bm").value = S.bm; $("bd").value = S.bd; $("th").value = S.th; $("tm").value = S.tm; $("baseNum").value = S.base;
+    document.querySelectorAll("#facegrid select").forEach(s => { s.value = S.face[s.dataset.k] || ""; });
+  }
+  function save(S) { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  // ── 写真 ──
+  let photoURL = null;
+  try { photoURL = localStorage.getItem(KEY + "_photo"); } catch (e) {}
+  const ANDROID_NOTE = "Android は「写真を選ぶ」から、カメラで撮るか、撮った写真を選んでください。";
+  if (isAndroid) { $("camBtn").hidden = true; $("camNote").textContent = ANDROID_NOTE; }
+  function showThumb() { const t = $("thumb"); if (photoURL) { t.src = photoURL; t.hidden = false; } else { t.hidden = true; t.removeAttribute("src"); } }
+  function viaImg(file) {
+    return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = r.result; }; r.onerror = rej; r.readAsDataURL(file); });
+  }
+  function readImage(file) {
+    if (window.createImageBitmap) return createImageBitmap(file, { imageOrientation: "from-image" }).catch(() => createImageBitmap(file)).catch(() => viaImg(file));
+    return viaImg(file);
+  }
+  async function loadFile(file) {
+    if (!file) return;
+    const src = await readImage(file);
+    const w0 = src.naturalWidth || src.width, h0 = src.naturalHeight || src.height;
+    const k = Math.min(1, 2000 / Math.max(w0, h0));
+    const c = document.createElement("canvas"); c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+    photoURL = c.toDataURL("image/jpeg", 0.9);
+    showThumb();
+    $("camNote").textContent = isAndroid ? ANDROID_NOTE : "写真を入れました。";
+    try {
+      const k2 = Math.min(1, 700 / Math.max(c.width, c.height));
+      const c2 = document.createElement("canvas"); c2.width = Math.round(c.width * k2); c2.height = Math.round(c.height * k2);
+      c2.getContext("2d").drawImage(c, 0, 0, c2.width, c2.height);
+      localStorage.setItem(KEY + "_photo", c2.toDataURL("image/jpeg", 0.85));
+    } catch (e) {}
+  }
+  ["camIn", "pickIn"].forEach(id => $(id).addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    loadFile(f).catch(() => { $("camNote").textContent = "この写真は読めませんでした。別の写真を選んでください。"; });
+    e.target.value = "";
+  }));
+  $("clearPhoto").addEventListener("click", () => { photoURL = null; showThumb(); $("camNote").textContent = isAndroid ? ANDROID_NOTE : ""; try { localStorage.removeItem(KEY + "_photo"); } catch (e) {} });
+
+  // ── 鑑定書の札（位置は 1024×1536 の画像の上）──
+  const stage = $("stage"), wrap = $("wrap"), baseImg = $("base");
+  const P = {};
+  function mk(id, x, y, w, h, cls, fs, extra) {
+    const el = document.createElement("div");
+    el.className = "p " + (cls || "");
+    el.style.cssText = "left:" + x + "px;top:" + y + "px;width:" + w + "px;height:" + h + "px;font-size:" + (fs || 14) + "px;" + (extra || "");
+    el.dataset.fs = fs || 14; el.dataset.box = [x, y, w, h].join(",");
+    stage.appendChild(el); P[id] = el;
+  }
+  mk("photo", 116, 6, 350, 476, "photo c", 20);
+  mk("name", 12, 58, 104, 398, "v c", 86, "font-family:var(--display);font-weight:800;color:#ff6fb8;text-shadow:0 0 10px rgba(255,80,170,.9),0 0 22px rgba(255,80,170,.6);line-height:1;background:rgba(22,10,24,.97);box-shadow:0 0 10px 8px rgba(22,10,24,.97)");
+  mk("yomi", 110, 218, 38, 186, "v c", 22, "font-weight:700;letter-spacing:.18em;text-shadow:0 0 6px #000;background:rgba(20,8,22,.85)");
+  mk("alias", 78, 424, 150, 60, "c", 30, "white-space:nowrap;font-family:var(--display);font-style:italic;color:#f0d9a8;text-shadow:0 0 8px rgba(0,0,0,.9);background:radial-gradient(closest-side, rgba(20,8,22,.95), rgba(20,8,22,.8) 70%, rgba(20,8,22,0))");
+  mk("facePhoto", 652, 64, 206, 402, "photo", 14);
+  [["c1",588,86,62,58],["c2",810,86,64,58],["c3",568,213,82,42],["c4",812,213,66,62],["c5",568,328,82,44],["c6",812,336,66,64]].forEach(a => mk(a[0], a[1], a[2], a[3], a[4], "crop", 10));
+  mk("fa1", 482, 146, 140, 60, "", 15); mk("fa2", 482, 280, 160, 42, "", 15); mk("fa3", 482, 396, 156, 57, "", 15);
+  mk("fa4", 862, 146, 148, 60, "", 15); mk("fa5", 866, 278, 146, 42, "", 15); mk("fa6", 866, 403, 146, 48, "", 15);
+  mk("tbName", 100, 530, 210, 34, "", 17); mk("tbBirth", 100, 567, 210, 54, "", 17); mk("tbAge", 100, 624, 210, 50, "", 17);
+  mk("tbLp", 100, 678, 210, 54, "", 17); mk("tbSei", 100, 734, 210, 34, "", 17); mk("tbBlood", 100, 788, 210, 30, "", 17); mk("tbTime", 100, 832, 210, 32, "", 17);
+  mk("kyuLabel", 428, 492, 72, 24, "c", 14);
+  mk("chars", 418, 533, 72, 292, "c dark", 40);
+  mk("tenN", 503, 557, 64, 24, "", 21); mk("tenT", 503, 583, 140, 52, "", 13); mk("tenB", 620, 545, 44, 40, "c badge", 22);
+  mk("jinN", 503, 673, 64, 24, "", 21); mk("jinT", 503, 698, 156, 54, "", 13); mk("jinB", 620, 642, 44, 40, "c badge", 22);
+  mk("chiN", 503, 789, 64, 24, "", 21); mk("chiT", 503, 814, 158, 50, "", 13); mk("chiB", 611, 760, 54, 44, "c badge", 22);
+  mk("gaiN", 328, 636, 72, 28, "", 21); mk("gaiT", 326, 664, 78, 62, "", 11); mk("gaiB", 337, 730, 52, 44, "c badge", 24);
+  mk("souB", 437, 832, 58, 42, "c badge", 24); mk("souT", 328, 872, 338, 30, "", 16);
+  [681, 794, 907].forEach((x, i) => { mk("pl" + i, x, 604, 106, 68, "c dark", 30); mk("an" + i, x, 672, 106, 66, "c dark", 28); mk("kw" + i, x, 740, 106, 38, "c dark", 12); });
+  mk("nkHead", 743, 783, 273, 28, "", 19); mk("nkDesc", 680, 812, 336, 90, "", 15);
+  mk("gMark", 0, 975, 3, 180, "", 10, "border-left:2px dashed #ff5fae;display:none");
+  mk("gNow", 174, 994, 80, 66, "c", 15); mk("gZen", 256, 1043, 50, 38, "c", 13); mk("gHon", 383, 1033, 58, 40, "c", 13);
+  mk("gKou", 559, 1033, 54, 40, "c", 13); mk("gShi", 739, 1073, 60, 40, "c", 13);
+  mk("gS1", 302, 1131, 64, 42, "c", 13); mk("gS2", 454, 1131, 96, 42, "c", 13); mk("gS3", 626, 1131, 94, 42, "c", 13);
+  mk("life", 16, 1292, 276, 216, "", 14, "--c:#ff8fd0"); mk("seik", 306, 1288, 188, 212, "", 14, "--c:#7fc4ff");
+  mk("teki", 506, 1288, 156, 206, "", 14, "--c:#7fe6a6"); mk("chui", 670, 1290, 160, 212, "", 14, "--c:#ff8c8c");
+  mk("lk1", 918, 1288, 96, 25, "", 13); mk("lk2", 918, 1320, 96, 26, "", 13); mk("lk3", 918, 1349, 96, 26, "", 13);
+  mk("lk4", 918, 1378, 96, 37, "", 13); mk("lk5", 918, 1418, 96, 25, "", 13); mk("lk6", 918, 1442, 96, 66, "", 12);
+
+  function scale() {
+    const k = wrap.clientWidth / 1024;
+    stage.style.transform = "scale(" + k + ")"; stage.style.webkitTransform = "scale(" + k + ")";
+    wrap.style.height = (1536 * k) + "px";
+  }
+  window.addEventListener("resize", scale);
+
+  const NOBG = { photo: 1, facePhoto: 1, gMark: 1, name: 1, yomi: 1, alias: 1 };
+  let painted = false;
+  function paintBackgrounds() {
+    if (painted) return;
+    let ctx = null;
+    try { const c = document.createElement("canvas"); c.width = 1024; c.height = 1536; ctx = c.getContext("2d"); ctx.drawImage(baseImg, 0, 0, 1024, 1536); ctx.getImageData(0, 0, 1, 1); } catch (e) { ctx = null; }
+    Object.keys(P).forEach(id => {
+      const el = P[id];
+      if (NOBG[id] || el.classList.contains("crop") || el.classList.contains("badge")) return;
+      let col = "rgb(16,10,26)";
+      if (ctx) {
+        const [x, y, w, h] = el.dataset.box.split(",").map(Number);
+        const pts = [];
+        for (let i = 0; i <= 10; i++) pts.push([x + w * i / 10, y + 1], [x + w * i / 10, y + h - 2], [x + 1, y + h * i / 10], [x + w - 2, y + h * i / 10]);
+        const vals = pts.map(([px, py]) => Array.from(ctx.getImageData(Math.max(0, Math.min(1023, px | 0)), Math.max(0, Math.min(1535, py | 0)), 1, 1).data));
+        vals.sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2]));
+        const mid = vals.slice(Math.floor(vals.length * .2), Math.ceil(vals.length * .6));
+        col = "rgb(" + [0, 1, 2].map(k => Math.round(mid.reduce((s, v) => s + v[k], 0) / mid.length)).join(",") + ")";
+      }
+      el.style.background = col; el.style.boxShadow = "0 0 4px 3px " + col;
+    });
+    painted = true;
+  }
+  function fit(el) {
+    let s = parseFloat(el.dataset.fs), guard = 0;
+    el.style.fontSize = s + "px";
+    while ((el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) && s > 6 && guard++ < 100) { s -= 0.5; el.style.fontSize = s + "px"; }
+  }
+  const set = (id, html) => { P[id].innerHTML = "<div>" + html + "</div>"; fit(P[id]); };
+  const dim = (t) => '<span style="color:#cbbde0">' + t + "</span>";
+  const first = (t) => (t || "").split("。")[0] + ((t || "").indexOf("。") >= 0 ? "。" : "");
+  function badge(id, word) {
+    const el = P[id], kyo = word.indexOf("凶") >= 0, dai = word === "大吉" || word === "特別吉";
+    el.style.background = dai ? "linear-gradient(#ffd0ec,#ff8fcf)" : kyo ? "linear-gradient(#e3e7ef,#9aa6c4)" : "linear-gradient(#ffe7a6,#f1b84a)";
+    el.style.color = dai ? "#7a0e4f" : kyo ? "#1d2433" : "#3d2600";
+    el.style.border = "2px solid " + (dai ? "#ff5fae" : kyo ? "#cfd6e4" : "#ffdb7a");
+    set(id, word);
+  }
+
+  const JOB5 = { "木": ["教育・保育・人を育てる仕事", "企画・編集・出版", "医療・福祉・園芸"], "火": ["芸能・広告・デザイン", "営業・接客・販売", "講師・発信する仕事"],
+    "土": ["不動産・建築・農業", "管理・事務・総務", "食の仕事・地域の商い"], "金": ["製造・金属加工・技術職", "金融・経理・法律", "職人・品質を磨く仕事"],
+    "水": ["研究・情報・IT", "流通・貿易・水産", "相談役・カウンセラー"] };
+  const SPOT5 = { "木": "森・公園・植物園", "火": "日当たりの良い所・祭り", "土": "田畑・山・古い町並み", "金": "工房・神社・高台", "水": "海・川・湖・水族館" };
+
+  // ── 鑑定（入力画面と同じ計算）──
+  function compute(S) {
+    const y = +S.by, m = +S.bm, d = +S.bd, h = S.tk === "1" ? +S.th : null;
+    const today = NOWD;
+    let age = today.getFullYear() - y; if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
+    const Pz = pillars(y, m, d, h);
+    for (const k in overrides) delete overrides[k];
+    const Sx = strokesOf(S.sei), Mx = strokesOf(S.mei), sum = (a) => a.reduce((s, x) => s + x.n, 0);
+    const ss = sum(Sx), ms = sum(Mx);
+    const ten = ss + (Sx.length === 1 ? 1 : 0), chi = ms + (Mx.length === 1 ? 1 : 0), jin = Sx[Sx.length - 1].n + Mx[0].n, sou = ss + ms, gai = ten + chi - jin;
+    const digits = [...`${y}${m}${d}`];
+    const lpRaw = digits.reduce((s, x) => s + +x, 0), lp = red(lpRaw, true);
+    const cy = risshunYear(today.getFullYear(), today.getMonth() + 1, today.getDate());
+    const hs = honmei(Pz.sy), cc = honmei(cy), ban = yearBan(cc);
+    const myPal = PAL.find(p => ban[p] === hs), pn = palaceOfStar(hs, cc), pal5 = PAL.find(p => ban[p] === 5);
+    const ybr = ((cy - 4) % 12 + 12) % 12, saiha = OPP[BR_DIR[ybr]];
+    const bad = {}; const addBad = (dir, why) => { if (dir && dir !== "中央") (bad[dir] = bad[dir] || []).push(why); };
+    addBad(PAL_DIR[pal5], "五黄殺"); addBad(OPP[PAL_DIR[pal5]], "暗剣殺"); addBad(PAL_DIR[myPal], "本命殺"); addBad(OPP[PAL_DIR[myPal]], "本命的殺"); addBad(saiha, "歳破");
+    const goodDirs = []; PAL.forEach(p => { if (p === "中宮") return; const t = ban[p], dir = PAL_DIR[p]; if (t === 5 || t === hs || bad[dir]) return; if (good5(KYUSEI_GO[hs], KYUSEI_GO[t])) goodDirs.push(dir); });
+    const cnt = { "木": 0, "火": 0, "土": 0, "金": 0, "水": 0 }; [Pz.y, Pz.mo, Pz.d, Pz.h].forEach(p => { if (!p) return; cnt[KG[p[0]]]++; cnt[SG[p[1]]]++; });
+    const weak = Object.entries(cnt).sort((a, b) => a[1] - b[1])[0][0];
+    const yaku = S.sex === "f" ? [19, 33, 37, 61] : S.sex === "m" ? [25, 42, 61] : [];
+    return { y, m, d, h, age, Pz, Sx, Mx, ten, jin, chi, gai, sou, lp, lpRaw, digits, hs, pn, goodDirs, bad, weak, yaku, cy };
+  }
+
+  function renderSheet(S) {
+    const R = compute(S);
+    const kyuName = R.Sx.map(x => x.kyu).join("") + R.Mx.map(x => x.kyu).join("");
+    const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    // 名前・写真
+    set("name", esc(kyuName));
+    set("yomi", esc(S.kana.replace(/\s/g, "")));
+    set("alias", esc(S.alias || ""));
+    // 顔占い
+    const faceSlot = [["fa1", "額"], ["fa4", "鼻"], ["fa2", "眉"], ["fa5", "口"], ["fa3", "目"], ["fa6", "顎"]];
+    faceSlot.forEach(([id, k]) => { const v = S.face[k]; set(id, v ? `<b style="color:#ffd27a">${esc(v)}</b><br>${esc(FACE2[k][v])}` : dim("未選択（入力画面の人相で選ぶ）")); });
+    // 基本情報
+    set("tbName", esc(S.sei + " " + S.mei) + (S.kana ? "（" + esc(S.kana) + "）" : ""));
+    set("tbBirth", `${R.y}年${R.m}月${R.d}日<br><span style="font-size:.85em">（${wareki(R.y, R.m, R.d)}）</span>`);
+    set("tbAge", `${R.age}歳<br><span style="font-size:.85em">（${NOWD.getFullYear()}年${NOWD.getMonth() + 1}月${NOWD.getDate()}日 時点）</span>`);
+    set("tbLp", `<span class="b" style="font-size:1.5em">${R.lp}</span> <span style="font-size:.8em">（${R.digits.join("+")}=${R.lpRaw}${R.lp !== R.lpRaw ? "→" + R.lp : ""}）</span>`);
+    set("tbSei", seiza(R.m, R.d));
+    set("tbBlood", S.blood ? S.blood + "型" : "不明");
+    set("tbTime", R.h == null ? "不明（時柱は未確定）" : `${R.h}時${String(+S.tm).padStart(2, "0")}分`);
+    // 姓名判断
+    set("kyuLabel", "<b>（旧字体）</b>");
+    const all = R.Sx.concat(R.Mx);
+    set("chars", all.map(x => `<span class="b" style="display:block;line-height:1">${esc(x.kyu)}</span><span class="s" style="margin-bottom:.15em">${x.n}画</span>`).join(""));
+    const K = (n, key) => kkOf(n, key);
+    const ten = K(R.ten, "t"), jin = K(R.jin, "j"), chi = K(R.chi, "c"), gai = K(R.gai, "g"), sou = K(R.sou, "s");
+    const unkw = (k) => (k.un ? k.un + "・" : "") + k.kw;
+    set("tenN", `<span class="b">${R.ten}</span>画`); set("tenT", `家系・先祖運<br>${unkw(ten)}`); badge("tenB", ten.label);
+    set("jinN", `<span class="b" style="color:#ffd7ef">${R.jin}</span>画`); set("jinT", `性格・人間関係<br><span style="color:#ffcf7a">${unkw(jin)}</span>`); badge("jinB", jin.label);
+    set("chiN", `<span class="b" style="color:#ffd27a">${R.chi}</span>画`); set("chiT", `才能・若年運<br><span style="color:#ffcf7a">${unkw(chi)}</span>`); badge("chiB", chi.label);
+    set("gaiN", `<span class="b">${R.gai}</span>画`); set("gaiT", `対人運・社交性<br>${unkw(gai)}`); badge("gaiB", gai.label);
+    badge("souB", sou.label); set("souT", `<span class="b" style="font-size:1.3em">${R.sou}</span>画　人生全体の運勢・${unkw(sou)}`);
+    // 四柱推命
+    [R.Pz.y, R.Pz.mo, R.Pz.d].forEach((p, i) => {
+      set("pl" + i, `<span class="b">${KAN[p[0]]}${SHI[p[1]]}</span><br><span style="font-size:.42em">（${KANY[p[0]]} ${SHIY[p[1]]}）<br>${KG[p[0]]}・${SG[p[1]]}</span>`);
+      set("an" + i, `<span style="font-size:1.25em">${ANI[p[1]]}</span>`);
+      set("kw" + i, NIKKAN[p[0]].split("。")[0].replace(/の人$/, "") + "<br>" + (NIKKAN[p[0]].split("。")[1] || "").split("、")[0]);
+    });
+    const ds = R.Pz.d[0];
+    set("nkHead", `<span class="b" style="color:#ffd27a">${KAN[ds]}</span>（${KANY[ds]}：${ds % 2 ? "陰" : "陽"}の${KG[ds]}）`);
+    set("nkDesc", NIKKAN[ds] + (R.Pz.borderline ? '<br><span style="color:#ffb3c2;font-size:.85em">節入りの日なので、出生時間を入れると月柱が正確になります。</span>' : ""));
+    // グラフ
+    const baseN = parseInt(S.base, 10), hasBase = baseN >= 10 && baseN <= 60;
+    const lab = (t, n) => '<span class="b">' + t + "</span><br><span>（" + (hasBase ? n + "歳" : "?歳") + "）</span>";
+    set("gZen", lab("前厄", baseN - 9)); set("gHon", lab("本厄", baseN + 9)); set("gKou", lab("後厄", baseN + 27)); set("gShi", lab("死前厄", baseN + 45));
+    set("gS1", lab("占成人", baseN)); set("gS2", lab("二回目成人", baseN + 18)); set("gS3", lab("三回目成人", baseN + 36));
+    set("gNow", `<span class="b" style="color:#ff8fd0;font-size:1.3em">現在</span><br><span class="b">${R.age}歳</span><br><span style="font-size:.6em">（${NOWD.getFullYear()}年${NOWD.getMonth() + 1}月時点）</span>`);
+    if (R.age >= 0 && R.age <= 100) { P.gMark.style.left = (85 + 8.95 * R.age) + "px"; P.gMark.style.display = "block"; } else P.gMark.style.display = "none";
+    // 人生の流れ
+    const li = (t) => "<li>" + t + "</li>";
+    let life = li(`若い頃：地格${R.chi}（${chi.label}）${chi.un || chi.kw}。`);
+    if (hasBase) {
+      life += li(`${baseN - 9}歳 前厄：環境の変化に注意。`) + li(`${baseN}歳 占成人：自分の運気を確立する時期。`) + li(`${baseN + 9}歳 本厄：大きな試練と飛躍のチャンス。`) +
+        li(`${baseN + 18}歳 二回目成人：人生の転換点。`) + li(`${baseN + 27}歳 後厄：体調・環境の変化に注意。`) + li(`${baseN + 36}歳 三回目成人：完成・安定の時期。`) + li(`${baseN + 45}歳 死前厄：物事の整理・沈静化。`);
+    }
+    if (R.yaku.length) life += li(`厄年（数え）：本厄 ${R.yaku.join("・")}歳。`);
+    life += li(`後半：総格${R.sou}（${sou.label}）${sou.un || sou.kw}。`);
+    life += li(`${R.cy}年は${KAIZA_NAME[R.pn]}：${first(KAIZA[R.pn])}`);
+    set("life", '<ul class="l">' + life + "</ul>");
+    // 性格・才能
+    set("seik", '<ul class="l">' + li(`日干${KAN[ds]}：${first(NIKKAN[ds])}`) + li(`人格${R.jin}：${first(jin.txt) || jin.kw}`) +
+      li(`数秘${R.lp}：${SUHI[R.lp][0]}。${SUHI[R.lp].slice(1, 3).join("・")}。`) + li(`${KYUSEI[R.hs]}：${KYUSEI_TXT[R.hs]}`) + "</ul>");
+    // 適職
+    set("teki", '<ul class="l">' + JOB5[KG[ds]].map(li).join("") + li(`${SUHI[R.lp][0]}を生かす仕事`) + "</ul>");
+    // 注意点
+    const warn = [];
+    [["天格", R.ten, ten], ["人格", R.jin, jin], ["地格", R.chi, chi], ["外格", R.gai, gai], ["総格", R.sou, sou]].forEach(([n, v, k]) => { if (k.label.indexOf("凶") >= 0 && n !== "天格") warn.push(`${n}${v}（${k.label}）：${k.kw}に注意。`); });
+    warn.push(`五行の「${R.weak}」が少ない。${ITEM5[R.weak]}で補う。`);
+    const badDirs = Object.keys(R.bad);
+    if (badDirs.length) warn.push(`${R.cy}年の凶方位：${badDirs.join("・")}。`);
+    set("chui", '<ul class="l">' + warn.slice(0, 5).map(li).join("") + "</ul>");
+    // ラッキー要素
+    set("lk1", `${KYUSEI_COLOR[R.hs]}・${ITEM5[R.weak].split("・")[0]}`);
+    set("lk2", `${R.hs}・${R.lp}`);
+    set("lk3", ITEM5[R.weak].split("・").slice(1).join("・"));
+    set("lk4", SPOT5[R.weak]);
+    set("lk5", R.goodDirs.length ? R.goodDirs.join("・") : "今年は無し");
+    set("lk6", `${first(KAIZA[R.pn])}${SUHI[R.lp][1]}を生かす。`);
+    // 写真
+    const crops = [["c1","50% 30%",360],["c2","50% 55%",360],["c3","40% 32%",320],["c4","50% 72%",340],["c5","45% 40%",320],["c6","50% 88%",320]];
+    if (photoURL) {
+      P.photo.innerHTML = '<img alt="顔写真" src="' + photoURL + '">';
+      P.facePhoto.innerHTML = '<img alt="" src="' + photoURL + '">';
+      crops.forEach(([id, pos, sz]) => { const el = P[id]; el.style.backgroundImage = 'url("' + photoURL + '")'; el.style.backgroundPosition = pos; el.style.backgroundSize = sz + "% auto"; });
+    } else {
+      P.photo.innerHTML = '<div class="ph">顔写真<br><span style="font-size:.7em;font-weight:500">入力画面で<br>撮る・選ぶと入ります</span></div>';
+      P.facePhoto.innerHTML = '<div class="ph" style="font-size:15px">写真待ち</div>';
+      crops.forEach(([id]) => { P[id].style.backgroundImage = "none"; });
+    }
+    $("resNote").textContent = `${S.sei} ${S.mei}さんの鑑定書`;
+  }
+
+  // ── 画面の切り替え ──
+  function validate(S) {
+    if (!S.sei || !S.mei) return "姓と名を入れてください。";
+    if (!S.by || !S.bm || !S.bd) return "生年月日を入れてください。";
+    const dim = new Date(+S.by, +S.bm, 0).getDate();
+    if (+S.bd > dim) return S.bm + "月は" + dim + "日までです。";
+    return "";
+  }
+  function whenReady(fn) {
+    const go = () => { const f = document.fonts && document.fonts.ready; (f ? f : Promise.resolve()).then(fn, fn); };
+    if (baseImg.complete && baseImg.naturalWidth) go(); else { baseImg.addEventListener("load", go, { once: true }); baseImg.addEventListener("error", fn, { once: true }); }
+  }
+  function showResult(S) {
+    $("inputView").hidden = true; $("resultView").hidden = false;
+    scale();
+    whenReady(() => { scale(); paintBackgrounds(); renderSheet(S); });
+    window.scrollTo(0, 0);
+  }
+  $("f").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const S = readForm(); save(S);
+    const msg = validate(S);
+    if (msg) { $("err").textContent = msg; $("err").hidden = false; return; }
+    $("err").hidden = true;
+    showResult(S);
+  });
+  $("back").addEventListener("click", () => { $("resultView").hidden = true; $("inputView").hidden = false; window.scrollTo(0, 0); });
+  $("f").addEventListener("change", () => save(readForm()));
+
+  fillForm(load());
+  showThumb();
+})();
+</script>
