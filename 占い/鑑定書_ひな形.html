@@ -55,7 +55,7 @@ input[type="number"] { width: 7em; }
 @keyframes rainbow { to { background-position: 300% 0; } }
 @media (prefers-reduced-motion: reduce) { .go { animation: none; } }
 .err { color: var(--bad); font-weight: 700; text-align: center; margin: 10px 0 0; }
-input:focus-visible, select:focus-visible, button:focus-visible, .btn:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
+input:focus-visible, select:focus-visible, button:focus-visible, .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 /* 鑑定書 */
 .bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
@@ -106,8 +106,9 @@ ul.l li::marker { color: var(--c, #ff8fd0); }
         <label class="radio"><input type="radio" name="tk" value="1">入れる</label>
         <select id="th" aria-label="時"></select><select id="tm" aria-label="分"></select></div></div>
       <div class="row"><span class="lab">顔写真</span><div class="fld">
-        <label class="btn" id="camBtn">カメラで撮る<input id="camIn" type="file" accept="image/*" capture="user"></label>
-        <label class="btn sub2">写真を選ぶ<input id="pickIn" type="file" accept="image/*"></label>
+        <label class="btn" id="camBtn" for="camIn" tabindex="0" role="button">カメラで撮る</label><input id="camIn" type="file" accept="image/*" capture="user" hidden>
+        <label class="btn sub2" for="pickIn" tabindex="0" role="button">写真を選ぶ</label><input id="pickIn" type="file" accept="image/*" hidden>
+        <button class="btn sub2" id="readFace" type="button" hidden>写真から人相を読む</button>
         <button class="btn sub2" id="clearPhoto" type="button">写真を消す</button>
         <img class="thumb" id="thumb" alt="入れた写真" hidden>
         <span class="sub" id="camNote"></span></div></div>
@@ -130,7 +131,7 @@ ul.l li::marker { color: var(--c, #ff8fd0); }
         <img class="base" id="base" src="hinagata3.jpg" alt="鑑定書">
       </div>
     </div>
-    <p class="note" style="margin-top:8px">グラフの線は見本の絵のままで、年齢の数字と「現在」の線だけが動きます。四柱推命は太陽の位置から節入りを計算しています。顔占いは入力画面で選んだ人相から出しています（写真を読み取る仕組みはまだありません）。</p>
+    <p class="note" style="margin-top:8px">グラフの線は見本の絵のままで、年齢の数字と「現在」の線だけが動きます。四柱推命は太陽の位置から節入りを計算しています。顔占いは入力画面の人相から出しています。人相は手で選ぶか、Claude にログインして開いた時は「写真から人相を読む」で写真から選べます。</p>
   </section>
 </main>
 
@@ -284,10 +285,39 @@ function wareki(y,m,d){const v=y*10000+m*100+d;const E=[[20190501,"令和",2019]
   function save(S) { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
   // ── 写真 ──
-  let photoURL = null;
+  let photoURL = null, photoBlob = null, sampleFn = null;
   try { photoURL = localStorage.getItem(KEY + "_photo"); } catch (e) {}
-  const ANDROID_NOTE = "Android は「写真を選ぶ」から、カメラで撮るか、撮った写真を選んでください。";
-  if (isAndroid) { $("camBtn").hidden = true; $("camNote").textContent = ANDROID_NOTE; }
+  function dataURLtoBlob(u) { try { const [h, d] = u.split(","); const bin = atob(d); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); return new Blob([arr], { type: (h.match(/data:([^;]+)/) || [])[1] || "image/jpeg" }); } catch (e) { return null; } }
+  if (photoURL) photoBlob = dataURLtoBlob(photoURL);
+  function updateReadBtn() { $("readFace").hidden = !(sampleFn && photoBlob); }
+  // 写真から人相を読む（Claude にログインして開いた時だけ出る）
+  if (window.claude && claude.use) {
+    claude.use("sample").then(async (s) => {
+      if (!s) return;
+      try { const lim = await s.limits(); if (!lim || !lim.images) return; } catch (e) { return; }
+      sampleFn = s; updateReadBtn();
+    }).catch(() => {});
+  }
+  $("readFace").addEventListener("click", async () => {
+    if (!sampleFn || !photoBlob) return;
+    const btn = $("readFace"); btn.disabled = true; $("camNote").textContent = "写真を読んでいます…（数十秒かかることがあります）";
+    const choices = {}; FACE_ORDER.forEach(k => { choices[k] = Object.keys(FACE2[k]); });
+    const prompt = "添付は人の顔写真です。人相学の鑑定に使うため、各部位の見た目に一番近い選択肢を1つずつ選んでください。" +
+      "判断できない部位は空文字にしてください。選択肢以外の言葉は使わないでください。\n選択肢: " + JSON.stringify(choices) +
+      "\n答えは JSON だけ: {\"額\":\"…\",\"眉\":\"…\",\"目\":\"…\",\"鼻\":\"…\",\"口\":\"…\",\"顎\":\"…\",\"顔の形\":\"…\"}";
+    try {
+      const ans = await sampleFn.json(prompt, { images: [photoBlob], cache: false });
+      let n = 0;
+      document.querySelectorAll("#facegrid select").forEach(sel => { const v = ans && ans[sel.dataset.k]; if (v && FACE2[sel.dataset.k][v]) { sel.value = v; n++; } });
+      save(readForm());
+      $("camNote").textContent = n ? "写真から " + n + " か所を選びました。違う所は手で直せます。" : "写真から読み取れませんでした。正面の明るい写真で試すか、手で選んでください。";
+    } catch (e) {
+      const m = { not_granted: "Claude の利用が許可されなかったので、人相は手で選んでください。", rate_limited: "混み合っています。少し待ってからもう一度押してください。" };
+      $("camNote").textContent = m[e && e.code] || "写真を読めませんでした。人相は手で選んでください。";
+    } finally { btn.disabled = false; }
+  });
+  const ANDROID_NOTE = "カメラが開かない時は「写真を選ぶ」から撮るか、撮った写真を選んでください。";
+  if (isAndroid) $("camNote").textContent = ANDROID_NOTE;
   function showThumb() { const t = $("thumb"); if (photoURL) { t.src = photoURL; t.hidden = false; } else { t.hidden = true; t.removeAttribute("src"); } }
   function viaImg(file) {
     return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = r.result; }; r.onerror = rej; r.readAsDataURL(file); });
@@ -305,7 +335,9 @@ function wareki(y,m,d){const v=y*10000+m*100+d;const E=[[20190501,"令和",2019]
     c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
     photoURL = c.toDataURL("image/jpeg", 0.9);
     showThumb();
-    $("camNote").textContent = isAndroid ? ANDROID_NOTE : "写真を入れました。";
+    $("camNote").textContent = "写真を入れました。";
+    photoBlob = await new Promise(r => { const k3 = Math.min(1, 1200 / Math.max(c.width, c.height)); const c3 = document.createElement("canvas"); c3.width = Math.round(c.width * k3); c3.height = Math.round(c.height * k3); c3.getContext("2d").drawImage(c, 0, 0, c3.width, c3.height); c3.toBlob(r, "image/jpeg", 0.88); });
+    updateReadBtn();
     try {
       const k2 = Math.min(1, 700 / Math.max(c.width, c.height));
       const c2 = document.createElement("canvas"); c2.width = Math.round(c.width * k2); c2.height = Math.round(c.height * k2);
@@ -313,12 +345,13 @@ function wareki(y,m,d){const v=y*10000+m*100+d;const E=[[20190501,"令和",2019]
       localStorage.setItem(KEY + "_photo", c2.toDataURL("image/jpeg", 0.85));
     } catch (e) {}
   }
+  document.querySelectorAll("label[for=camIn],label[for=pickIn]").forEach(l => l.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $(l.htmlFor).click(); } }));
   ["camIn", "pickIn"].forEach(id => $(id).addEventListener("change", (e) => {
     const f = e.target.files && e.target.files[0];
     loadFile(f).catch(() => { $("camNote").textContent = "この写真は読めませんでした。別の写真を選んでください。"; });
     e.target.value = "";
   }));
-  $("clearPhoto").addEventListener("click", () => { photoURL = null; showThumb(); $("camNote").textContent = isAndroid ? ANDROID_NOTE : ""; try { localStorage.removeItem(KEY + "_photo"); } catch (e) {} });
+  $("clearPhoto").addEventListener("click", () => { photoURL = null; photoBlob = null; updateReadBtn(); showThumb(); $("camNote").textContent = isAndroid ? ANDROID_NOTE : ""; try { localStorage.removeItem(KEY + "_photo"); } catch (e) {} });
 
   // ── 鑑定書の札（位置は 1024×1536 の画像の上）──
   const stage = $("stage"), wrap = $("wrap"), baseImg = $("base");
