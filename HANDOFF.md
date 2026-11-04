@@ -8,7 +8,7 @@
 - 10-30 13:35 時点で Remote Control でつなげるパソコンは0台 → 実機作業は帰宅待ち
 
 ## 11-03 占いの鑑定書(このチャット)
-- ひな形版: 見本画像(占い/hinagata.jpg)を固定し、数字と文言だけ重ねる。占い/鑑定書_鶴見卓志.html → https://claude.ai/artifact/8xoG5bdYurkNg4NZBmEBah (版2で上書き)
+- ひな形版: 見本画像(占い/hinagata2.jpg、グラフの基準線より下を灰色に塗り替え済み)を固定し、数字と文言だけ重ねる。占い/鑑定書_鶴見卓志.html → https://claude.ai/artifact/8xoG5bdYurkNg4NZBmEBah (版3で上書き)
 - 写真・生年月日・基準数は端末に上書き保存。Android はカメラボタンを隠し「写真を選ぶ」だけ(gokansei の決まり)
 - 照らし済み: 見本日付 2014-01-10 で 癸巳・乙丑・辛巳/数秘9/山羊座 一致。playwright で PC・iPhone13・Pixel7 の幅、横はみ出し無し、エラー無し、写真の取り込みと表示
 - まだ: 実機(AQUOS wish・iPhone)で写真ボタン/生年月日/基準数の出し方/顔占いの読み取り
