@@ -8,8 +8,8 @@
 - 10-30 13:35 時点で Remote Control でつなげるパソコンは0台 → 実機作業は帰宅待ち
 
 ## 11-03 占いの鑑定書(このチャット)
-- 入力画面→鑑定書(ひな形)を1ページにつないだ: https://claude.ai/artifact/8xoG5bdYurkNg4NZBmEBah (版5: 個人名を消したひな形。入力欄は空・保存キーも新しくした)
-- 作り方: 占い/src/page.html + src/engine.js(「総合運勢鑑定」TPU2FHH1dB44yGXkoM4jev の計算部分をそのまま抜いた物)→ python3 占い/src/build.py で 占い/鑑定書_ひな形.html を作る。土台画像 hinagata2.jpg(グラフ基準線より下は灰色)
+- 入力画面→鑑定書(ひな形)を1ページにつないだ: https://claude.ai/artifact/8xoG5bdYurkNg4NZBmEBah (版6: 個人名を消したひな形。入力欄は空・保存キーも新しく、土台画像からも見本の名前と写真を消した)
+- 作り方: 占い/src/page.html + src/engine.js(「総合運勢鑑定」TPU2FHH1dB44yGXkoM4jev の計算部分をそのまま抜いた物)→ python3 占い/src/build.py で 占い/鑑定書_ひな形.html を作る。土台画像 hinagata3.jpg(グラフ基準線より下は灰色、見本の人の名前・写真・顔は消した)
 - 姓名判断は入力画面と同じ BOOK(本の写真)の吉凶。なので15画は「着実運・吉」(Drive の md の「福寿円満・大吉」と違う)
 - 人相は入力画面の5つ+額・顎を足した選択式。写真の読み取りは無し
 - 照らし済み: playwright で PC・iPhone13・Pixel7、入力→鑑定書まで通し。見本の山田梨愛 2014/1/10 で 四柱 癸巳・乙丑・辛巳/数秘9/天8地24総32 が見本と一致(人格16・外格16は本の表で大吉、見本は吉)。横はみ出し・エラー無し
