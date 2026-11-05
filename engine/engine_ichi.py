@@ -31,7 +31,7 @@ def prep(m5,h1):
     nsb=c<=mid+2*sd; nss=c>=mid-2*sd                                                       # 竿先で入らない・足さない
     pos_b=(m.l<=e21)&(c>e9)&(e9>e21); pos_s=(m.h>=e21)&(c<e9)&(e9<e21)                      # 5エントリの位置
     kar=karami(m); tame=kar.shift(1).rolling(12).sum()>=8; up=c>m.h.shift(26); dn=c<m.l.shift(26)
-    pon_b=tame&up&~up.shift(1).fillna(False); pon_s=tame&dn&~dn.shift(1).fillna(False)      # ポン
+    pon_b=tame&up&~up.shift(1,fill_value=False); pon_s=tame&dn&~dn.shift(1,fill_value=False)      # ポン
     tdn=(m.l<=mid-2*sd).rolling(6).max()>0; tup=(m.h>=mid+2*sd).rolling(6).max()>0
     nar_b=tdn&(c>m.o)&(c>mid-2*sd); nar_s=tup&(c<m.o)&(c<mid+2*sd)                          # 鳴神
     m['ent']=pd.Series(np.where((pos_b|pon_b)&okb&nsb,1,np.where((pos_s|pon_s)&oks&nss,-1,0)),index=idx).shift(1)

@@ -15,7 +15,7 @@ def prep(m5,h1):
     hc=h1.c; mid1=hc.rolling(20).mean(); sd1=hc.rolling(20).std(ddof=0); w=4*sd1; sq=w<0.7*w.rolling(100).mean()
     recent_sq=sq.shift(1).rolling(6).max().fillna(0).astype(bool)
     up=hc>mid1+2*sd1; dn=hc<mid1-2*sd1
-    first_up=up&~up.shift(1).fillna(False); first_dn=dn&~dn.shift(1).fillna(False)   # 帯の外へ出た最初の1本だけ(2本目以降は竿先側)
+    first_up=up&~up.shift(1,fill_value=False); first_dn=dn&~dn.shift(1,fill_value=False)   # 帯の外へ出た最初の1本だけ(2本目以降は竿先側)
     root=pd.Series(np.where(first_up&recent_sq,1,np.where(first_dn&recent_sq,-1,0)),index=h1.index)   # ★=根っこ
     e91=ema(hc,9); bm=(h1.o+hc)/2
     nine=pd.Series(np.where((bm>e91)&(hc>e91),1,np.where((bm<e91)&(hc<e91),-1,0)),index=h1.index)                  # 9の渡り切り
