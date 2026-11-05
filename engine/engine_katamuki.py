@@ -8,23 +8,29 @@ import os, sys; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from engine_ichi import load, ema, atr14, bigbars, PIP, angle21
 from engine_nekko2 import tfbars, at_close, TFLEN
 import numpy as np, pandas as pd
-def prep(m5,h1,TF='1h',ANG=30.0,SAO=55.0):
+def prep(m5,h1,TF='1h',ANG=30.0,SAO=55.0,S200=False,CONF=False):   # S200: 1h200の向き側だけ / CONF: 9上が2本続けて確定してから
     m=m5.copy(); idx=m.index; c=m.c
     b=tfbars(m5,h1,TF); bc=b.c; e9=ema(bc,9); ang=angle21(b)
     trend=pd.Series(np.where((ang>=ANG),1,np.where(ang<=-ANG,-1,0)),index=b.index)
     sao=pd.Series(np.where(ang>SAO,1,np.where(ang<-SAO,-1,0)),index=b.index)
     side9=pd.Series(np.sign(bc-e9).values,index=b.index)                                   # 9上(+1)/9下(−1)
+    if CONF: side9=side9.where(side9==side9.shift(1),0)                                     # 確認の足:9上(9下)が2本続けて確定
     bm=(b.o+bc)/2; nine=pd.Series(np.where((bm>e9)&(bc>e9),1,np.where((bm<e9)&(bc<e9),-1,0)),index=b.index)
     for k,v in (('trend',trend),('sao',sao),('side9',side9),('nine',nine)): m[k]=at_close(v.astype(float),TF,idx)
+    if S200:   # 1h の実体が 200 の向き側に渡り切っている(+1 上 / −1 下 / 0 どちらでもない)
+        hc=h1.c; s2=ema(hc,200); bm1=(h1.o+hc)/2
+        ab=((hc>s2)&(bm1>s2)).astype(int)-((hc<s2)&(bm1<s2)).astype(int)
+        m['s200']=at_close(ab.astype(float),'1h',idx)
+    else: m['s200']=np.nan
     m['newb']=pd.Series(1.0,index=b.index+TFLEN[TF]).reindex(idx).notna().values
     e95,e215=ema(c,9),ema(c,21); mid=c.rolling(20).mean(); sd=c.rolling(20).std(ddof=0)
     pb=(m.l<=e215)&(c>e95)&(e95>e215)&(c<=mid+2*sd); ps=(m.h>=e215)&(c<e95)&(e95<e215)&(c>=mid-2*sd)
     m['pull']=pd.Series(np.where(pb,1,np.where(ps,-1,0)),index=idx).shift(1)
     b4=bigbars(h1,'4h'); a=at_close(atr14(b4),'4h',idx)
     m['chL']=m.h.rolling(22).max().shift(1)-3*a; m['chS']=m.l.rolling(22).min().shift(1)+3*a
-    return m.dropna()
+    return m.dropna(subset=[c for c in m.columns if c!='s200'])
 def run(m,spr=0.3*PIP,MAXPOS=20,ADD=20.0):
-    O,H,L=m.o.values,m.h.values,m.l.values; TR=m.trend.values; SA=m.sao.values; S9=m.side9.values; NN=m.nine.values; NB=m.newb.values; P=m.pull.values
+    O,H,L=m.o.values,m.h.values,m.l.values; S2=m.s200.values; TR=m.trend.values; SA=m.sao.values; S9=m.side9.values; NN=m.nine.values; NB=m.newb.values; P=m.pull.values
     CL,CS=m.chL.values,m.chS.values; T=m.index
     pos=[]; log=[]; camp=0; prev_pull=0
     def cls(i,p,ex,why): log.append(dict(camp=p['camp'],n=p['n'],dir='買' if p['d']>0 else '売',kind=p['k'],open=p['ot'],entry=p['e'],close=T[i],exit=ex,why=why,pips=(ex-p['e'])/PIP*p['d'],i0=p['i0'],i1=i))
@@ -41,11 +47,12 @@ def run(m,spr=0.3*PIP,MAXPOS=20,ADD=20.0):
             if pos and int(NN[i])==-pos[0]['d']:                  # 9割れ → 利確
                 for p in pos: cls(i,p,O[i] if p['d']>0 else O[i]+spr,'9割れ')
                 pos=[]
-            if not pos and tr!=0 and int(S9[i])==tr and int(SA[i])!=tr: opn(i,tr,'9上')   # 傾きあり・9上・竿先でない
+            ok200=np.isnan(S2[i]) or int(S2[i])==tr
+            if not pos and tr!=0 and int(S9[i])==tr and int(SA[i])!=tr and ok200: opn(i,tr,'9上')   # 傾きあり・9上・竿先でない・(200の向き側)
         pl=int(P[i])
         if pos and len(pos)<MAXPOS:
             d=pos[0]['d']
-            if pl==d and prev_pull!=d and int(SA[i])!=d:
+            if pl==d and prev_pull!=d and int(SA[i])!=d and (np.isnan(S2[i]) or int(S2[i])==d):
                 pxc=O[i] if d>0 else O[i]+spr
                 if d*(pxc-pos[-1]['e'])>=ADD*PIP: opn(i,d,'押し目')
         prev_pull=pl
