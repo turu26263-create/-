@@ -16,6 +16,9 @@ def atr14(df):
 LEN={'1h':pd.Timedelta(hours=1),'4h':pd.Timedelta(hours=4)}
 def bigbars(h1,tf): return h1 if tf=='1h' else h1.resample(tf).agg(dict(o='first',h='max',l='min',c='last')).dropna()
 def to_m5(s,tf,idx): s=s.copy(); s.index=s.index+LEN[tf]; return s.reindex(idx,method='ffill')   # 足が確定した時刻から使う
+def angle21(df):   # だまし回避スキルの21の角度【置き換え・たくちんと決めた測り方】横1本6ドット、縦=直近150本の高安の幅を500ドット、21の3本分の傾き
+    e=ema(df.c,21); rng=df.h.rolling(150).max()-df.l.rolling(150).min()
+    return np.degrees(np.arctan2((e-e.shift(3))/rng*500, 18))
 def karami(df,n=26): return (df.c<=df.h.shift(n))&(df.c>=df.l.shift(n))
 def prep(m5,h1):
     m=m5.copy(); idx=m.index; c=m.c
@@ -33,7 +36,8 @@ def prep(m5,h1):
     nar_b=tdn&(c>m.o)&(c>mid-2*sd); nar_s=tup&(c<m.o)&(c<mid+2*sd)                          # 鳴神
     m['ent']=pd.Series(np.where((pos_b|pon_b)&okb&nsb,1,np.where((pos_s|pon_s)&oks&nss,-1,0)),index=idx).shift(1)
     m['add']=pd.Series(np.where(nar_b&okb&nsb,1,np.where(nar_s&oks&nss,-1,0)),index=idx).shift(1)
-    w1=4*h1.c.rolling(20).std(ddof=0); goo=(w1<0.7*w1.rolling(100).mean())&karami(h1)
+    m['tch']=pd.Series(np.where(m.l<=mid-2*sd,1,np.where(m.h>=mid+2*sd,-1,0)),index=idx).shift(1)   # 確定5分足が −2σ(+1)/+2σ(−1) に触れた
+    goo=(angle21(h1).abs()<10)&(karami(h1).rolling(12).sum()>=8)   # グー=21が寝て(角度10度未満)遅行が絡む(12本中8本)【置き換え】
     m['goo']=to_m5(goo.astype(float),'1h',idx)>0                                            # グー
     bm=(h1.o+h1.c)/2; st=pd.Series(np.where((bm>e91)&(h1.c>e91),1.0,np.where((bm<e91)&(h1.c<e91),-1.0,np.nan)),index=h1.index).ffill().fillna(0)
     m['dir1h']=to_m5(st,'1h',idx)                                                           # 9割れ(実体が渡り切り)
@@ -43,9 +47,9 @@ def prep(m5,h1):
     m['chL']=m.h.rolling(22).max().shift(1)-3*a; m['chS']=m.l.rolling(22).min().shift(1)+3*a
     return m.dropna()
 def run(m,spr=0.3*PIP,MAXPOS=4):
-    O,H,L,C=m.o.values,m.h.values,m.l.values,m.c.values; E=m.ent.values; A=m['add'].values; G=m.goo.values; D=m.dir1h.values
+    O,H,L,C=m.o.values,m.h.values,m.l.values,m.c.values; E=m.ent.values; A=m['add'].values; TC=m.tch.values; G=m.goo.values; D=m.dir1h.values
     U,DN,CL,CS=m.u35.values,m.d35.values,m.chL.values,m.chS.values; T=m.index
-    pos=[]; log=[]; camp=0; prevD=0
+    pos=[]; log=[]; camp=0; prevD=0; armed=False; left=True   # 鳴神は1回の押し目で1発(帯から離れて、また触れたら次の1発)
     def cls(i,p,ex,why): log.append(dict(camp=p['camp'],n=p['n'],dir='買' if p['d']>0 else '売',kind=p['k'],open=p['ot'],entry=p['e'],close=T[i],exit=ex,why=why,pips=(ex-p['e'])/PIP*p['d']))
     def opn(i,d,k):
         nonlocal camp
@@ -56,6 +60,9 @@ def run(m,spr=0.3*PIP,MAXPOS=4):
         pos.append(dict(d=d,e=px,sl=sl,ot=T[i],camp=camp,n=len(pos)+1,k=k))
     for i in range(len(m)):
         d1=int(D[i]); goo=bool(G[i])
+        if pos:
+            if int(TC[i])!=pos[0]['d']: left=True
+            elif left: armed=True; left=False
         if pos:
             d=pos[0]['d']
             if d1==-d and prevD!=d1:
@@ -69,9 +76,9 @@ def run(m,spr=0.3*PIP,MAXPOS=4):
                     sl=CL[i] if d>0 else CS[i]
                     if d>0 and sl>p['sl']+0.001 and sl<O[i]: p['sl']=sl
                     if d<0 and sl<p['sl']-0.001 and sl>O[i]+spr: p['sl']=sl
-                if len(pos)<MAXPOS and int(A[i])==d and d1==d: opn(i,d,'鳴神')
+                if len(pos)<MAXPOS and int(A[i])==d and d1==d and armed: opn(i,d,'鳴神'); armed=False; left=False
         prevD=d1
-        if not pos and not goo and int(E[i])!=0 and int(E[i])==d1: opn(i,int(E[i]),'5エントリ')
+        if not pos and not goo and int(E[i])!=0 and int(E[i])==d1: opn(i,int(E[i]),'5エントリ'); armed=False; left=True
         keep=[]
         for p in pos:
             d=p['d']
