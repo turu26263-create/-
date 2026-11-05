@@ -1,5 +1,5 @@
 import pandas as pd, numpy as np, sys
-S=sys.argv[1]
+S=sys.argv[1]; LAG=21  # 遅行スパンは21本前(たくちん 2026-11-05)
 d=pd.read_csv(S+'/data/USDJPY5.csv',header=None,names='d t o h l c v'.split())
 d.index=pd.to_datetime(d.d+' '+d.t,format='%Y.%m.%d %H:%M'); d=d[['o','h','l','c']]
 def rs(r): 
@@ -36,10 +36,10 @@ print(t.head(5).to_string())
 # 1件目の照らし: 合図の足と前後2本
 s=t.sig.iloc[0]; j=idx.get_loc(s)
 for k in range(j-2,j+3):
-    r=m.iloc[k]; lag=m.iloc[k-26]
+    r=m.iloc[k]; lag=m.iloc[k-LAG]
     kawa='上の外' if r.c>r.bu else ('下の外' if r.c<r.bl else '中')
     chi='上抜け' if r.c>lag.h else ('下抜け' if r.c<lag.l else '絡み')
     print(idx[k],f"O{r.o:.3f} H{r.h:.3f} L{r.l:.3f} C{r.c:.3f}",'陽' if r.c>=r.o else '陰',
       f"上ひげ{(r.h-max(r.o,r.c))*100:.1f}p 下ひげ{(min(r.o,r.c)-r.l)*100:.1f}p",'川1σ',kawa,
-      f"9={r.m9:.3f} 21={r.m21:.3f}",'9>21' if r.m9>r.m21 else '9<21','遅行26本前',idx[k-26].strftime('%H:%M'),chi,
+      f"9={r.m9:.3f} 21={r.m21:.3f}",'9>21' if r.m9>r.m21 else '9<21',f'遅行{LAG}本前',idx[k-LAG].strftime('%H:%M'),chi,
       f"| H4 C{r.h4_c:.3f} 9={r.h4_m9:.3f} H1 C{r.h1_c:.3f} 21={r.h1_m21:.3f}")
