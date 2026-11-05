@@ -4,6 +4,7 @@
 #  縄3 5分の921 = 確定した5分足で EMA9 が EMA21 を上抜け(1本前は9<=21)。その時に確定している一番新しい1時間足の「買いの許し」(縄1+縄2)が○なら、次の5分足の始値で入る
 #  縄3改 許しが出た時にもう921が済んでいる時 = 買いの許しが×→○に変わった最初の5分足で、5分の EMA9>EMA21 なら次の5分足の始値で入る(11-05 たくちん「ご」)
 #  縄4 だまし回避 = 入りの5分足の終値が +1σ の外(川の上の外)で、終値が21本前の5分足の高値を上抜け(遅行21本前)(11-05 たくちん「ご」)
+#  縄5 竿先で入らない = 入りの5分足の終値が +2σ の外なら入らない(決まり帳 入2【たくちん】「竿先や根っこでないのにはいるな」。11-05「ご」)
 #  縄2 1時間の21上 = 確定した1時間足の終値が1時間EMA21より上。縄1は、その1時間足が閉じた時に確定している一番新しい4時間足を使う
 # データ:HistData 1分足(EST)。表示は日本時間=EST+14時間(印の高安と合うのを照らし済み)
 import sys,glob,pandas as pd
@@ -46,11 +47,17 @@ def nawa3(m1,h1,h4):
     x['ent']=x.ent921|x.entkai
     x['kawa']=x.c>x['mid']+x.sd; x['chi']=x.c>x.h.shift(21); x['h21']=x.h.shift(21)
     x['ent4']=x.ent&x.kawa&x.chi
+    x['u2']=x['mid']+2*x.sd; x['ent5']=x.ent4&(x.c<=x.u2)
     return x
 if __name__=='__main__' and len(sys.argv)>2 and sys.argv[2]=='3':
     m1=load(sys.argv[1]); h4=nawa1(m1); h1=nawa2(m1,h4); x=nawa3(m1,h1,h4)
     y=x.loc['2017-01-02 10:00':'2017-02-04']; idx=x.index
     col='entkai' if len(sys.argv)>3 and sys.argv[3]=='kai' else 'ent'
+    if len(sys.argv)>3 and sys.argv[3]=='5':
+        for t,r in y[y.ent4].iterrows():
+            nx=x.iloc[idx.get_loc(t)+1]
+            print(f"{t+JST:%m/%d %H:%M} {'921' if r.ent921 else '改 '} C{r.c:.3f} +2σ={r.u2:.3f} {'竿先+の外→縄5で消える' if r.c>r.u2 else '魚道の中【縄5 入る】'} | 入り{nx.o:.3f}")
+        sys.exit()
     if len(sys.argv)>3 and sys.argv[3]=='4':
         for t,r in y[y.ent].iterrows():
             nx=x.iloc[idx.get_loc(t)+1]; ok=r.kawa and r.chi
