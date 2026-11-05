@@ -2,6 +2,7 @@
 # ロープの編み方:1本ずつ編む。いまは1本目だけ
 #  縄1 4時間の9上 = 確定した4時間足の終値が4時間EMA9より上【置き換え:EMA はエンジンに合わせた】(11-05 たくちん「よし」)
 #  縄3 5分の921 = 確定した5分足で EMA9 が EMA21 を上抜け(1本前は9<=21)。その時に確定している一番新しい1時間足の「買いの許し」(縄1+縄2)が○なら、次の5分足の始値で入る
+#  縄3改 許しが出た時にもう921が済んでいる時 = 買いの許しが×→○に変わった最初の5分足で、5分の EMA9>EMA21 なら次の5分足の始値で入る(11-05 たくちん「ご」)
 #  縄2 1時間の21上 = 確定した1時間足の終値が1時間EMA21より上。縄1は、その1時間足が閉じた時に確定している一番新しい4時間足を使う
 # データ:HistData 1分足(EST)。表示は日本時間=EST+14時間(印の高安と合うのを照らし済み)
 import sys,glob,pandas as pd
@@ -38,12 +39,16 @@ def nawa3(m1,h1,h4):
     x=m.reset_index().rename(columns={'index':'t'}).sort_values('kakutei')
     x=pd.merge_asof(x,a,left_on='kakutei',right_on='k1',direction='backward')
     x=pd.merge_asof(x,b,left_on='kakutei',right_on='k4b',direction='backward').set_index('t')
-    x['ent']=x.x921&x.n12.fillna(False).astype(bool)
+    perm=x.n12.fillna(False).astype(bool); x['perm']=perm
+    x['ent921']=x.x921&perm
+    x['entkai']=perm&~perm.shift(1,fill_value=False)&(x.e9>x.e21)&~x.x921
+    x['ent']=x.ent921|x.entkai
     return x
 if __name__=='__main__' and len(sys.argv)>2 and sys.argv[2]=='3':
     m1=load(sys.argv[1]); h4=nawa1(m1); h1=nawa2(m1,h4); x=nawa3(m1,h1,h4)
     y=x.loc['2017-01-02 10:00':'2017-02-04']; idx=x.index
-    for t,r in y[y.ent].iterrows():
+    col='entkai' if len(sys.argv)>3 and sys.argv[3]=='kai' else 'ent'
+    for t,r in y[y[col]].iterrows():
         nx=x.iloc[idx.get_loc(t)+1]
         print(f"{t+JST:%m/%d %H:%M} {'陽' if r.c>=r.o else '陰'} O{r.o:.3f} C{r.c:.3f} 5分9={r.e9:.3f} 21={r.e21:.3f} 5分位置:{ichi(r.c,r['mid'],r.sd)} | 1h({r.t1+JST:%d日%H時}) C{r.c1:.3f} 9={r.e91:.3f} 21={r.e211:.3f} {ichi(r.c1,r.mid1,r.sd1)} | 4h({r.t4+JST:%d日%H時}) C{r.c4b:.3f} 9={r.e9_4:.3f} 21={r.e21_4:.3f} 200={r.e200_4:.3f} {ichi(r.c4b,r.mid4,r.sd4)} | 入り{nx.o:.3f}")
 elif __name__=='__main__' and len(sys.argv)>2 and sys.argv[2]=='2':
