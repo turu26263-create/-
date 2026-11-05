@@ -46,18 +46,18 @@ def prep(m5,h1):
     b4=bigbars(h1,'4h'); a=to_m5(atr14(b4),'4h',idx)
     m['chL']=m.h.rolling(22).max().shift(1)-3*a; m['chS']=m.l.rolling(22).min().shift(1)+3*a
     return m.dropna()
-def run(m,spr=0.3*PIP,MAXPOS=4):
+def run(m,spr=0.3*PIP,MAXPOS=4,LOCK=10.0):   # LOCK: しあわせセット(建値ロック)が掛かる有利な幅 pips【置き換え:10pips。ミナデイン極EA の 10*Point=1pips だと建値で14,060回降ろされた】
     O,H,L,C=m.o.values,m.h.values,m.l.values,m.c.values; E=m.ent.values; A=m['add'].values; TC=m.tch.values; G=m.goo.values; D=m.dir1h.values
     U,DN,CL,CS=m.u35.values,m.d35.values,m.chL.values,m.chS.values; T=m.index
     pos=[]; log=[]; camp=0; prevD=0; armed=False; left=True   # 鳴神は1回の押し目で1発(帯から離れて、また触れたら次の1発)
-    def cls(i,p,ex,why): log.append(dict(camp=p['camp'],n=p['n'],dir='買' if p['d']>0 else '売',kind=p['k'],open=p['ot'],entry=p['e'],close=T[i],exit=ex,why=why,pips=(ex-p['e'])/PIP*p['d']))
+    def cls(i,p,ex,why): log.append(dict(camp=p['camp'],n=p['n'],dir='買' if p['d']>0 else '売',kind=p['k'],open=p['ot'],entry=p['e'],close=T[i],exit=ex,why=why+('(建値)' if why=='網' and p['lock'] and abs(ex-p['e'])<1e-9 else ''),pips=(ex-p['e'])/PIP*p['d'],i0=p['i0'],i1=i))
     def opn(i,d,k):
         nonlocal camp
         px=O[i]+spr if d>0 else O[i]; sl=CL[i] if d>0 else CS[i]
         if d>0 and sl>px: sl=px-10*PIP
         if d<0 and sl<px: sl=px+10*PIP
         if not pos: camp+=1
-        pos.append(dict(d=d,e=px,sl=sl,ot=T[i],camp=camp,n=len(pos)+1,k=k))
+        pos.append(dict(d=d,e=px,sl=sl,ot=T[i],camp=camp,n=len(pos)+1,k=k,lock=False,i0=i))
     for i in range(len(m)):
         d1=int(D[i]); goo=bool(G[i])
         if pos:
@@ -88,4 +88,10 @@ def run(m,spr=0.3*PIP,MAXPOS=4):
             elif d<0 and H[i]+spr>=p['sl']: cls(i,p,O[i]+spr if O[i]+spr>=p['sl'] else p['sl'],'網')
             else: keep.append(p)
         pos=keep
-    return pd.DataFrame(log)
+        for p in pos:   # しあわせセット: 有利に LOCK pips 進んだら 網を建値へ(次の足から効く)
+            if not p['lock'] and LOCK is not None:
+                if p['d']>0 and H[i]-p['e']>=LOCK*PIP:
+                    p['lock']=True; p['sl']=max(p['sl'],p['e'])
+                elif p['d']<0 and p['e']-(L[i]+spr)>=LOCK*PIP:
+                    p['lock']=True; p['sl']=min(p['sl'],p['e'])
+    out=pd.DataFrame(log); out.attrs['open_left']=len(pos); return out
