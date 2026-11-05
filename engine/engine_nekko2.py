@@ -9,8 +9,14 @@
 import os, sys; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from engine_ichi import load, ema, atr14, bigbars, to_m5, PIP, angle21, karami
 import numpy as np, pandas as pd
-def prep(m5,h1):
-    m=m5.copy(); idx=m.index; hc=h1.c
+TFLEN={'15min':pd.Timedelta(minutes=15),'30min':pd.Timedelta(minutes=30),'1h':pd.Timedelta(hours=1),'2h':pd.Timedelta(hours=2),'4h':pd.Timedelta(hours=4)}
+def tfbars(m5,h1,tf):
+    agg=dict(o='first',h='max',l='min',c='last')
+    if tf in ('15min','30min'): return m5.resample(tf).agg(agg).dropna()
+    return h1 if tf=='1h' else h1.resample(tf).agg(agg).dropna()
+def at_close(s,tf,idx): s=s.copy(); s.index=s.index+TFLEN[tf]; return s.reindex(idx,method='ffill')   # その足が確定した時刻から使う
+def prep(m5,h1,TF='1h'):
+    m=m5.copy(); idx=m.index; h1_=h1; h1=tfbars(m5,h1_,TF); hc=h1.c
     mid1=hc.rolling(20).mean(); sd1=hc.rolling(20).std(ddof=0); w=4*sd1; sq=w<0.7*w.rolling(100).mean()
     recent_sq=sq.shift(1).rolling(6).max().fillna(0).astype(bool)
     up=hc>mid1+2*sd1; dn=hc<mid1-2*sd1
@@ -26,10 +32,10 @@ def prep(m5,h1):
     out=pd.Series(np.where(up,1,np.where(dn,-1,0)),index=h1.index)                    # 1h が帯の外(上+1/下−1)
     e91=ema(hc,9); bm=(h1.o+hc)/2
     nine=pd.Series(np.where((bm>e91)&(hc>e91),1,np.where((bm<e91)&(hc<e91),-1,0)),index=h1.index)
-    for k,v in (('root',root),('out1',out),('nine',nine)): m[k]=to_m5(v.astype(float),'1h',idx)
-    b4=bigbars(h1,'4h'); a=to_m5(atr14(b4),'4h',idx)
+    for k,v in (('root',root),('out1',out),('nine',nine)): m[k]=at_close(v.astype(float),TF,idx)
+    b4=bigbars(h1_,'4h'); a=to_m5(atr14(b4),'4h',idx)
     m['chL']=m.h.rolling(22).max().shift(1)-3*a; m['chS']=m.l.rolling(22).min().shift(1)+3*a
-    m['newh']=(idx.minute==0)
+    m['newh']=pd.Series(1.0,index=h1.index+TFLEN[TF]).reindex(idx).notna().values   # その足が確定した直後の5分足
     return m.dropna()
 def run(m,spr=0.3*PIP,MAXPOS=20,ADD=20.0):
     O,H,L=m.o.values,m.h.values,m.l.values; R=m.root.values; OUT=m.out1.values; NN=m.nine.values; NH=m.newh.values
