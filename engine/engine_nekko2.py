@@ -4,6 +4,7 @@
 # 3) 無限リーチ = 根っこの後、1h足が帯の外(±2σ)で確定し続けている間だけ、前の玉から20pips進むごとに1発(最大20)。1h足が帯の中で確定したら もう足さない【置き換え】
 # 4) 降り = 9割れ(1h実体の真ん中と終値が9の向こう)で全部利確。その根っこは終わり
 # 5) 網 = 5分22本の高安 − 4hATR14×3(損切りの守り)
+# 7) 根っこは1h200の向き側だけ(買い=1h終値が1hEMA200の上、売り=下)— たくちん「200/4/1差し込みの所5で合わせれるやろ」
 # 6) だまし回避(スキルの決まり):根っこの足で 1h遅行(26本前)が絡んでいたら入らない(爆弾岩)/ 1h21の角度が根っこと逆向きなら入らない(21が逆向きならついて起きたのは12%)
 import os, sys; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from engine_ichi import load, ema, atr14, bigbars, to_m5, PIP, angle21, karami
@@ -18,6 +19,8 @@ def prep(m5,h1):
     ang=angle21(h1); kar=karami(h1)
     root=root.where(~kar,0)                                   # だまし回避:遅行が絡む根っこ(爆弾岩)は捨てる
     root=root.where(~((root>0)&(ang<0))&~((root<0)&(ang>0)),0)   # だまし回避:1h21が逆向きの根っこは捨てる
+    s200=ema(hc,200)
+    root=root.where(~((root>0)&(hc<s200))&~((root<0)&(hc>s200)),0)   # たくちん「200/4/1」:根っこは1h200の向き側だけ(買いは200の上、売りは下)
     out=pd.Series(np.where(up,1,np.where(dn,-1,0)),index=h1.index)                    # 1h が帯の外(上+1/下−1)
     e91=ema(hc,9); bm=(h1.o+hc)/2
     nine=pd.Series(np.where((bm>e91)&(hc>e91),1,np.where((bm<e91)&(hc<e91),-1,0)),index=h1.index)
