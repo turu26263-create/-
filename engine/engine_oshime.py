@@ -1,5 +1,5 @@
 # 押し目エンジン(たくちん 11-05「5でレンジ抜け前の山こえて巡航上昇下降なら押し目買い無限リーチのみにしたら、取れるはず」)
-# 1) 5分レンジ = 5分遅行(26本前)が直近12本のうち8本以上絡む【置き換え:ポンの貯めと同じ】
+# 1) 5分レンジ = 5分遅行(21本前)が直近12本のうち8本以上絡む【置き換え:ポンの貯めと同じ】
 # 2) 前の山 = そのレンジの間の一番高い所(売りは一番安い所)。レンジが終わった後も、次のレンジまで覚えておく
 # 3) 山越え+巡航 = 5分終値が前の山を越えて確定 かつ 巡航の形(終値が±1σの外・帯が広がる・遅行が抜ける)【書】
 # 4) 入り = その後、押し目買い(戻り売り)の無限リーチだけ:確定5分足のひげが21に触れ・終値が9の向き側・9と21が向き側・竿先(±2σ外)でない
@@ -22,8 +22,8 @@ def prep(m5,h1,LAG=21,ANG=True):
         cruise_up=(c>yama_h)&(a5>=30)&(a5<=55)&(c>m.h.shift(LAG))
         cruise_dn=(c<yama_l)&(a5<=-30)&(a5>=-55)&(c<m.l.shift(LAG))
     else:
-        cruise_up=(c>yama_h)&(c>mid+sd)&(w>w.shift(1))&(c>m.h.shift(26))
-        cruise_dn=(c<yama_l)&(c<mid-sd)&(w>w.shift(1))&(c<m.l.shift(26))
+        cruise_up=(c>yama_h)&(c>mid+sd)&(w>w.shift(1))&(c>m.h.shift(21))
+        cruise_dn=(c<yama_l)&(c<mid-sd)&(w>w.shift(1))&(c<m.l.shift(21))
     m['go']=pd.Series(np.where(cruise_up&~rng,1,np.where(cruise_dn&~rng,-1,0)),index=idx).shift(1)   # 確定足で山越え+巡航
     pb=(m.l<=e21)&(c>e9)&(e9>e21)&(c<=mid+2*sd); ps=(m.h>=e21)&(c<e9)&(e9<e21)&(c>=mid-2*sd)
     if ANG: pb&=(a5>0)&(a5<=55); ps&=(a5<0)&(a5>=-55)                         # 寝ている時・竿先(55度超)では入らない

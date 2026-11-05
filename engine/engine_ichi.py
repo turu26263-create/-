@@ -19,7 +19,7 @@ def to_m5(s,tf,idx): s=s.copy(); s.index=s.index+LEN[tf]; return s.reindex(idx,m
 def angle21(df):   # だまし回避スキルの21の角度【置き換え・たくちんと決めた測り方】横1本6ドット、縦=直近150本の高安の幅を500ドット、21の3本分の傾き
     e=ema(df.c,21); rng=df.h.rolling(150).max()-df.l.rolling(150).min()
     return np.degrees(np.arctan2((e-e.shift(3))/rng*500, 18))
-def karami(df,n=26): return (df.c<=df.h.shift(n))&(df.c>=df.l.shift(n))
+def karami(df,n=21): return (df.c<=df.h.shift(n))&(df.c>=df.l.shift(n))
 def prep(m5,h1):
     m=m5.copy(); idx=m.index; c=m.c
     e9,e21=ema(c,9),ema(c,21); mid=c.rolling(20).mean(); sd=c.rolling(20).std(ddof=0)
@@ -30,7 +30,7 @@ def prep(m5,h1):
     okb=(o1>0)&(s1>0)&(side1>0); oks=(o1<0)&(s1<0)&(side1<0)
     nsb=c<=mid+2*sd; nss=c>=mid-2*sd                                                       # 竿先で入らない・足さない
     pos_b=(m.l<=e21)&(c>e9)&(e9>e21); pos_s=(m.h>=e21)&(c<e9)&(e9<e21)                      # 5エントリの位置
-    kar=karami(m); tame=kar.shift(1).rolling(12).sum()>=8; up=c>m.h.shift(26); dn=c<m.l.shift(26)
+    kar=karami(m); tame=kar.shift(1).rolling(12).sum()>=8; up=c>m.h.shift(21); dn=c<m.l.shift(21)
     pon_b=tame&up&~up.shift(1,fill_value=False); pon_s=tame&dn&~dn.shift(1,fill_value=False)      # ポン
     tdn=(m.l<=mid-2*sd).rolling(6).max()>0; tup=(m.h>=mid+2*sd).rolling(6).max()>0
     nar_b=tdn&(c>m.o)&(c>mid-2*sd); nar_s=tup&(c<m.o)&(c<mid+2*sd)                          # 鳴神
