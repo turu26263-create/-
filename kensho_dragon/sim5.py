@@ -86,7 +86,7 @@ def base(m5,h1):
     m['newh']=(m.index.minute==0)   # 1時間足が閉じた直後の5分足
     return m.dropna()
 
-def go(m, SAOSAKI=False, OSHIME=0, W1=1.0, RANGE=None, MAXPOS=20, spr=0.3, start=None, end=None):
+def go(m, SAOSAKI=False, OSHIME=0, W1=1.0, RANGE=None, MAXPOS=20, spr=0.3, start=None, end=None, ADD=20.0):
     if start or end: m=m.loc[start:end]
     n=len(m); okb=np.ones(n,bool); oks=np.ones(n,bool)
     c=m.c.shift(1).values   # 確定1本前の5分足
@@ -96,7 +96,7 @@ def go(m, SAOSAKI=False, OSHIME=0, W1=1.0, RANGE=None, MAXPOS=20, spr=0.3, start
         okb&=tb; oks&=ts
     yr=(m.index.year-2015).values.astype(np.int64); s=spr*PIP
     eq,g,l,yp,bs,nc=run_tr(m.o.values,m.h.values,m.l.values,m.c.values,m['loc'].values.astype(np.float64),m.trend.values.astype(np.float64),
-                          m.chL.values,m.chS.values,okb,oks,s,MAXPOS,20.0,W1,yr)
+                          m.chL.values,m.chS.values,okb,oks,s,MAXPOS,float(ADD),W1,yr)
     nr=0
     if RANGE:
         sq,side,k=RANGE   # sq: 4h帯幅がふだんの何倍以下ならレンジ / side: 'both' か '200'(200の向きだけ) / k: 網=1時間ATR×k
