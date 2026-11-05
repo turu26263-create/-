@@ -6,20 +6,27 @@
 #    押し目ごとに1発(21から離れてまた触れたら次)、前の玉から20pips、最大20発【置き換え】
 # 5) 降り = 1時間足の9割れ(実体の真ん中と終値が9の向こう)で全部利確、この巡航は終わり。網=5分22本の高安−4hATR×3(守り)
 # 6) だまし回避 = 1h21が逆向きなら入らない・1h200の向き側(実体が渡り切り)だけ
+# 7) 5分21の傾き:巡航=向き側に30〜55度、押し目で入るのは0〜55度の時だけ。遅行は21本前(たくちん「5分の傾きもいれる？ 遅効21やろ」)
 import os, sys; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from engine_ichi import load, ema, atr14, bigbars, to_m5, PIP, angle21, karami
 import numpy as np, pandas as pd
-def prep(m5,h1):
+def prep(m5,h1,LAG=21,ANG=True):
     m=m5.copy(); idx=m.index; c=m.c
     e9,e21=ema(c,9),ema(c,21); mid=c.rolling(20).mean(); sd=c.rolling(20).std(ddof=0); w=4*sd
-    rng=karami(m).rolling(12).sum()>=8                                   # 5分レンジ
+    rng=karami(m,LAG).rolling(12).sum()>=8                               # 5分レンジ(遅行は LAG 本前・たくちん「遅効21」)
+    a5=angle21(m)                                                            # 5分21の角度(だまし回避スキルの測り方)
     # 前の山:レンジの足の高値・安値をレンジが続く間ためて、レンジが終わっても次のレンジまで持つ
     hi=m.h.where(rng); lo=m.l.where(rng); grp=(rng&~rng.shift(1,fill_value=False)).cumsum()
     yama_h=hi.groupby(grp).cummax().ffill(); yama_l=lo.groupby(grp).cummin().ffill()
-    cruise_up=(c>yama_h)&(c>mid+sd)&(w>w.shift(1))&(c>m.h.shift(26))
-    cruise_dn=(c<yama_l)&(c<mid-sd)&(w>w.shift(1))&(c<m.l.shift(26))
+    if ANG:   # 巡航=5分21の角度が向き側に30〜55度 かつ 遅行(LAG本前)が抜けている【たくちん「5分の傾きもいれる？ 遅効21やろ」】
+        cruise_up=(c>yama_h)&(a5>=30)&(a5<=55)&(c>m.h.shift(LAG))
+        cruise_dn=(c<yama_l)&(a5<=-30)&(a5>=-55)&(c<m.l.shift(LAG))
+    else:
+        cruise_up=(c>yama_h)&(c>mid+sd)&(w>w.shift(1))&(c>m.h.shift(26))
+        cruise_dn=(c<yama_l)&(c<mid-sd)&(w>w.shift(1))&(c<m.l.shift(26))
     m['go']=pd.Series(np.where(cruise_up&~rng,1,np.where(cruise_dn&~rng,-1,0)),index=idx).shift(1)   # 確定足で山越え+巡航
     pb=(m.l<=e21)&(c>e9)&(e9>e21)&(c<=mid+2*sd); ps=(m.h>=e21)&(c<e9)&(e9<e21)&(c>=mid-2*sd)
+    if ANG: pb&=(a5>0)&(a5<=55); ps&=(a5<0)&(a5>=-55)                         # 寝ている時・竿先(55度超)では入らない
     m['pull']=pd.Series(np.where(pb,1,np.where(ps,-1,0)),index=idx).shift(1)
     m['t21']=pd.Series(np.where(m.l<=e21,1,0)+np.where(m.h>=e21,-1,0)*0,index=idx).shift(1)     # (使わない:押し目の区切りは pull で見る)
     hc=h1.c; e91=ema(hc,9); bm=(h1.o+hc)/2
