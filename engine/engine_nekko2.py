@@ -15,7 +15,7 @@ def tfbars(m5,h1,tf):
     if tf in ('15min','30min'): return m5.resample(tf).agg(agg).dropna()
     return h1 if tf=='1h' else h1.resample(tf).agg(agg).dropna()
 def at_close(s,tf,idx): s=s.copy(); s.index=s.index+TFLEN[tf]; return s.reindex(idx,method='ffill')   # その足が確定した時刻から使う
-def prep(m5,h1,TF='1h'):
+def prep(m5,h1,TF='1h',CONF=False):   # CONF: 確認の足(根っこの次の足も帯の外で確定)を待って入る
     m=m5.copy(); idx=m.index; h1_=h1; h1=tfbars(m5,h1_,TF); hc=h1.c
     mid1=hc.rolling(20).mean(); sd1=hc.rolling(20).std(ddof=0); w=4*sd1; sq=w<0.7*w.rolling(100).mean()
     recent_sq=sq.shift(1).rolling(6).max().fillna(0).astype(bool)
@@ -30,6 +30,8 @@ def prep(m5,h1,TF='1h'):
     above=(hc>s200)&(bm1>s200); below=(hc<s200)&(bm1<s200)   # 実体が200の向こうへ渡り切っている(毛1本は水しぶき)
     root=root.where(~((root>0)&~above)&~((root<0)&~below),0)   # たくちん「200/4/1」:根っこは1h200の向き側だけ
     out=pd.Series(np.where(up,1,np.where(dn,-1,0)),index=h1.index)                    # 1h が帯の外(上+1/下−1)
+    if CONF:   # bb開きのだまし回避:根っこの次の足も同じ向きに帯の外で確定したら、その足を根っこにする(=1本待つ)
+        root=pd.Series(np.where((root.shift(1)==1)&(out==1),1,np.where((root.shift(1)==-1)&(out==-1),-1,0)),index=h1.index)
     e91=ema(hc,9); bm=(h1.o+hc)/2
     nine=pd.Series(np.where((bm>e91)&(hc>e91),1,np.where((bm<e91)&(hc<e91),-1,0)),index=h1.index)
     for k,v in (('root',root),('out1',out),('nine',nine)): m[k]=at_close(v.astype(float),TF,idx)
