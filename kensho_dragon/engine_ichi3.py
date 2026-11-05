@@ -8,7 +8,9 @@ def prep_v3(m5,h1):
     b4=bigbars(h1,'4h'); s4=to_m5(pd.Series(np.sign(b4.c-ema(b4.c,21)).values,index=b4.index),'4h',idx)
     s1=to_m5(pd.Series(np.sign(ema(h1.c,21).diff()).values,index=h1.index),'1h',idx)
     e91=ema(h1.c,9); side1=to_m5(pd.Series(np.sign(h1.c-e91).values,index=h1.index),'1h',idx)
-    dirok_b=(s4>0)&(s1>0)&(side1>0); dirok_s=(s4<0)&(s1<0)&(side1<0)          # 向1・向2・ド3
+    o1=to_m5(pd.Series(np.sign(e91-ema(h1.c,21)).values,index=h1.index),'1h',idx)   # 1時間の 9と21 の並び(921=+1 / 219=-1)
+    m['o1']=o1
+    dirok_b=(o1>0)&(s1>0)&(side1>0); dirok_s=(o1<0)&(s1<0)&(side1<0)          # 向1(1hの921/219で向き)・ド3
     notsao_b=c<=mid+2*sd; notsao_s=c>=mid-2*sd                                  # 入2・足3
     # 入1 位置
     pos_b=(m.l<=e21)&(c>e9)&(e9>e21); pos_s=(m.h>=e21)&(c<e9)&(e9<e21)
@@ -35,7 +37,7 @@ def prep_v3(m5,h1):
     return m.dropna()
 def run_v3(m,spr=0.3*PIP,MAXPOS=4,start=None,end=None):
     if start or end: m=m.loc[start:end]
-    O,H,L,C=m.o.values,m.h.values,m.l.values,m.c.values; S4=m.s4.values; E=m.ent.values; A=m['add'].values; G=m.goo.values; D=m.dir1h.values
+    O,H,L,C=m.o.values,m.h.values,m.l.values,m.c.values; S4=m.o1.values; E=m.ent.values; A=m['add'].values; G=m.goo.values; D=m.dir1h.values
     U,DN,CL,CS=m.u35.values,m.d35.values,m.chL.values,m.chS.values; T=m.index
     pos=[]; log=[]; camp=0; prevD=0
     def cls(i,p,ex,why): log.append(dict(camp=p['camp'],n=p['n'],dir='買' if p['d']>0 else '売',kind=p['k'],open=p['ot'],entry=p['e'],close=T[i],exit=ex,why=why,pips=(ex-p['e'])/PIP*p['d']))
@@ -50,7 +52,7 @@ def run_v3(m,spr=0.3*PIP,MAXPOS=4,start=None,end=None):
         d1=int(D[i]); goo=bool(G[i])
         if pos:
             d=pos[0]['d']
-            if d1==-d and prevD!=d1 and not goo and int(S4[i])==d1:   # ド1 9割れドテン(グーでは×・4hの向きに逆らう9割れでは× ド4)
+            if d1==-d and prevD!=d1:   # ド1 9割れ→必ず降りる。逆に入るのは 1hの219/921 が新しい向き(入りの向き o1 で止まる)・グーでは入らない
                 for p in pos: cls(i,p,O[i] if d>0 else O[i]+spr,'9割れドテン')
                 pos=[]
             elif goo:                                    # 出2 次のグー
