@@ -19,22 +19,25 @@ def panel(ax,logf,name):
     for no,(cp,r) in enumerate(cc.iterrows(),1):
         i0=pos.get(r.open.floor('4h')); i1=pos.get(r.close.floor('4h')); col='#2ca02c' if r.p>0 else '#d62728'
         if i0 is not None and i1 is not None: ax.plot([i0,i1],[r.entry,r.exit],color=col,lw=2.2,alpha=.75)
-        if i1 is not None: ax.plot(i1,r.exit,'x',color=col,ms=9,mew=2.2)
+        if i1 is not None: ax.plot(i1,r.exit,'X',color=col,ms=20,mec='black',mew=1.2,zorder=7)
         if i0 is not None:
-            ax.plot(i0,r.entry,'^' if r.dir=='買' else 'v',color='black',ms=9,zorder=5)
+            buy=(r.dir=='買'); ac='#0050ff' if buy else '#ff1a1a'
             lvl=sum(1 for u in used if abs(u-i0)<4); used.append(i0)   # 近い番号は段をずらす
-            dy=(0.45+0.32*lvl)*(-1 if r.dir=='買' else 1)
-            ax.annotate(str(no),(i0,r.entry),xytext=(i0,r.entry+dy),ha='center',va='center',fontsize=12,fontweight='bold',
-                        bbox=dict(boxstyle='circle,pad=0.2',fc='white',ec='black',lw=.8),arrowprops=dict(arrowstyle='-',color='gray',lw=.7),zorder=6)
+            dy=(0.55+0.38*lvl)*(-1 if buy else 1)
+            # 太い矢印: 買い=下から上へ(青)、売り=上から下へ(赤)。矢の先が入った値
+            ax.annotate('',xy=(i0,r.entry),xytext=(i0,r.entry+dy),
+                        arrowprops=dict(arrowstyle='simple,head_length=1.4,head_width=1.4,tail_width=0.55',fc=ac,ec='black',lw=1),zorder=6)
+            ax.text(i0,r.entry+dy+(-0.12 if buy else 0.12),str(no),ha='center',va='center',fontsize=15,fontweight='bold',
+                    bbox=dict(boxstyle='circle,pad=0.25',fc='white',ec=ac,lw=2),zorder=8)
         rows.append(f"{no}:{r.dir}{'(ド)' if 'ドテン' in r.k else ''} {int(r.n)}発 {r.p:+.0f}")
     ax.set_xticks(ticks); ax.set_xticklabels([(w.index[i]+JST).strftime('%m/%d') for i in ticks],fontsize=10)
-    ax.set_xlim(-1,len(w)); ax.set_ylim(111.6,119.2); ax.grid(alpha=.25)
+    ax.set_xlim(-1,len(w)); ax.set_ylim(111.2,119.6); ax.grid(alpha=.25)
     ax.set_title(f'{name}  2017年1月 {cc.p.sum():+.0f}pips・{len(cc)}戦',fontsize=14,loc='left')
-    ax.text(1.002,1,'\n'.join(rows),transform=ax.transAxes,va='top',fontsize=10,family='WenQuanYi Zen Hei')
+    ax.text(1.002,1,'\n'.join(rows),transform=ax.transAxes,va='top',fontsize=12,family='WenQuanYi Zen Hei')
     return cc
 fig,axs=plt.subplots(2,1,figsize=(28,17),dpi=100)
 panel(axs[0],'blog.pkl','B(4h終値が200を越えたらすぐドテン・入りは5分だけ)')
 panel(axs[1],'b2log.pkl','B2(4h終値が200の同じ側に3本続いたらドテン+入り・足しは4hの9と21も同じ向きの時だけ)')
 axs[0].legend(loc='upper center',fontsize=10,ncol=6)
-fig.suptitle('ドル円 4時間足 2017年1月  ▲買い ▼売り=戦の1発目(丸数字=右の一覧)、×=全部降りた所、線=入った値→降りた値(赤=負け 緑=勝ち)  日付は日本時間',fontsize=14)
+fig.suptitle('ドル円 4時間足 2017年1月  青い上矢印=買い 赤い下矢印=売り(戦の1発目・矢の先が入った値・丸数字=右の一覧)、大きい×=全部降りた所、線=入った値→降りた値(赤=負け 緑=勝ち)  日付は日本時間',fontsize=14)
 plt.tight_layout(rect=(0,0,0.9,0.97)); plt.savefig('jan2017_4h_B_B2.png'); print('ok')
