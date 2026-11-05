@@ -1,5 +1,6 @@
 # 延長線エンジン(たくちん 11-05「5分レンジの時 前の山とその前の山の頂点を結んで延長で傾き計算 上むき bb開き、延長線超えて損切りくったら、押し目買いにする、延長線と押し目買いの検証」)
-# 山 = 5分足で両側K本より高い高値(谷は低い安値)。右側K本が確定してから使う(先読みしない)【置き換え K=3】
+# 山 = 5分足で両側K本より高い実体の頂点(谷は低い実体の底)。ひげ=魚のピチピチは無視(たくちん「川の向きと魚ピチピチと同じような感じ」)。右側K本が確定してから使う【置き換え K=3】
+# 線は 川(帯の真ん中の3本の向き)と同じ向きの時だけ。同じ線での抜けは1回だけ
 # 線 = 直近の5分レンジ(遅行21本前が12本中8本以上絡む)があった所で、前の山とその前の山を結んだ延長線(上向き)/ 谷と谷(下向き)
 # 抜け = 線が向き側に傾き・帯(5分±2σの幅)が開いている・5分終値が延長線を越えて確定
 # MODE 'A' 延長線で入る(損切り=直前の谷の下)/ 'B' 抜けた後の押し目で入る(無限リーチ)/ 'C' A で損切りを食ったら同じ抜けを B に切り替える
@@ -8,7 +9,7 @@ import os, sys; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from engine_ichi import load, ema, atr14, bigbars, to_m5, PIP, angle21, karami
 import numpy as np, pandas as pd
 def prep(m5,h1,K=3,LAG=21):
-    m=m5.copy(); idx=m.index; c=m.c; H=m.h.values; L=m.l.values; n=len(m)
+    m=m5.copy(); idx=m.index; c=m.c; H=np.maximum(m.o.values,m.c.values); L=np.minimum(m.o.values,m.c.values); n=len(m)   # 山・谷は実体の頂点(ひげ=魚のピチピチは無視)
     e9,e21=ema(c,9),ema(c,21); mid=c.rolling(20).mean(); sd=c.rolling(20).std(ddof=0); w=(4*sd).values
     rng=(karami(m,LAG).rolling(12).sum()>=8).values
     rng_recent=pd.Series(rng).rolling(24).max().fillna(0).values>0             # 直近24本(2時間)の中にレンジがあった【置き換え】
@@ -18,22 +19,22 @@ def prep(m5,h1,K=3,LAG=21):
         if H[i]==H[i-K:i+K+1].max() and (H[i]>H[i-K:i]).all(): ph[i]=True
         if L[i]==L[i-K:i+K+1].min() and (L[i]<L[i-K:i]).all(): pl[i]=True
     brk=np.zeros(n); lineval=np.full(n,np.nan); stop=np.full(n,np.nan)
-    peaks=[]; troughs=[]
+    peaks=[]; troughs=[]; used=set(); midv=mid.values
     C=c.values
     for i in range(n):
         j=i-K                                                                   # i の時点で確定している山・谷
         if j>=0 and ph[j]: peaks.append(j)
         if j>=0 and pl[j]: troughs.append(j)
         if not rng_recent[i] or i<1: continue
-        opening=w[i]>w[i-1]
-        if len(peaks)>=2:
+        opening=w[i]>w[i-1]; river=np.sign(midv[i]-midv[i-3])               # 川の向き=帯の真ん中の3本の向き
+        if len(peaks)>=2 and (peaks[-2],peaks[-1]) not in used:
             a,b=peaks[-2],peaks[-1]; slope=(H[b]-H[a])/(b-a); v=H[b]+slope*(i-b); vp=H[b]+slope*(i-1-b)
-            if slope>0 and opening and C[i]>v and C[i-1]<=vp:
-                brk[i]=1; lineval[i]=v; stop[i]=L[troughs[-1]] if troughs else np.nan
-        if len(troughs)>=2:
+            if slope>0 and river>0 and opening and C[i]>v and C[i-1]<=vp:
+                brk[i]=1; lineval[i]=v; stop[i]=L[troughs[-1]] if troughs else np.nan; used.add((a,b))   # 同じ線は1回だけ
+        if len(troughs)>=2 and (troughs[-2],troughs[-1]) not in used:
             a,b=troughs[-2],troughs[-1]; slope=(L[b]-L[a])/(b-a); v=L[b]+slope*(i-b); vp=L[b]+slope*(i-1-b)
-            if slope<0 and opening and C[i]<v and C[i-1]>=vp:
-                brk[i]=-1; lineval[i]=v; stop[i]=H[peaks[-1]] if peaks else np.nan
+            if slope<0 and river<0 and opening and C[i]<v and C[i-1]>=vp:
+                brk[i]=-1; lineval[i]=v; stop[i]=H[peaks[-1]] if peaks else np.nan; used.add((a,b))
     m['brk']=pd.Series(brk,index=idx).shift(1); m['stop']=pd.Series(stop,index=idx).shift(1)   # 確定足で抜け → 次の足で動く
     pb=(m.l<=e21)&(c>e9)&(e9>e21)&(c<=mid+2*sd); ps=(m.h>=e21)&(c<e9)&(e9<e21)&(c>=mid-2*sd)
     m['pull']=pd.Series(np.where(pb,1,np.where(ps,-1,0)),index=idx).shift(1)
