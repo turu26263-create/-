@@ -1,5 +1,5 @@
 # 根っこエンジン(たくちん 11-05「根っこ無限リーチだけで9割れ利確」「バンドブレイクで押し目買い 竿根っこだけでいい」「まだ竿先で入っとる」)
-# 1) 根っこ = 1時間足の帯が直前6本のどこかでしぼみ(幅<ふだん100本の0.7倍【置き換え】)、終値が ±2σ の外で確定(★)
+# 1) 根っこ = 1時間足の帯が直前6本のどこかでしぼみ(幅<ふだん100本の0.7倍【置き換え】)、終値が ±2σ の外へ出た最初の1本(★)。2本目以降は竿先側なので根っこにしない
 # 2) 根っこの後、5分足の押し目で入る:確定5分足のひげが21に触れ・終値が9の向き側・9と21が向き側
 # 3) 竿先で入らない・足さない:1時間足の終値が ±2σ の外にある間、5分足の終値が ±2σ の外の時
 # 4) 無限リーチ:押し目ごとに1発(帯21に触れて離れてまた触れたら次)、前の玉から20pips、最大20発
@@ -13,7 +13,9 @@ def prep(m5,h1):
     e9,e21=ema(c,9),ema(c,21); mid=c.rolling(20).mean(); sd=c.rolling(20).std(ddof=0)
     hc=h1.c; mid1=hc.rolling(20).mean(); sd1=hc.rolling(20).std(ddof=0); w=4*sd1; sq=w<0.7*w.rolling(100).mean()
     recent_sq=sq.shift(1).rolling(6).max().fillna(0).astype(bool)
-    root=pd.Series(np.where((hc>mid1+2*sd1)&recent_sq,1,np.where((hc<mid1-2*sd1)&recent_sq,-1,0)),index=h1.index)   # ★
+    up=hc>mid1+2*sd1; dn=hc<mid1-2*sd1
+    first_up=up&~up.shift(1).fillna(False); first_dn=dn&~dn.shift(1).fillna(False)   # 帯の外へ出た最初の1本だけ(2本目以降は竿先側)
+    root=pd.Series(np.where(first_up&recent_sq,1,np.where(first_dn&recent_sq,-1,0)),index=h1.index)   # ★=根っこ
     e91=ema(hc,9); bm=(h1.o+hc)/2
     nine=pd.Series(np.where((bm>e91)&(hc>e91),1,np.where((bm<e91)&(hc<e91),-1,0)),index=h1.index)                  # 9の渡り切り
     sao1=pd.Series(np.where(hc>mid1+2*sd1,1,np.where(hc<mid1-2*sd1,-1,0)),index=h1.index)                           # 1hの竿先
