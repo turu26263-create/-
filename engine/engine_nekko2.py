@@ -20,7 +20,9 @@ def prep(m5,h1):
     root=root.where(~kar,0)                                   # だまし回避:遅行が絡む根っこ(爆弾岩)は捨てる
     root=root.where(~((root>0)&(ang<0))&~((root<0)&(ang>0)),0)   # だまし回避:1h21が逆向きの根っこは捨てる
     s200=ema(hc,200)
-    root=root.where(~((root>0)&(hc<s200))&~((root<0)&(hc>s200)),0)   # たくちん「200/4/1」:根っこは1h200の向き側だけ(買いは200の上、売りは下)
+    bm1=(h1.o+hc)/2
+    above=(hc>s200)&(bm1>s200); below=(hc<s200)&(bm1<s200)   # 実体が200の向こうへ渡り切っている(毛1本は水しぶき)
+    root=root.where(~((root>0)&~above)&~((root<0)&~below),0)   # たくちん「200/4/1」:根っこは1h200の向き側だけ
     out=pd.Series(np.where(up,1,np.where(dn,-1,0)),index=h1.index)                    # 1h が帯の外(上+1/下−1)
     e91=ema(hc,9); bm=(h1.o+hc)/2
     nine=pd.Series(np.where((bm>e91)&(hc>e91),1,np.where((bm<e91)&(hc<e91),-1,0)),index=h1.index)
