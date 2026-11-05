@@ -4,7 +4,8 @@
 # 3) 竿先で入らない・足さない:1時間足の終値が ±2σ の外にある間、5分足の終値が ±2σ の外の時
 # 4) 無限リーチ:押し目ごとに1発(帯21に触れて離れてまた触れたら次)、前の玉から20pips、最大20発
 # 5) 降り:9割れ(1時間足の実体の真ん中と終値が9の向こう)で全部利確。網(5分22本の高安−4hATR×3)は損切りの守りだけ
-# 6) 根っこの向きは 9割れ か 逆の根っこ が来るまで生きる。ドテンはしない
+# 6) 根っこの向きは 逆の根っこ か 1hの219(921) が来るまで生きる(9割れでは消さない=押し目)。ドテンはしない
+#    11-05 直したミス:玉が無い時の9割れで根っこを消していた(押し目で入れずに終わっていた)
 import os, sys; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from engine_ichi import load, ema, atr14, bigbars, to_m5, PIP
 import numpy as np, pandas as pd
@@ -19,6 +20,8 @@ def prep(m5,h1):
     e91=ema(hc,9); bm=(h1.o+hc)/2
     nine=pd.Series(np.where((bm>e91)&(hc>e91),1,np.where((bm<e91)&(hc<e91),-1,0)),index=h1.index)                  # 9の渡り切り
     sao1=pd.Series(np.where(hc>mid1+2*sd1,1,np.where(hc<mid1-2*sd1,-1,0)),index=h1.index)                           # 1hの竿先
+    o1=pd.Series(np.sign(e91-ema(hc,21)).values,index=h1.index)                     # 1h の 921(+1)/219(-1)
+    m['o1']=to_m5(o1,'1h',idx)
     m['root']=to_m5(root.astype(float),'1h',idx); m['nine']=to_m5(nine.astype(float),'1h',idx); m['sao1']=to_m5(sao1.astype(float),'1h',idx)
     pb=(m.l<=e21)&(c>e9)&(e9>e21)&(c<=mid+2*sd); ps=(m.h>=e21)&(c<e9)&(e9<e21)&(c>=mid-2*sd)
     m['pull']=pd.Series(np.where(pb,1,np.where(ps,-1,0)),index=idx).shift(1)            # 確定5分足の押し目(戻り)
@@ -28,7 +31,7 @@ def prep(m5,h1):
     m['newh']=(idx.minute==0)
     return m.dropna()
 def run(m,spr=0.3*PIP,MAXPOS=20,ADD=20.0):
-    O,H,L,C=m.o.values,m.h.values,m.l.values,m.c.values; R=m.root.values; N=m.nine.values; S=m.sao1.values; P=m.pull.values; NH=m.newh.values
+    O,H,L,C=m.o.values,m.h.values,m.l.values,m.c.values; O1=m.o1.values; R=m.root.values; N=m.nine.values; S=m.sao1.values; P=m.pull.values; NH=m.newh.values
     CL,CS=m.chL.values,m.chS.values; T=m.index
     pos=[]; log=[]; camp=0; rootd=0; used=False
     def cls(i,p,ex,why): log.append(dict(camp=p['camp'],n=p['n'],dir='買' if p['d']>0 else '売',kind=p['k'],open=p['ot'],entry=p['e'],close=T[i],exit=ex,why=why,pips=(ex-p['e'])/PIP*p['d'],i0=p['i0'],i1=i))
@@ -43,10 +46,12 @@ def run(m,spr=0.3*PIP,MAXPOS=20,ADD=20.0):
     for i in range(len(m)):
         if NH[i]:                                          # 1時間足が確定した直後の5分足で、根っこ・9割れを見る
             r=int(R[i]); nn=int(N[i])
-            if pos and nn==-pos[0]['d']:                   # 9割れ → 全部利確、根っこも終わり
+            if pos and nn==-pos[0]['d']:                   # 9割れ → 玉は全部利確。根っこは生かしたまま(次の押し目でまた入る)
                 for p in pos: cls(i,p,O[i] if p['d']>0 else O[i]+spr,'9割れ')
+                pos=[]
+            if rootd and int(O1[i])==-rootd:               # 根っこが終わるのは 1h の219(買い根っこ)/921(売り根っこ)が確定した時
+                for p in pos: cls(i,p,O[i] if p['d']>0 else O[i]+spr,'219')
                 pos=[]; rootd=0
-            elif rootd and nn==-rootd: rootd=0
             if r!=0 and r!=rootd:
                 if pos and pos[0]['d']!=r:
                     for p in pos: cls(i,p,O[i] if p['d']>0 else O[i]+spr,'逆の根っこ')
