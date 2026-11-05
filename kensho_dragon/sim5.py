@@ -3,7 +3,7 @@ from sim4 import *
 import numba as nb
 
 @nb.njit(cache=True)
-def run_tr(O,H,L,C,LOC,TRD,CHL,CHS,OKB,OKS,spr,MAXPOS,ADDSTEP,W1,YEAR):
+def run_tr(O,H,L,C,LOC,TRD,CHL,CHS,OKB,OKS,spr,MAXPOS,ADDA,W1,YEAR):
     # OKB/OKS: その足で買い/売りの入り・足しをしてよいか(竿先・押し目)。W1: 1発目の重さ(斥候)
     n=len(O); pd_=np.zeros(64); pe=np.zeros(64); ps=np.zeros(64); pw=np.zeros(64); k_=0
     eq=np.zeros(n); eqc=0.0; g=0.0; l=0.0; yp=np.zeros(20); bs=np.zeros(2); nc=0
@@ -25,8 +25,9 @@ def run_tr(O,H,L,C,LOC,TRD,CHL,CHS,OKB,OKS,spr,MAXPOS,ADDSTEP,W1,YEAR):
                     if d<0 and sl<ps[k]-0.001 and sl>O[i]+spr: ps[k]=sl
                 ok2 = OKB[i] if d>0 else OKS[i]
                 if k_<MAXPOS and loc==d and ok2:
+                    pxc=O[i] if d>0 else O[i]+spr          # 進み具合は v3 と同じく 買い=Bid・売り=Ask で見る
                     px=O[i]+spr if d>0 else O[i]
-                    if d*(px-pe[k_-1])>=ADDSTEP*PIP:
+                    if d*(pxc-pe[k_-1])>=ADDA[i]*PIP:
                         sl=CHL[i] if d>0 else CHS[i]
                         if d>0 and sl>px: sl=px-10*PIP
                         if d<0 and sl<px: sl=px+10*PIP
@@ -86,7 +87,7 @@ def base(m5,h1):
     m['newh']=(m.index.minute==0)   # 1時間足が閉じた直後の5分足
     return m.dropna()
 
-def go(m, SAOSAKI=False, OSHIME=0, W1=1.0, RANGE=None, MAXPOS=20, spr=0.3, start=None, end=None, ADD=20.0):
+def go(m, SAOSAKI=False, OSHIME=0, W1=1.0, RANGE=None, MAXPOS=20, spr=0.3, start=None, end=None, ADD=20.0, XOK=None):
     if start or end: m=m.loc[start:end]
     n=len(m); okb=np.ones(n,bool); oks=np.ones(n,bool)
     c=m.c.shift(1).values   # 確定1本前の5分足
@@ -94,9 +95,11 @@ def go(m, SAOSAKI=False, OSHIME=0, W1=1.0, RANGE=None, MAXPOS=20, spr=0.3, start
     if OSHIME:  # 直近 OSHIME 本の5分足のどこかで 1時間EMA21 に触れた
         tb=(m.l<=m.e21).rolling(OSHIME).max().shift(1).fillna(0).values>0; ts=(m.h>=m.e21).rolling(OSHIME).max().shift(1).fillna(0).values>0
         okb&=tb; oks&=ts
+    if XOK is not None:
+        okb&=(m[XOK].values>0); oks&=(m[XOK].values<0)
     yr=(m.index.year-2015).values.astype(np.int64); s=spr*PIP
     eq,g,l,yp,bs,nc=run_tr(m.o.values,m.h.values,m.l.values,m.c.values,m['loc'].values.astype(np.float64),m.trend.values.astype(np.float64),
-                          m.chL.values,m.chS.values,okb,oks,s,MAXPOS,float(ADD),W1,yr)
+                          m.chL.values,m.chS.values,okb,oks,s,MAXPOS,(m[ADD].values if isinstance(ADD,str) else np.full(n,float(ADD))),W1,yr)
     nr=0
     if RANGE:
         sq,side,k=RANGE   # sq: 4h帯幅がふだんの何倍以下ならレンジ / side: 'both' か '200'(200の向きだけ) / k: 網=1時間ATR×k
