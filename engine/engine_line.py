@@ -1,4 +1,4 @@
-# 延長線エンジン(たくちん 11-05「5分レンジの時 前の山とその前の山の頂点を結んで延長で傾き計算 上むき bb開き、延長線超えて損切りくったら、押し目買いにする、延長線と押し目買いの検証」)
+# 抜けエンジン(既定は bb2=5分±2σの抜け。延長線は BRK='line'。たくちん 11-05「5分レンジの時 前の山とその前の山の頂点を結んで延長で傾き計算 上むき bb開き、延長線超えて損切りくったら、押し目買いにする、延長線と押し目買いの検証」)
 # 山 = 5分足で両側K本より高い実体の頂点(谷は低い実体の底)。ひげ=魚のピチピチは無視(たくちん「川の向きと魚ピチピチと同じような感じ」)。右側K本が確定してから使う【置き換え K=3】
 # 線は 川(帯の真ん中の3本の向き)と同じ向きの時だけ。同じ線での抜けは1回だけ
 # 線 = 直近の5分レンジ(遅行21本前が12本中8本以上絡む)があった所で、前の山とその前の山を結んだ延長線(上向き)/ 谷と谷(下向き)
@@ -8,7 +8,7 @@
 import os, sys; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from engine_ichi import load, ema, atr14, bigbars, to_m5, PIP, angle21, karami
 import numpy as np, pandas as pd
-def prep(m5,h1,K=3,LAG=21):
+def prep(m5,h1,K=3,LAG=21,BRK='bb2'):   # BRK: 'bb2'=5分±2σの抜け(たくちん「bb2の方がええ」)/ 'line'=延長線
     m=m5.copy(); idx=m.index; c=m.c; H=np.maximum(m.o.values,m.c.values); L=np.minimum(m.o.values,m.c.values); n=len(m)   # 山・谷は実体の頂点(ひげ=魚のピチピチは無視)
     e9,e21=ema(c,9),ema(c,21); mid=c.rolling(20).mean(); sd=c.rolling(20).std(ddof=0); w=(4*sd).values
     rng=(karami(m,LAG).rolling(12).sum()>=8).values
@@ -19,7 +19,7 @@ def prep(m5,h1,K=3,LAG=21):
         if H[i]==H[i-K:i+K+1].max() and (H[i]>H[i-K:i]).all(): ph[i]=True
         if L[i]==L[i-K:i+K+1].min() and (L[i]<L[i-K:i]).all(): pl[i]=True
     brk=np.zeros(n); lineval=np.full(n,np.nan); stop=np.full(n,np.nan)
-    peaks=[]; troughs=[]; used=set(); midv=mid.values
+    peaks=[]; troughs=[]; used=set(); midv=mid.values; sdv=sd.values
     C=c.values
     for i in range(n):
         j=i-K                                                                   # i の時点で確定している山・谷
@@ -27,6 +27,11 @@ def prep(m5,h1,K=3,LAG=21):
         if j>=0 and pl[j]: troughs.append(j)
         if not rng_recent[i] or i<1: continue
         opening=w[i]>w[i-1]; river=np.sign(midv[i]-midv[i-3])               # 川の向き=帯の真ん中の3本の向き
+        if BRK=='bb2':   # レンジの後、終値が ±2σ の外へ出た最初の1本・帯が開く・川が同じ向き
+            up2=midv[i]+2*sdv[i]; dn2=midv[i]-2*sdv[i]; up2p=midv[i-1]+2*sdv[i-1]; dn2p=midv[i-1]-2*sdv[i-1]
+            if C[i]>up2 and C[i-1]<=up2p and opening and river>0: brk[i]=1; stop[i]=L[troughs[-1]] if troughs else np.nan
+            elif C[i]<dn2 and C[i-1]>=dn2p and opening and river<0: brk[i]=-1; stop[i]=H[peaks[-1]] if peaks else np.nan
+            continue
         if len(peaks)>=2 and (peaks[-2],peaks[-1]) not in used:
             a,b=peaks[-2],peaks[-1]; slope=(H[b]-H[a])/(b-a); v=H[b]+slope*(i-b); vp=H[b]+slope*(i-1-b)
             if slope>0 and river>0 and opening and C[i]>v and C[i-1]<=vp:
