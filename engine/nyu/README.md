@@ -43,6 +43,7 @@
 
 ## エントリー調節(11-06 たくちん「10まん2000 レバレッジ33% で エントリ調節きくように」)
 - lot_sizing(t, base, d, capital_yen, margin_cap, leverage, step, min_lot, max_lot, maxpos, fixed_lot, compound):入るたびにロットを決めて円で回し直す。持っている玉の証拠金の合計が資金(含み損込み)の margin_cap を超えないよう、残りの枠で割る。足りなければ入らない
+- stopout=維持率%(強制決済・ゼロカット)/dd_pips_per_lot+dd_budget=落ち込みで決める(並べ替えの DD95 が資金の dd_budget に収まるロット)
 - 返り値:玉ごとのロットと円/最後の資金・増えた倍率・一番へこんだ資金・落ち込み率・証拠金維持率の一番低い・入れなかった合図
 
 ## 照らし済み(11-06)

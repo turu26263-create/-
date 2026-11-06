@@ -374,7 +374,7 @@ def yen_curve(t, base, d=1, capital_yen=1_000_000, lot=0.1, leverage=25, pip_yen
 
 # ================================================================ エントリー調節(11-06 たくちん「10まん2000 レバレッジ33% で エントリ調節きくように」)
 def lot_sizing(t, base, d=1, capital_yen=102_000, margin_cap=0.33, leverage=25, step=0.01, min_lot=0.01, max_lot=100.0,
-               maxpos=5, fixed_lot=None, unit=100_000, pip_yen_per_lot=1000.0, compound=True):
+               maxpos=5, fixed_lot=None, unit=100_000, pip_yen_per_lot=1000.0, compound=True, stopout=None, dd_pips_per_lot=None, dd_budget=None):
     """入るたびにロットを決めて、円で回し直す【置き換え】。
     margin_cap:持っている玉の証拠金の合計が、資金(含み損込み)の margin_cap を超えないようにする。残りの枠(maxpos−持っている玉)で割ってロットを決める
     fixed_lot:決め打ちのロット(None=上の決め方)。compound=False なら資金は最初のままでロットを決める
@@ -393,11 +393,14 @@ def lot_sizing(t, base, d=1, capital_yen=102_000, margin_cap=0.33, leverage=25, 
         used = sum(price * unit * lots[o] / leverage for o in open_)
         per_lot = price * unit / leverage
         if fixed_lot is not None: lot = fixed_lot
+        elif dd_pips_per_lot:                                          # 落ち込みで決める:1玉あたり DD(pips)×ロット×最大の発数 が 資金の dd_budget に収まる
+            lot = np.floor(eq * dd_budget / (dd_pips_per_lot * pip_yen_per_lot) / step) * step
         else:
             room = eq * margin_cap - used; slots = max(maxpos - len(open_), 1)
             lot = np.floor(max(room, 0) / slots / per_lot / step) * step
         lot = min(lot, max_lot)
-        if lot < min_lot - 1e-12 or used + per_lot * lot > eq * (margin_cap if fixed_lot is None else 1.0) + 1e-6: skip += 1; continue
+        cap_ = 1.0 if (fixed_lot is not None or dd_pips_per_lot) else margin_cap
+        if lot < min_lot - 1e-12 or used + per_lot * lot > eq * cap_ + 1e-6: skip += 1; continue
         lots[k] = round(lot, 4); open_.append(k)
     T['lot'] = lots; T['円'] = T.pips * pip_yen_per_lot * T.lot
     # 毎本の資金(含み損込み)と証拠金
@@ -405,10 +408,16 @@ def lot_sizing(t, base, d=1, capital_yen=102_000, margin_cap=0.33, leverage=25, 
     for a, b, e, l, p in zip(A, B, T.e.values, lots, T.pips.values):
         if l <= 0: continue
         fl[a:b] += (C[a:b] - e) / PIP * d * pip_yen_per_lot * l; mg[a:b] += C[a:b] * unit * l / leverage; rl[b] += p * pip_yen_per_lot * l
-    eq = capital_yen + fl + np.cumsum(rl)[:n]; peak = np.maximum.accumulate(eq)
+    eq = capital_yen + fl + np.cumsum(rl)[:n]
     lvl = np.where(mg > 0, eq / np.maximum(mg, 1e-9) * 100, np.inf)
+    so_at = None
+    if stopout is not None:                                         # 強制決済:維持率が stopout% を下回ったら全部決済して、そこで止まる(ゼロカットで0円より下にはならない)
+        hit = np.where((lvl < stopout) | (eq <= 0))[0]
+        if len(hit):
+            k0 = hit[0]; so_at = str(pd.Timestamp(idx[k0])); eq = eq.copy(); eq[k0:] = max(eq[k0], 0.0); lvl = lvl.copy(); lvl[k0:] = np.inf
+    peak = np.maximum.accumulate(eq)
     s = dict(最初の資金=capital_yen, 最後の資金=round(float(eq[-1])), 増えた倍率=round(float(eq[-1] / capital_yen), 2),
              一番へこんだ資金=round(float(eq.min())), 一番大きい落ち込み円=round(float((peak - eq).max())), 落ち込み率=round(float(((peak - eq) / peak).max() * 100), 1),
              証拠金維持率の一番低い=round(float(lvl.min()), 0), 入った玉=int((lots > 0).sum()), 入れなかった合図=skip,
-             ロット最小=float(lots[lots > 0].min()) if (lots > 0).any() else 0, ロット最大=float(lots.max()))
+             ロット最小=float(lots[lots > 0].min()) if (lots > 0).any() else 0, ロット最大=float(lots.max()), 強制決済=so_at)
     return T, s
