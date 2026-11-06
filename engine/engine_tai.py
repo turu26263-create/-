@@ -6,6 +6,7 @@
 #  縄4 だまし回避 = 入りの5分足の終値が +1σ の外(川の上の外)で、終値が21本前の5分足の高値を上抜け(遅行21本前)(11-05 たくちん「ご」)
 #  縄5 竿先で入らない = 入りの5分足の終値が +2σ の外なら入らない(決まり帳 入2【たくちん】「竿先や根っこでないのにはいるな」。11-05「ご」)
 #  縄4改 縄3改の入り(許しが出た瞬間)だけは、縄4の代わりに「確定4時間足の終値が4時間EMA21の上」で見る【置き換え:1か月の照らしから。11-06 たくちん「C ご」】
+#  縄6 降り = 持っている間に確定5分足で EMA9 が EMA21 を下抜け(219)したら次の5分足の始値で全部降りる。玉は1つだけ(持っている間の入りは見送る)【置き換え:玉の数はまだ決めていない】(11-06 たくちん「よし」)
 #  縄2 1時間の21上 = 確定した1時間足の終値が1時間EMA21より上。縄1は、その1時間足が閉じた時に確定している一番新しい4時間足を使う
 # データ:HistData 1分足(EST)。表示は日本時間=EST+14時間(印の高安と合うのを照らし済み)
 import sys,glob,pandas as pd
@@ -54,6 +55,18 @@ if __name__=='__main__' and len(sys.argv)>2 and sys.argv[2]=='3':
     m1=load(sys.argv[1]); h4=nawa1(m1); h1=nawa2(m1,h4); x=nawa3(m1,h1,h4)
     y=x.loc['2017-01-02 10:00':'2017-02-04']; idx=x.index
     col='entkai' if len(sys.argv)>3 and sys.argv[3]=='kai' else 'ent'
+    if len(sys.argv)>3 and sys.argv[3]=='6':
+        x219=(x.e9<x.e21)&(x.e9.shift()>=x.e21.shift()); E=x.ent5.values; X=x219.values; O=x.o.values; T=x.index; pos=None; skip=[]
+        i0=idx.get_loc(y.index[0]); i1=idx.get_loc(y.index[-1])
+        for i in range(i0,i1):
+            if pos is None and E[i]: pos=(i,O[i+1])
+            elif pos and E[i]: skip.append(i)
+            elif pos and X[i]:
+                j,px=pos; lo=x.l.values[j+1:i+2].min(); hi=x.h.values[j+1:i+2].max()
+                print(f"入り {T[j]+JST:%m/%d %H:%M}の合図→{T[j+1]+JST:%H:%M} {px:.3f} | 降り {T[i]+JST:%m/%d %H:%M}の219→{T[i+1]+JST:%H:%M} {O[i+1]:.3f} | {(O[i+1]-px)*100:+.1f}p | 持っている間の高値{hi:.3f}(+{(hi-px)*100:.1f}p) 安値{lo:.3f}({(lo-px)*100:+.1f}p) | 持つ間に見送った入り{len(skip)}本")
+                pos=None; skip=[]
+        if pos: print('持ったまま終わり',T[pos[0]]+JST)
+        sys.exit()
     if len(sys.argv)>3 and sys.argv[3]=='5':
         for t,r in y[y.ent4].iterrows():
             nx=x.iloc[idx.get_loc(t)+1]
