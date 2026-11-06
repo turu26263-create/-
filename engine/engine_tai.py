@@ -7,6 +7,7 @@
 #  縄5 竿先で入らない = 入りの5分足の終値が +2σ の外なら入らない(決まり帳 入2【たくちん】「竿先や根っこでないのにはいるな」。11-05「ご」)
 #  縄4改 縄3改の入り(許しが出た瞬間)だけは、縄4の代わりに「確定4時間足の終値が4時間EMA21の上」で見る【置き換え:1か月の照らしから。11-06 たくちん「C ご」】
 #  縄6 降り = 持っている間に確定5分足で EMA9 が EMA21 を下抜け(219)したら次の5分足の始値で全部降りる。玉は1つだけ(持っている間の入りは見送る)【置き換え:玉の数はまだ決めていない】(11-06 たくちん「よし」)
+#  縄7 降り(完成) = 確定1時間足の9割れ(実体の真ん中と終値が1時間EMA9の下)で全部降りる。決まり帳 ド4【たくちん】「9割れで利確」。縄6(5分の219)は胴体に短すぎたので置き換え(11-06 たくちん「完成さして データ出して」)
 #  縄2 1時間の21上 = 確定した1時間足の終値が1時間EMA21より上。縄1は、その1時間足が閉じた時に確定している一番新しい4時間足を使う
 # データ:HistData 1分足(EST)。表示は日本時間=EST+14時間(印の高安と合うのを照らし済み)
 import sys,glob,pandas as pd
@@ -38,7 +39,8 @@ def nawa3(m1,h1,h4):
     m['kakutei']=m.index+pd.Timedelta(minutes=5)
     h1=h1.copy(); h1['mid1']=h1.c.rolling(20).mean(); h1['sd1']=h1.c.rolling(20).std(ddof=0); h1['e91']=ema(h1.c,9)
     h4=h4.copy(); h4['e21_4']=ema(h4.c,21); h4['e200_4']=ema(h4.c,200); h4['mid4']=h4.c.rolling(20).mean(); h4['sd4']=h4.c.rolling(20).std(ddof=0)
-    a=h1.reset_index()[['t','kakutei','c','e21','e91','mid1','sd1','n2','n1','n12']].rename(columns={'t':'t1','kakutei':'k1','c':'c1','e21':'e211'}).sort_values('k1')
+    h1['ware']=((h1.o+h1.c)/2<h1.e91)&(h1.c<h1.e91)
+    a=h1.reset_index()[['t','kakutei','c','e21','e91','mid1','sd1','n2','n1','n12','ware']].rename(columns={'t':'t1','kakutei':'k1','c':'c1','e21':'e211'}).sort_values('k1')
     b=h4.reset_index().rename(columns={'index':'t4'})[['t4','kakutei','c','e9','e21_4','e200_4','mid4','sd4']].rename(columns={'kakutei':'k4b','c':'c4b','e9':'e9_4'}).sort_values('k4b')
     x=m.reset_index().rename(columns={'index':'t'}).sort_values('kakutei')
     x=pd.merge_asof(x,a,left_on='kakutei',right_on='k1',direction='backward')
@@ -51,6 +53,27 @@ def nawa3(m1,h1,h4):
     x['ent4']=(x.ent921&x.kawa&x.chi)|(x.entkai&(x.c4b>x.e21_4))
     x['u2']=x['mid']+2*x.sd; x['ent5']=x.ent4&(x.c<=x.u2)
     return x
+def run(x,spr=0.0):
+    E=x.ent5.values; W=x.ware.fillna(False).astype(bool).values; K1=x.k1.values; O=x.o.values; H=x.h.values; L=x.l.values; T=x.index; tr=[]; pos=None
+    for i in range(len(x)-1):
+        if pos is None:
+            if E[i]: pos=(i+1,O[i+1]+spr)
+        elif W[i] and K1[i]>T[pos[0]]:
+            j,px=pos; tr.append(dict(sig=T[j-1],ent=T[j],e=px,ext=T[i+1],x=O[i+1],pips=(O[i+1]-px)*100,hi=(H[j:i+1].max()-px)*100,lo=(L[j:i+1].min()-px)*100)); pos=None
+    return pd.DataFrame(tr)
+if __name__=='__main__' and len(sys.argv)>2 and sys.argv[2]=='run':
+    m1=load(sys.argv[1]); h4=nawa1(m1); h1=nawa2(m1,h4); x=nawa3(m1,h1,h4)
+    out=sys.argv[3]
+    for spr in (0.0,0.003,0.01):
+        t=run(x,spr); t.to_csv(f"{out}_spr{spr*100:.1f}.csv",index=False)
+        w=t.pips[t.pips>0].sum(); l=-t.pips[t.pips<0].sum()
+        print(f"spr{spr*100:.1f}p 戦{len(t)} 勝{(t.pips>0).sum()} 合計{t.pips.sum():+.1f}p PF{w/l:.2f} 平均{t.pips.mean():+.2f} 最大{t.pips.max():+.1f} 最小{t.pips.min():+.1f}")
+        if spr==0.003:
+            t['y']=t.ent.dt.year; g=t.groupby('y').pips.agg(['count','sum']); g['pf']=t.groupby('y').pips.apply(lambda s:s[s>0].sum()/max(-s[s<0].sum(),1e-9))
+            eq=t.pips.cumsum(); print('最大ドローダウン',round((eq.cummax()-eq).max(),1),'p'); print(g.round(2).to_string())
+            j=t[(t.ent>='2017-01-02')&(t.ent<'2017-02-05')]
+            for _,r in j.iterrows(): print(f"  {r.ent+JST:%m/%d %H:%M} {r.e:.3f} → {r.ext+JST:%m/%d %H:%M} {r.x:.3f} {r.pips:+.1f}p (最高+{r.hi:.1f} 最低{r.lo:+.1f})")
+    sys.exit()
 if __name__=='__main__' and len(sys.argv)>2 and sys.argv[2]=='3':
     m1=load(sys.argv[1]); h4=nawa1(m1); h1=nawa2(m1,h4); x=nawa3(m1,h1,h4)
     y=x.loc['2017-01-02 10:00':'2017-02-04']; idx=x.index
