@@ -72,6 +72,21 @@ print(f"{'○' if g else '×'} 鏡の照らし:値段を上下ひっくり返し
 m3 = Market(raw_s, 'server'); run_tai(m3, '1D', '4h', '1h', 1, ('1D', '219'), **KWm); after = run_tai(m3, '1D', '4h', '1h', -1, ('1D', '219'), **KWm)[0]
 g = len(after) == len(ts_) and np.allclose(after.pips.values, ts_.pips.values); ok.append(g)
 print(f"{'○' if g else '×'} 順番の照らし:買いを先に回しても売りは同じ {len(after)}玉 {after.pips.sum():+.1f}p")
+print('--- 鏡の照らし(いろいろな形)---')
+raw_s5 = raw_s.loc['2016-03-01':'2019-12-31']; raw_e5 = raw_e.loc['2016-01-01':'2017-12-31']
+KB = dict(maxpos=5, n8=False, reenter=True, avoid_in=(0,), avoid_out=(0,))
+cases = [('網=前の日', lambda m, d: run_tai(m,'1D','4h','1h',d,('1D','219'),sl='prevday',**KB)[0], raw_s5, 'server'),
+         ('網=4hの21の20p下', lambda m, d: run_tai(m,'1D','4h','1h',d,('1D','219'),sl=('4h','e21',0.2),**KB)[0], raw_s5, 'server'),
+         ('しあわせセット50p', lambda m, d: run_tai(m,'1D','4h','1h',d,('1D','219'),lock=50,**KB)[0], raw_s5, 'server'),
+         ('足しだけしあわせセット', lambda m, d: run_tai(m,'1D','4h','1h',d,('1D','219'),lock=50,lockcore=False,**KB)[0], raw_s5, 'server'),
+         ('TS200・100p伸びてから', lambda m, d: run_tai(m,'1D','4h','1h',d,('1D','219'),ts=200,ts_start=100,tp=('4h',3.5),**KB)[0], raw_s5, 'server'),
+         ('芯は日足・足しは4h9割れ', lambda m, d: run_tai(m,'1D','4h','1h',d,('1D','9割れ'),('4h','9割れ'),maxpos=5,n8=True,reenter=True)[0], raw_s5, 'server'),
+         ('終値9で降り', lambda m, d: run_tai(m,'1D','4h','1h',d,('1D','終値9'),maxpos=5,reenter=True)[0], raw_s5, 'server'),
+         ('上の小魚', lambda m, d: kozakana_ue(m,d,5)[0], raw_s5, 'server'),
+         ('逆目99 4h', lambda m, d: gyakume_99(m,'4h',-d)[0] if False else gyakume_99(m,'4h',d)[0], raw_s5, 'server'),
+         ('5分足の鯛(縄8・1分足で先を決める)', lambda m, d: run_tai(m,'4h','1h','5min',d,('1h','9割れ'),n8=True,tp=('1h',3.5),ts=100,fine=True)[0], raw_e5, 'est')]
+for nm, fn, rw, ck in cases:
+    g, msg = kagami(fn, rw, ck); ok.append(g); print(f"{'○' if g else '×'} 鏡:{nm}:{msg}")
 print('--- ターボ ---')
 space = dict(maxpos=[1, 5], sao=[2.0, 2.5], lock=[0, 50], spr=[0.003, 0.01])
 fn = lambda maxpos, sao, lock, spr: stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=maxpos,sao=sao,n8=True,reenter=True,lock=lock,spr=spr)[0])

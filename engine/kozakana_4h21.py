@@ -18,10 +18,10 @@ def run(d,a,b,MAX=5,spr=0.003):
     pos=[]; tr=[]; i0=np.searchsorted(T,np.datetime64(a)); i1=np.searchsorted(T,np.datetime64(b))
     for i in range(i0,i1):
         if pos and not S[i]:
-            for j,e in pos: ex=O[i+1]-(0 if d>0 else spr); tr.append((T[j],e,T[i+1],ex,(ex-e)*100*d))
+            for j,e in pos: ex=O[i+1]+(0 if d>0 else spr); tr.append((T[j],e,T[i+1],ex,(ex-e)*100*d))
             pos=[]
         if ent[i] and S[i] and len(pos)<MAX: pos.append((i+1,O[i+1]+(spr if d>0 else 0)))
-    for j,e in pos: ex=O[i1]; tr.append((T[j],e,T[i1],ex,(ex-e)*100*d))   # 山の終わりで残りは降りる
+    for j,e in pos: ex=O[i1]+(0 if d>0 else spr); tr.append((T[j],e,T[i1],ex,(ex-e)*100*d))   # 山の終わりで残りは降りる
     return pd.DataFrame(tr,columns=['ent','e','ext','x','pips'])
 for nm,a,b,kj in (('日足のクジラ','2025-09-19','2026-01-27',1936.7),('450hのクジラ','2021-03-26','2025-04-15 18:00',16604.3)):
     print(f'\n=== {nm} {a}〜{b}(クジラ5発 {kj:+.1f}p)===')

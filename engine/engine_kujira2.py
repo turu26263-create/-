@@ -65,8 +65,8 @@ def run2(x,d,ent,MAXPOS=5,tai4h=False,spr=0.003,net='day'):
             if i>p['j']:
                 if d>0 and L[i]<=p['sl']: ex=min(O[i],p['sl']); why='網'
                 if d<0 and H[i]>=p['sl']: ex=max(O[i],p['sl'])+spr; why='網'
-            if ex is None and B[i] and BK[i]>T[p['j']]: ex=O[i+1]-(0 if d>0 else spr); why='日足9割れ'
-            if ex is None and tai4h and p['n']>1 and A[i] and AK[i]>T[p['j']]: ex=O[i+1]-(0 if d>0 else spr); why='4h9割れ'
+            if ex is None and B[i] and BK[i]>T[p['j']]: ex=O[i+1]+(0 if d>0 else spr); why='日足9割れ'
+            if ex is None and tai4h and p['n']>1 and A[i] and AK[i]>T[p['j']]: ex=O[i+1]+(0 if d>0 else spr); why='4h9割れ'
             if ex is not None: tr.append((p['camp'],p['n'],T[p['j']],p['e'],T[i],ex,(ex-p['e'])*100*d,why))
             else: keep.append(p)
         pos=keep

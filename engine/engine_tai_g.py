@@ -40,5 +40,5 @@ def run(x,d,ent,spr=0.003):
         if pos is None:
             if E[i]: pos=(i+1,O[i+1]+(spr if d>0 else 0))
         elif W[i] and K[i]>T[pos[0]]:
-            j,px=pos; ex=O[i+1]-(0 if d>0 else spr); tr.append((T[j],px,T[i+1],ex,(ex-px)*100*d)); pos=None
+            j,px=pos; ex=O[i+1]+(0 if d>0 else spr); tr.append((T[j],px,T[i+1],ex,(ex-px)*100*d)); pos=None
     return pd.DataFrame(tr,columns=['ent','e','ext','x','pips'])

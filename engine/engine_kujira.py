@@ -24,7 +24,7 @@ def run_k(x,d,ent,mode,MAXPOS=20,spr=0.003):
             big=(mode=='kujira') or (mode=='mix' and p['n']==1)
             hit=(B[i] and BK[i]>T[p['j']]) if big else (A[i] and AK[i]>T[p['j']])
             if hit:
-                ex=O[i+1]-(0 if d>0 else spr); tr.append((p['camp'],p['n'],T[p['j']],p['e'],T[i+1],ex,(ex-p['e'])*100*d,'日足9割れ' if big else '4h9割れ'))
+                ex=O[i+1]+(0 if d>0 else spr); tr.append((p['camp'],p['n'],T[p['j']],p['e'],T[i+1],ex,(ex-p['e'])*100*d,'日足9割れ' if big else '4h9割れ'))
             else: keep.append(p)
         pos=keep
         if E[i] and len(pos)<MAXPOS:

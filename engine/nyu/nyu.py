@@ -116,9 +116,9 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
             ex = np.nan; why = 0
             slhit = False; tphit = False
             if i > j and not np.isnan(psl[s]):
-                slhit = (d > 0 and L[i] <= psl[s]) or (d < 0 and H[i] >= psl[s])
+                slhit = (d > 0 and L[i] <= psl[s] + 1e-9) or (d < 0 and H[i] >= psl[s] - 1e-9)        # ぴったり届いた時に計算の端数で入れかわらないように(11-06)
             if i > j and not np.isnan(TPV[i]):
-                tphit = (d > 0 and TPV[i] > pe[s] and H[i] >= TPV[i]) or (d < 0 and TPV[i] < pe[s] and L[i] <= TPV[i])   # 利確は入り値より上にある時だけ
+                tphit = (d > 0 and TPV[i] > pe[s] and H[i] >= TPV[i] - 1e-9) or (d < 0 and TPV[i] < pe[s] and L[i] <= TPV[i] + 1e-9)   # 利確は入り値より上にある時だけ
             tp_first = False
             if slhit and tphit:                                          # 同じ足で網と利確の両方に届いた:HLO で先を決める(0=わからない→損な方=網)
                 amb += 1
@@ -128,7 +128,7 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                 if d > 0: ex = min(O[i], psl[s])
                 else: ex = max(O[i], psl[s]) + spr
                 why = 3
-                if plk[s] and abs(psl[s] - pe[s]) < 1e-9: why = 5
+                if plk[s] and abs(psl[s] - (pe[s] if d > 0 else pe[s] - spr)) < 1e-9: why = 5
                 elif pts[s]: why = 6
             elif tphit:
                 if d > 0: ex = max(O[i], TPV[i])
@@ -145,16 +145,17 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                 act[s] = False; cnt -= 1; exited = True
             else:
                 if ts > 0 and i >= j:                                    # TS:この足までの一番上から ts pips 下へ(次の足から効く)。ts_start pips 伸びてから
-                    fav = (pmax[s] - pe[s]) / 0.01 if d > 0 else (pe[s] - pmin[s]) / 0.01
+                    fav = (pmax[s] - pe[s]) / 0.01 if d > 0 else (pe[s] - pmin[s] - spr) / 0.01   # 売りは降りる時にスプレッドを払うので、伸びはスプレッド分引いて数える(買いと同じにする)
                     if fav >= ts_start:
                         nsl = pmax[s] - ts * 0.01 if d > 0 else pmin[s] + ts * 0.01
                         if np.isnan(psl[s]) or (d > 0 and nsl > psl[s]) or (d < 0 and nsl < psl[s]):
                             psl[s] = nsl; pts[s] = True
             if np.isnan(ex) and lock > 0 and not plk[s] and i >= j and (lockcore or pn[s] > 1):
-                fav = (pmax[s] - pe[s]) / 0.01 if d > 0 else (pe[s] - pmin[s]) / 0.01
+                fav = (pmax[s] - pe[s]) / 0.01 if d > 0 else (pe[s] - pmin[s] - spr) / 0.01
                 if fav >= lock:
                     plk[s] = True
-                    if np.isnan(psl[s]) or (d > 0 and pe[s] > psl[s]) or (d < 0 and pe[s] < psl[s]): psl[s] = pe[s]; pts[s] = False
+                    be = pe[s] if d > 0 else pe[s] - spr                       # 建値:売りは買い戻しのスプレッド分下に置くと損益0(11-06 鏡の照らしで直した)
+                    if np.isnan(psl[s]) or (d > 0 and be > psl[s]) or (d < 0 and be < psl[s]): psl[s] = be; pts[s] = False
         if E[i] and cnt < mp and (reenter or not exited):
             e = O[i + 1] + (spr if d > 0 else 0.0); sl = SLV[i] if slmode >= 1 else np.nan
             if slmode >= 1 and not np.isnan(sl) and ((d > 0 and sl >= e) or (d < 0 and sl <= e)): continue
@@ -421,3 +422,17 @@ def lot_sizing(t, base, d=1, capital_yen=102_000, margin_cap=0.33, leverage=25, 
              証拠金維持率の一番低い=round(float(lvl.min()), 0), 入った玉=int((lots > 0).sum()), 入れなかった合図=skip,
              ロット最小=float(lots[lots > 0].min()) if (lots > 0).any() else 0, ロット最大=float(lots.max()), 強制決済=so_at)
     return T, s
+
+# ================================================================ 鏡の照らし(11-06 たくちん「けんしょするな、エンジン直せ」)
+def mirror_raw(raw, K=300.0):
+    """値段を上下ひっくり返したデータ(K−値段。高値と安値が入れかわる)"""
+    m = raw.copy(); m[['o', 'c']] = K - raw[['o', 'c']].values; m['h'] = K - raw['l'].values; m['l'] = K - raw['h'].values; return m
+
+def kagami(make, raw, clock):
+    """make(Market, d)->trades。元のデータの売り と ひっくり返したデータの買い が1玉ずつ同じか。違えば違う玉の数と理由を返す"""
+    a = make(Market(raw, clock), -1); b = make(Market(mirror_raw(raw), clock), 1)
+    if len(a) != len(b): return False, f'玉の数が違う 売り{len(a)} 鏡の買い{len(b)}'
+    if not ((a.ent.values == b.ent.values).all() and (a.ext.values == b.ext.values).all()): return False, '入り・降りの時刻が違う'
+    dd = np.abs(a.pips.values - b.pips.values) > 1e-6
+    if dd.any(): return False, f'損益が違う玉 {int(dd.sum())}(理由 {a.why.values[dd][:3].tolist()})'
+    return True, f'{len(a)}玉 同じ'
