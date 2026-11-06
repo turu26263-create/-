@@ -50,6 +50,11 @@ print(f"{'○' if g else '×'} 利確(4h+3.5σ)は入り値より上の時だけ
 t = run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=5,n8=True,reenter=True,lock=50,lockcore=False)[0]
 g = ((t.why == '建値') & (t.n == 1)).sum() == 0 and (t.why == '建値').sum() > 0; ok.append(g)
 print(f"{'○' if g else '×'} しあわせセットを足した玉だけ(lockcore=False):芯の建値 {int(((t.why=='建値')&(t.n==1)).sum())}・足しの建値 {int((t.why=='建値').sum())}")
+t, b = run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=5,n8=True,reenter=True,tp=('4h',3.5),ts=550)
+g = abs(cost_adjust(t,1).pips.sum() - t.pips.sum()) < 1e-6 and cost_adjust(t,1,spr_hour={0:10.0}).pips.sum() < t.pips.sum() and cost_adjust(t,1,swap_long=0.1).pips.sum() > t.pips.sum(); ok.append(g)
+print(f"{'○' if g else '×'} 0時のスプレッド・スワップ:付けなければ同じ、0時+10pで減る、買いスワップ+で増える")
+m1_, m2_ = montecarlo(t, 300, seed=7), montecarlo(t, 300, seed=7)
+g = m1_ == m2_ and m1_['DD95'] >= m1_['DD中央'] >= 0; ok.append(g); print(f"{'○' if g else '×'} 並べ替えの試し:同じ種なら同じ答え・DD95≧中央")
 print('--- ターボ ---')
 space = dict(maxpos=[1, 5], sao=[2.0, 2.5], lock=[0, 50], spr=[0.003, 0.01])
 fn = lambda maxpos, sao, lock, spr: stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=maxpos,sao=sao,n8=True,reenter=True,lock=lock,spr=spr)[0])

@@ -248,3 +248,56 @@ def daichi(df, keys, col='確15-21_p'):
                     if m.any() and df[m][col].iloc[0] <= 0: good = False
         ok.append(good)
     df = df.copy(); df['台地'] = ok; return df
+
+# ================================================================ 改良(11-06 たくちん「エンジンさき 改良は?」)
+def cost_adjust(t, d, swap_long=0.0, swap_short=0.0, spr_hour=None, wed3=True, rollover_hour=0):
+    """研究台の甘い所を足す(付けなければ今と同じ)。
+    swap_long/swap_short:1晩あたりの pips(買い・売り)。持っている間にサーバー時刻 rollover_hour を何回またいだか。水曜をまたぐ晩は3倍(wed3)
+    spr_hour:{時: 足すpips}。その時刻(サーバー時刻)に入った・降りた玉に、広がったスプレッドを足す(例 {0: 5.0})"""
+    t = t.copy(); ent = pd.to_datetime(t.ent); ext = pd.to_datetime(t.ext)
+    if swap_long or swap_short:
+        nights = []
+        for a, b in zip(ent, ext):
+            days = pd.date_range(a.normalize() + pd.Timedelta(hours=rollover_hour), b, freq='D')
+            days = days[(days > a) & (days <= b)]
+            nights.append(sum(3 if (wed3 and dd.weekday() == 2) else (0 if dd.weekday() >= 5 else 1) for dd in days))
+        t['晩'] = nights; t['swap'] = t['晩'] * (swap_long if d > 0 else swap_short); t['pips'] = t.pips + t.swap
+    if spr_hour:
+        add = ent.dt.hour.map(lambda h: spr_hour.get(h, 0.0)).values + ext.dt.hour.map(lambda h: spr_hour.get(h, 0.0)).values
+        t['広がり'] = add; t['pips'] = t.pips - add
+    return t
+
+def nenbetsu(t, span=3):
+    """年ごとの強さ:年ごとの損益・負けた年の数・一番悪い年・span 年ずつ区切った時の PF"""
+    y = pd.to_datetime(t.ent).dt.year; g = t.groupby(y).pips.sum()
+    pf = {}
+    ys = sorted(g.index)
+    for i in range(len(ys) - span + 1):
+        z = t[y.between(ys[i], ys[i + span - 1])]; pf[f'{ys[i]}-{ys[i+span-1]}'] = stat(z)['pf']
+    return dict(年ごと=g.round(0).to_dict(), 負けた年=int((g < 0).sum()), 年の数=len(g), 一番悪い年=(int(g.idxmin()), round(float(g.min()), 0)), 区切りPF=pf)
+
+def montecarlo(t, n=2000, seed=1, capital_yen=None, lot=0.1, pip_yen_per_lot=1000.0):
+    """山(camp)ごとの損益の順番を n 通りに並べ替え、降りた順の最大DDの散らばりを見る(含み損は入れていない)。
+    capital_yen と lot を入れると円にする(ドル円 1ロット=1pip 1000円)。1玉 lot ロットのつもり"""
+    rng = np.random.default_rng(seed); g = t.groupby('camp').pips.sum().values; dds = np.empty(n)
+    for k in range(n):
+        eq = np.cumsum(rng.permutation(g)); dds[k] = (np.maximum.accumulate(np.r_[0, eq]) - np.r_[0, eq]).max()
+    r = dict(山=len(g), DD中央=round(float(np.median(dds)), 0), DD95=round(float(np.percentile(dds, 95)), 0), DD99=round(float(np.percentile(dds, 99)), 0), 今の順のDD=round(float((np.maximum.accumulate(np.r_[0, np.cumsum(g)]) - np.r_[0, np.cumsum(g)]).max()), 0))
+    if capital_yen:
+        yen = pip_yen_per_lot * lot
+        r.update(合計円=round(float(g.sum() * yen)), DD95円=round(r['DD95'] * yen), DD95の資金に対する割合=round(r['DD95'] * yen / capital_yen * 100, 1))
+    return r
+
+def hitotsuzutsu(run, base_kw, parts, split, extra=None):
+    """1個ずつの道具:base_kw の形から、parts={名前: 上書きする kw} を1つずつ当てて、今との差を表にする。
+    run(**kw)->(trades, base)。extra(t)->dict を足すと列が増える(大山など)"""
+    rows = []
+    for nm, over in [('今の形', {})] + list(parts.items()):
+        kw = dict(base_kw); kw.update(over); t, b = run(**kw); r = report(t, b, kw.get('d', 1), split); r['名前'] = nm
+        if extra: r.update(extra(t))
+        rows.append(r)
+    df = pd.DataFrame(rows); base = df.iloc[0]
+    for c in [c for c in df.columns if c.endswith('_p')]: df[c + '差'] = (df[c] - base[c]).round(0)
+    kk = [c for c in split if c.startswith('確')]
+    df['判定'] = ['今' if i == 0 else ('○' if all(df.loc[i, f'{k}_p差'] >= 0 for k in kk) else ('×' if all(df.loc[i, f'{k}_p差'] < 0 for k in kk) else '△')) for i in range(len(df))]
+    return df
