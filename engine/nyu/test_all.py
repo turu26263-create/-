@@ -95,6 +95,10 @@ g = all(s for _, _, s in res); ok.append(g); print(f"{'○' if g else '×'} 引�
 sd = senbiki_daily(Market(raw_s, 'server'), '1h', 1); hh = pd.Index(sd.index[sd.pre]).hour
 g = len(hh) > 0 and set(hh) <= {22}; ok.append(g); print(f"{'○' if g else '×'} 先取りする足は、日足が閉じる1時間前(22時の足・23時に閉じる)だけ:{sorted(set(hh))}")
 chk('引け先取り1時間前を決まった形に入れた(前から219のままを合図と読まない)', stat(run_senbiki(srv,'1h',1,1,maxpos=5,n8=False,reenter=True,tp=('4h',3.5),ts=550,avoid_in=(0,),avoid_out=(0,))[0]), (299, 12935.1))
+from bugbug import bugbug
+KB = dict(maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,))
+g, _ = bugbug(lambda mk, d: run_tai(mk, '1D', '4h', '1h', d, ('1D', '219'), **KB)[0], raw_s5, 'server', 5, 0.003); ok.append(g)
+print(f"{'○' if g else '×'} バグバグ修正機:決まった形(売り買い)が全部○")
 print('--- ターボ ---')
 space = dict(maxpos=[1, 5], sao=[2.0, 2.5], lock=[0, 50], spr=[0.003, 0.01])
 fn = lambda maxpos, sao, lock, spr: stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=maxpos,sao=sao,n8=True,reenter=True,lock=lock,spr=spr)[0])
