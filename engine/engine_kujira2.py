@@ -9,15 +9,27 @@
 import sys,warnings; warnings.filterwarnings('ignore'); sys.path.insert(0,__file__.rsplit('/',1)[0])
 from engine_tai_g import *
 from engine_kujira import ware,attach2
+from engine_ichi import angle21
 def prep2(m1):
     h=bars(m1,'1h'); h['kakutei']=h.k; h['e9']=ema(h.c,9); h['e21']=ema(h.c,21); h['md']=h.c.rolling(20).mean(); h['sd']=h.c.rolling(20).std(ddof=0)
     D=bars(m1,'1D'); D['e9']=ema(D.c,9); D['up']=D.c>D.e9; D['dn']=D.c<D.e9
     D['ku']=D.up.groupby((~D.up).cumsum()).cumsum(); D['kd']=D.dn.groupby((~D.dn).cumsum()).cumsum()
-    H4=bars(m1,'4h'); H4['e21']=ema(H4.c,21)
+    H4=bars(m1,'4h'); H4['e21']=ema(H4.c,21); H4['e9']=ema(H4.c,9); H4['ang']=angle21(H4)
     x=attach2(h,D[['k','c','e9','l','h','ku','kd']].rename(columns=lambda c:'D_'+c),'D_')
-    x=attach2(x,H4[['k','c','e21']].rename(columns=lambda c:'F_'+c),'F_')
+    x=attach2(x,H4[['k','c','e21','e9','ang']].rename(columns=lambda c:'F_'+c),'F_')
     x=attach2(x,ware(m1,'4h','a_'),'a_'); x=attach2(x,ware(m1,'1D','b_'),'b_')
     return x.drop(columns=['k'])
+def signals3(x,d,trig,cruise=True):
+    # 11-06 たくちん「ビー 巡航上昇時9が21に差し込んできたら」【置き換え】
+    #  巡航:4hの21の角度が向きに30度以上の時が直近24本の1hの中にあった / 差し込み:4hの9と21の差が5p以内(くぐっても10pまで)が直近8本の1hの中にあった
+    up=x.e9>x.e21; up1=x.e9.shift()>x.e21.shift(); g=(x.F_e9-x.F_e21)*d; a=x.F_ang*d
+    sashi=((g<=0.05)&(g>=-0.10)).rolling(8).max()>0
+    cr=(a>=30).rolling(24).max()>0 if cruise else True
+    if d>0:
+        zone=(x.D_c>x.D_e9)&(x.D_ku>=4); t=(up&~up1) if trig=='921' else ((x.c>x.e9)&(x.c.shift()<=x.e9.shift()))
+        return zone&sashi&cr&t&(x.c<=x.md+2*x.sd)
+    zone=(x.D_c<x.D_e9)&(x.D_kd>=4); t=(~up&up1) if trig=='921' else ((x.c<x.e9)&(x.c.shift()>=x.e9.shift()))
+    return zone&sashi&cr&t&(x.c>=x.md-2*x.sd)
 def signals2(x,d,trig,tgt='F'):   # tgt='F'=差し込み先は4hのEMA21 / 'D'=日足のEMA9
     up=x.e9>x.e21; up1=x.e9.shift()>x.e21.shift()
     if d>0:
@@ -65,13 +77,13 @@ if __name__=='__main__':
     m1=load(sys.argv[1]); out=sys.argv[2]; x=prep2(m1); rows=[]
     h1c=x.c
     for d in (1,-1):
-        for trig,tgt in (('921','F'),('ware','F'),('921','D'),('ware','D')):
+        for trig,tgt in (('921',True),('ware',True),('921',False),('ware',False)):
             for tai4h in (False,True):
-                t=run2(x,d,signals2(x,d,trig,tgt),5,tai4h); y=pd.to_datetime(t.ent).dt.year
-                r=dict(向き='買い' if d>0 else '売り',差し込み先='4h21' if tgt=='F' else '日足9',合図=trig,鯛の降り='4h9割れ' if tai4h else 'なし')
+                t=run2(x,d,signals3(x,d,trig,tgt),5,tai4h); y=pd.to_datetime(t.ent).dt.year
+                r=dict(向き='買い' if d>0 else '売り',巡航='あり' if tgt else 'なし',合図=trig,鯛の降り='4h9割れ' if tai4h else 'なし')
                 for k,msk in (('選22-24',y.between(2022,2024)),('確15-21',y.between(2015,2021)),('確25',y==2025),('全',y>0)):
                     s_=stat(t[msk]); r[k+'_p']=s_['sum']; r[k+'_pf']=s_['pf']
                 r['玉']=len(t); r['戦']=t.camp.nunique(); r['DD(降り順)']=dd_open(t)
                 r['網%']=round(100*t.why.str.startswith('網').mean(),1); rows.append(r)
-                t.to_csv(f"{out}/K2_{'buy' if d>0 else 'sell'}_{tgt}_{trig}_{'tai' if tai4h else 'nashi'}.csv",index=False)
+                t.to_csv(f"{out}/K3_{'buy' if d>0 else 'sell'}_{'jun' if tgt else 'nojun'}_{trig}_{'tai' if tai4h else 'nashi'}.csv",index=False)
     print(pd.DataFrame(rows).to_string(index=False))
