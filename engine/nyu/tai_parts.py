@@ -60,8 +60,8 @@ def tp_sigma(mk, small, tf, k=3.5, d=1):
 def make_sl(mk, small, d, sl):
     if sl is None: return None
     if sl == 'prevday': return sl_prevday(mk, small, d)
-    tf, col = sl                       # 例 ('4h','e21')
-    return sl_line(mk, small, tf, col, 0.05, d)
+    tf, col = sl[0], sl[1]; buf = sl[2] if len(sl) > 2 else 0.05     # 例 ('4h','e21') / ('4h','e21',0.20)
+    return sl_line(mk, small, tf, col, buf, d)
 
 def make_tp(mk, small, d, tp):
     if tp is None: return None
