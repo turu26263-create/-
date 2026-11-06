@@ -4,8 +4,8 @@ import sys, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0, __fi
 from nyu import *; from tai_parts import *
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt; from matplotlib import font_manager
 font_manager.fontManager.addfont('/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'); plt.rcParams['font.family'] = 'WenQuanYi Zen Hei'; plt.rcParams['axes.unicode_minus'] = False
-srv = Market(load_cached(sys.argv[1]), 'server'); Y = int(sys.argv[2]); out = sys.argv[3]; KK = int(sys.argv[4]) if len(sys.argv) > 4 else 0
-t, b = run_tai(srv, '1D', '4h', '1h', 1, ('1D', '219'), maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,), kai_k9=KK)
+srv = Market(load_cached(sys.argv[1]), 'server'); Y = int(sys.argv[2]); out = sys.argv[3]; KK = int(sys.argv[4]) if len(sys.argv) > 4 else 0; UP = len(sys.argv) > 5 and sys.argv[5] == 'up'
+t, b = run_tai(srv, '1D', '4h', '1h', 1, ('1D', '219'), maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,), kai_k9=KK, big21_up=UP)
 D = srv.feat('1D'); a, z = pd.Timestamp(f'{Y}-01-01'), pd.Timestamp(f'{Y+1}-01-01')
 D = D[(D.index >= a - pd.Timedelta('20D')) & (D.index < z + pd.Timedelta('10D'))]
 y = t[(t.ent >= a) & (t.ent < z)].reset_index(drop=True)
@@ -27,7 +27,7 @@ for k, r in y.iterrows():
 ax.scatter([], [], marker='^', color='#06c', label='入り(番号)'); ax.scatter([], [], marker='v', color='#1a9', label='利確(4h+3.5σ)')
 ax.scatter([], [], marker='v', color='#555', label='日足219で降り'); ax.scatter([], [], marker='v', color='#f80', label='TS 550p')
 ax.legend(loc='upper left', fontsize=10, ncol=4); ax.grid(alpha=0.3)
-ax.set_title(f'{Y}年 ドル円 日足 クジラの刺身' + (f'【許しの入りは日足9上の{KK}本目から】' if KK else '') + f'(決まった形:日足9上・4h21上・1hで入る・最大5発・4h+3.5σ利確・TS550・日足219で降り・0時は1時へ)  {len(y)}玉 合計{y.pips.sum():+.0f}p  緑の帯=日足921の間', fontsize=13)
+ax.set_title(f'{Y}年 ドル円 日足 クジラの刺身' + (f'【許しの入りは日足9上の{KK}本目から】' if KK else '') + ('【日足21が上向きの時だけ】' if UP else '') + f'(決まった形:日足9上・4h21上・1hで入る・最大5発・4h+3.5σ利確・TS550・日足219で降り・0時は1時へ)  {len(y)}玉 合計{y.pips.sum():+.0f}p  緑の帯=日足921の間', fontsize=13)
 cum = y.sort_values('ext'); ax2.step(cum.ext, cum.pips.cumsum(), where='post', color='#06c'); ax2.axhline(0, color='k', lw=0.6)
 ax2.set_ylabel('降りた順の合計 p'); ax2.grid(alpha=0.3); ax.set_xlim(a - pd.Timedelta('5D'), z + pd.Timedelta('5D'))
 plt.tight_layout(); plt.savefig(out, dpi=110)
