@@ -28,8 +28,10 @@ def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=
         kawa = x.c < x.md - x.sd; chi = x.c < x.l21; qq = q.c < q.e21; ns = x.c >= x.md - sao * x.sd; ang = -q.ang
     e921 = cross & p; kai = p & ~p.shift(1, fill_value=False) & side & ~cross
     if kai_k9:   # 許しが出た瞬間の入りは、大きい足の終値が9の向こうに kai_k9 本続いてから(たくちん「9のってからロウソク3本目まで竿先」)
-        B = mk.feat(big); s9 = (B.c > B.e9) if d > 0 else (B.c < B.e9); B = B.assign(k9=s9.groupby((~s9).cumsum()).cumsum()); mk._f[big] = B
-        kk = mk.on(small, big, ['k9']).k9.fillna(0).values; kai = kai & (kk >= kai_k9)
+        B = mk.feat(big); kc = 'k9b' if d > 0 else 'k9s'                  # 買いと売りで数え方を分ける(11-06 直したミス:同じ列名で買いの数えが売りに残っていた)
+        if kc not in B.columns:
+            s9 = (B.c > B.e9) if d > 0 else (B.c < B.e9); mk._f[big] = B.assign(**{kc: s9.groupby((~s9).cumsum()).cumsum()})
+        kk = mk.on(small, big, [kc])[kc].fillna(0).values; kai = kai & (kk >= kai_k9)
         p_ok = p.copy()
         # 許しが出た瞬間を4本目まで待った時は、4本目になった最初の足で入る(その時もまだ許しの中・9>21)
         first = pd.Series(kk >= kai_k9, index=x.index) & ~pd.Series(kk >= kai_k9, index=x.index).shift(1, fill_value=False)
@@ -52,8 +54,8 @@ def exit_219(mk, small, tf, d):
 
 def exit_close9(mk, small, tf, d):
     """tf の終値が9の向こう"""
-    F = mk.feat(tf); F = F.assign(cb=F.c < F.e9, cs=F.c > F.e9)
-    mk._f[tf] = F
+    F = mk.feat(tf)
+    if 'cb' not in F.columns: mk._f[tf] = F.assign(cb=F.c < F.e9, cs=F.c > F.e9)
     c = 'cb' if d > 0 else 'cs'; y = mk.on(small, tf, [c])
     return y[c].fillna(False).astype(bool).values, y['k_' + tf].values
 
