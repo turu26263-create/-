@@ -64,6 +64,21 @@ class Market:
         b['ware_s'] = (mid > b.e9) & (c > b.e9)
         b['up921'] = b.e9 > b.e21                                  # 921 の並び
         self._f[tf] = b; return b
+    def hl_order(self, tf):
+        """足の中で高値と安値のどちらが先についたか(+1=高値が先/−1=安値が先/0=わからない)。元のデータ(1分足など)が細かい時だけわかる"""
+        key = ('hlo', tf)
+        if key in self._f: return self._f[key]
+        b = self.bars(tf); r = self.raw
+        if len(r) >= 2 and (r.index[1] - r.index[0]) >= (b.index[1] - b.index[0]):
+            out = np.zeros(len(b), np.int64)
+        else:
+            bid = np.searchsorted(b.index.values, r.index.values, side='right') - 1           # 細かい足がどの足に入るか(空の足は無視)
+            okr = (bid >= 0) & (r.index.values < b.k.values[np.clip(bid, 0, None)])
+            z = pd.DataFrame({'b': bid[okr], 'h': r.h.values[okr], 'l': r.l.values[okr], 't': np.arange(okr.sum())})
+            th = z.loc[z.groupby('b').h.idxmax(), ['b', 't']].set_index('b').t; tl = z.loc[z.groupby('b').l.idxmin(), ['b', 't']].set_index('b').t
+            v = np.sign(tl - th).astype(np.int64)                                             # 高値が先(th<tl)=+1
+            out = np.zeros(len(b), np.int64); out[v.index.values] = v.values
+        self._f[key] = out; return out
     def on(self, base_tf, tf, cols):
         """tf の線を base_tf の足に貼る。base の足が閉じた時に確定している tf の足の値だけ使う"""
         key = ('on', base_tf, tf, tuple(cols))
@@ -76,7 +91,7 @@ class Market:
 
 # ---------------------------------------------------------------- 1玉ずつの売買(numba)
 @njit(cache=True)
-def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reenter, lock, lockcore, ts, ts_start):
+def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reenter, lock, lockcore, ts, ts_start, HLO):
     # E 入り / XC・KC 芯の降り(と、その合図の足が閉じた時刻)/ XA・KA 足し玉の降り / SLV 網の高さ(nan=網なし)/ TPV 利確の高さ(nan=なし)
     # slmode 0=網なし 1=網を上げるだけ(売りは下げるだけ)/ lock>0:玉が lock pips 伸びたら次の足から網を建値へ(しあわせセット)
     # 足の中の順番:網 → 利確 → 合図の降り(損な方を先に見る)
@@ -85,7 +100,7 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
     plk = np.zeros(mp, np.bool_); pmin = np.zeros(mp); pmax = np.zeros(mp); pts = np.zeros(mp, np.bool_)
     out_j = np.zeros(n, np.int64); out_i = np.zeros(n, np.int64); out_e = np.zeros(n); out_x = np.zeros(n); out_n = np.zeros(n, np.int64); out_c = np.zeros(n, np.int64); out_w = np.zeros(n, np.int64)
     out_lo = np.zeros(n); out_hi = np.zeros(n)
-    m = 0; camp = 0; cnt = 0; maxheld = 0
+    m = 0; camp = 0; cnt = 0; maxheld = 0; amb = 0; amb_tp = 0
     for i in range(1, n - 1):
         exited = False
         for s in range(mp):
@@ -99,14 +114,26 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                 elif d > 0: psl[s] = max(psl[s], SLV[i])
                 else: psl[s] = min(psl[s], SLV[i])
             ex = np.nan; why = 0
+            slhit = False; tphit = False
             if i > j and not np.isnan(psl[s]):
-                if d > 0 and L[i] <= psl[s]: ex = min(O[i], psl[s]); why = 3
-                if d < 0 and H[i] >= psl[s]: ex = max(O[i], psl[s]) + spr; why = 3
-                if why == 3 and plk[s] and abs(psl[s] - pe[s]) < 1e-9: why = 5
-                elif why == 3 and pts[s]: why = 6
-            if np.isnan(ex) and i > j and not np.isnan(TPV[i]):
-                if d > 0 and TPV[i] > pe[s] and H[i] >= TPV[i]: ex = max(O[i], TPV[i]); why = 4          # 利確は入り値より上にある時だけ(線が入り値より下がったら効かない)
-                if d < 0 and TPV[i] < pe[s] and L[i] <= TPV[i]: ex = min(O[i], TPV[i]) + spr; why = 4
+                slhit = (d > 0 and L[i] <= psl[s]) or (d < 0 and H[i] >= psl[s])
+            if i > j and not np.isnan(TPV[i]):
+                tphit = (d > 0 and TPV[i] > pe[s] and H[i] >= TPV[i]) or (d < 0 and TPV[i] < pe[s] and L[i] <= TPV[i])   # 利確は入り値より上にある時だけ
+            tp_first = False
+            if slhit and tphit:                                          # 同じ足で網と利確の両方に届いた:HLO で先を決める(0=わからない→損な方=網)
+                amb += 1
+                if (d > 0 and HLO[i] > 0) or (d < 0 and HLO[i] < 0):
+                    if not (d > 0 and O[i] <= psl[s]) and not (d < 0 and O[i] >= psl[s]): tp_first = True; amb_tp += 1
+            if slhit and not tp_first:
+                if d > 0: ex = min(O[i], psl[s])
+                else: ex = max(O[i], psl[s]) + spr
+                why = 3
+                if plk[s] and abs(psl[s] - pe[s]) < 1e-9: why = 5
+                elif pts[s]: why = 6
+            elif tphit:
+                if d > 0: ex = max(O[i], TPV[i])
+                else: ex = min(O[i], TPV[i]) + spr
+                why = 4
             if np.isnan(ex):
                 if pn[s] == 1:
                     if XC[i] and KC[i] > T[j]: ex = O[i + 1] - (0.0 if d > 0 else spr); why = 1
@@ -138,11 +165,11 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                     pmin[s] = 1e18; pmax[s] = -1e18; cnt += 1; break
             if cnt > maxheld: maxheld = cnt
     held = cnt
-    return out_j[:m], out_i[:m], out_e[:m], out_x[:m], out_n[:m], out_c[:m], out_w[:m], out_lo[:m], out_hi[:m], maxheld, held
+    return out_j[:m], out_i[:m], out_e[:m], out_x[:m], out_n[:m], out_c[:m], out_w[:m], out_lo[:m], out_hi[:m], maxheld, held, amb, amb_tp
 
 WHY = {1: '芯の降り', 2: '足しの降り', 3: '網', 4: '利確', 5: '建値', 6: 'TS'}
 
-def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003, reenter=True, TPV=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0):
+def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003, reenter=True, TPV=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, HLO=None):
     """base=入る足の表(o,h,l,c と時刻)。真偽の並びを渡すと、1玉ずつの戦の表を返す。
     SLV=網の高さ(上げるだけ)/TPV=利確の高さ/lock=しあわせセット(伸びたら網を建値へ)。玉ごとに 逆に行った最大(mae)・伸びた最大(mfe)も返す"""
     O = base.o.values.astype(np.float64); H = base.h.values.astype(np.float64); L = base.l.values.astype(np.float64)
@@ -153,12 +180,12 @@ def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003
     nan = np.full(len(O), np.nan)
     sl = nan if SLV is None else np.asarray(SLV, dtype=np.float64)
     tp = nan if TPV is None else np.asarray(TPV, dtype=np.float64)
-    r = _sim(O, H, L, T, f(E), f(XC), k(KC), f(XA), k(KA), sl, tp, d, maxpos, spr, 0 if SLV is None else 1, reenter, float(lock), bool(lockcore), float(ts), float(ts_start))
-    j, i, e, x, n, c, w, lo, hi, mx, held = r
+    r = _sim(O, H, L, T, f(E), f(XC), k(KC), f(XA), k(KA), sl, tp, d, maxpos, spr, 0 if SLV is None else 1, reenter, float(lock), bool(lockcore), float(ts), float(ts_start), np.zeros(len(O), np.int64) if HLO is None else np.asarray(HLO, dtype=np.int64))
+    j, i, e, x, n, c, w, lo, hi, mx, held, amb, amb_tp = r
     t = pd.DataFrame({'ent': base.index.values[j], 'e': e, 'ext': base.index.values[np.minimum(i, len(O) - 1)], 'x': x,
                       'pips': (x - e) / PIP * d, 'n': n, 'camp': c, 'why': [WHY[v] for v in w]})
     t['mae'] = np.where(d > 0, lo - e, e - hi) / PIP; t['mfe'] = np.where(d > 0, hi - e, e - lo) / PIP
-    t.attrs['maxheld'] = int(mx); t.attrs['held_at_end'] = int(held)
+    t.attrs['maxheld'] = int(mx); t.attrs['held_at_end'] = int(held); t.attrs['同じ足で網と利確'] = int(amb); t.attrs['そのうち利確が先'] = int(amb_tp)
     return t
 
 # ---------------------------------------------------------------- 成績
