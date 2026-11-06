@@ -43,9 +43,13 @@ def signals2(x,d,trig,tgt='F'):   # tgt='F'=差し込み先は4hのEMA21 / 'D'=�
     touch=(x.h>=lvl-0.05).rolling(6).max()>0
     t=(~up&up1) if trig=='921' else ((x.c<x.e9)&(x.c.shift()>=x.e9.shift()))
     return zone&touch&t&(x.c<x.F_e21)&(x.c>=x.md-2*x.sd)
-def run2(x,d,ent,MAXPOS=5,tai4h=False,spr=0.003):
+def run2(x,d,ent,MAXPOS=5,tai4h=False,spr=0.003,net='day'):
+    # net:'day'=前の日の安値/'f9'=4hのEMA9の5p下/'f21'=4hのEMA21の5p下(11-06 たくちん「9か21どちらかいいほう」)。どれも上げるだけ(売りは下げるだけ)
     E=ent.values; O=x.o.values; H=x.h.values; L=x.l.values; T=x.index.values
-    DL=x.D_l.values if d>0 else x.D_h.values; DK=x.D_k.values
+    if net=='day': DL=x.D_l.values if d>0 else x.D_h.values
+    else:
+        lv=(x.F_e9 if net=='f9' else x.F_e21).values; DL=lv-0.05*d
+    DK=x.D_k.values
     A=(x.a_wb if d>0 else x.a_ws).fillna(False).astype(bool).values; AK=x.a_k.values
     B=(x.b_wb if d>0 else x.b_ws).fillna(False).astype(bool).values; BK=x.b_k.values
     zone=((x.D_c>x.D_e9) if d>0 else (x.D_c<x.D_e9)).values
@@ -59,8 +63,8 @@ def run2(x,d,ent,MAXPOS=5,tai4h=False,spr=0.003):
                 if not np.isnan(nsl): p['sl']=max(p['sl'],nsl) if d>0 else min(p['sl'],nsl)
             ex=None; why=''
             if i>p['j']:
-                if d>0 and L[i]<=p['sl']: ex=min(O[i],p['sl']); why='網(前の日の安値)'
-                if d<0 and H[i]>=p['sl']: ex=max(O[i],p['sl'])+spr; why='網(前の日の高値)'
+                if d>0 and L[i]<=p['sl']: ex=min(O[i],p['sl']); why='網'
+                if d<0 and H[i]>=p['sl']: ex=max(O[i],p['sl'])+spr; why='網'
             if ex is None and B[i] and BK[i]>T[p['j']]: ex=O[i+1]-(0 if d>0 else spr); why='日足9割れ'
             if ex is None and tai4h and p['n']>1 and A[i] and AK[i]>T[p['j']]: ex=O[i+1]-(0 if d>0 else spr); why='4h9割れ'
             if ex is not None: tr.append((p['camp'],p['n'],T[p['j']],p['e'],T[i],ex,(ex-p['e'])*100*d,why))
