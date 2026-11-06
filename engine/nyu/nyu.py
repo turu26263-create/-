@@ -328,3 +328,46 @@ def hitotsuzutsu(run, base_kw, parts, split, extra=None):
     kk = [c for c in split if c.startswith('確')]
     df['判定'] = ['今' if i == 0 else ('○' if all(df.loc[i, f'{k}_p差'] >= 0 for k in kk) else ('×' if all(df.loc[i, f'{k}_p差'] < 0 for k in kk) else '△')) for i in range(len(df))]
     return df
+
+# ================================================================ 改良2(11-06 たくちん「ab」)
+def walk_forward(run_fn, space, years, learn=3, pick='全_pf', min_n=10):
+    """歩いて確かめる:各年 Y について、Y-learn〜Y-1 年で space の中から pick が一番の組を選び、その組を Y 年に当てる。
+    run_fn(**組)->trades。返り値:年ごとの 選んだ組・その年の損益、と 当てた年だけを足した合計(=見ていない年の成績)"""
+    keys = list(space); combos = [dict(zip(keys, c)) for c in itertools.product(*[space[k] for k in keys])]
+    allt = [(c, run_fn(**c)) for c in combos]; rows = []
+    for Y in years:
+        best = None; bv = -1e18
+        for c, t in allt:
+            y = pd.to_datetime(t.ent).dt.year; z = t[y.between(Y - learn, Y - 1)]; s = stat(z)
+            v = s.get(pick.replace('全_', ''), np.nan) if pick != '全_p' else s['sum']
+            if pick == '全_pf': v = s['pf']
+            if s['n'] >= min_n and v is not None and not (isinstance(v, float) and np.isnan(v)) and v > bv: bv = v; best = (c, t)
+        if best is None: continue
+        c, t = best; y = pd.to_datetime(t.ent).dt.year; z = t[y == Y]
+        rows.append(dict(年=Y, 選んだ組=str(c), 学んだ年の成績=round(bv, 2), その年の損益=round(z.pips.sum(), 1), 玉=len(z)))
+    df = pd.DataFrame(rows); df.attrs['見ていない年の合計'] = round(df['その年の損益'].sum(), 1) if len(df) else 0; return df
+
+def data_awase(raw_a, raw_b, tf='1h', shifts=range(-12, 13)):
+    """データ合わせ:raw_a と raw_b の tf 足を、時刻を shift 時間ずらして重ね、終値の差が一番小さいずれを探す。
+    返り値:一番合うずれ・その時の 重なった足の数・終値の差の平均(pips)・高値・安値の差・1p以内に合う割合"""
+    A = raw_a.resample(tf).agg(AGG).dropna(); B0 = raw_b.resample(tf).agg(AGG).dropna(); best = None
+    for sh in shifts:
+        B = B0.copy(); B.index = B.index + pd.Timedelta(hours=sh); j = A.join(B, rsuffix='_b', how='inner')
+        if len(j) < 100: continue
+        dc = (j.c - j.c_b).abs().mean() / PIP
+        if best is None or dc < best[1]: best = (sh, dc, j)
+    sh, dc, j = best
+    return dict(ずれ時間=sh, 重なった足=len(j), 終値の差の平均p=round(dc, 2), 高値の差の平均p=round((j.h - j.h_b).abs().mean() / PIP, 2),
+                安値の差の平均p=round((j.l - j.l_b).abs().mean() / PIP, 2), 終値が1p以内=round(float(((j.c - j.c_b).abs() <= PIP).mean() * 100), 1))
+
+def yen_curve(t, base, d=1, capital_yen=1_000_000, lot=0.1, leverage=25, pip_yen_per_lot=1000.0, unit=100_000):
+    """円と証拠金:1玉 lot ロット。降りた順の資金の増え方と、持っている玉の証拠金(値段×1万通貨×lot/レバレッジ)が資金(含み損込み)を超えないか"""
+    C = base.c.values; idx = base.index.values; n = len(idx); fl = np.zeros(n); rl = np.zeros(n + 1); held = np.zeros(n)
+    A = np.searchsorted(idx, t.ent.values); B = np.searchsorted(idx, t.ext.values)
+    for a, b, e in zip(A, B, t.e.values): fl[a:b] += (C[a:b] - e) / PIP * d; held[a:b] += 1
+    np.add.at(rl, B, t.pips.values); eq_p = fl + np.cumsum(rl)[:n]
+    yen = pip_yen_per_lot * lot; eq = capital_yen + eq_p * yen
+    margin = held * C * unit * lot / leverage
+    lvl = np.where(margin > 0, eq / np.maximum(margin, 1) * 100, np.inf)
+    return dict(最後の資金=round(float(eq[-1])), 一番へこんだ資金=round(float(eq.min())), 一番へこんだ時=str(pd.Timestamp(idx[int(eq.argmin())]).date()),
+                最大の証拠金=round(float(margin.max())), 証拠金維持率の一番低い=round(float(lvl.min()), 0), 同時最大玉=int(held.max()))

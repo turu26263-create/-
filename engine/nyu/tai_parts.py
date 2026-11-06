@@ -3,6 +3,11 @@ import numpy as np, pandas as pd
 from nyu import Market, simulate
 
 def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True):
+    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
+    if key in mk._f: return mk._f[key]
+    E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi); mk._f[key] = E; return E
+
+def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True):
     """縄1 big の9上 / 縄2 mid の21上 / 縄3 small の921 / 縄3改 許しが出た時にもう921済み / 縄4 川の外+遅行21本前 / 縄4改 big の21上 / 縄5 竿先で入らない / 縄8 big の角度55度超で入らない"""
     S = mk.feat(small); x = S
     M = mk.on(mid, big, ['c', 'e9']).join(mk.feat(mid)[['c', 'e21', 'k']].rename(columns={'c': 'cm'}))
@@ -68,13 +73,23 @@ def make_tp(mk, small, d, tp):
     tf, k = tp; return tp_sigma(mk, small, tf, k, d)
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=()):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC
     base = mk.feat(small)
+    if avoid_in or avoid_out:                                   # 0時をずらす(11-06):約定の足の時刻が avoid にある時は、次の足まで待つ
+        fh = np.r_[base.index.hour.values[1:], -1]               # i の合図が約定する足(i+1)の時刻
+        if avoid_in:
+            E = np.asarray(E, bool).copy(); bad = np.isin(fh, avoid_in)
+            for i in np.where(E & bad)[0]:
+                E[i] = False; k = i + 1
+                while k < len(E) - 1 and np.isin(fh[k], avoid_in): k += 1
+                E[k] = True
+        if avoid_out:
+            bad = np.isin(fh, avoid_out); XC = np.asarray(XC, bool) & ~bad; XA = np.asarray(XA, bool) & ~bad   # 降りの合図は続く(219 など)ので、次の足で降りる
     return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None), base
 
 # ---- 小魚(11-06)
