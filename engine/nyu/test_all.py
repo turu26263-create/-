@@ -43,6 +43,12 @@ g = (t.why == '網').sum() > 0; ok.append(g); print(f"{'○' if g else '×'} 網
 t = run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=5,n8=True,reenter=True)[0]
 g = (t.mae <= 0.0001).all() and (t.mfe >= -0.0001).all() and (t.mfe >= t.pips - 0.01).all(); ok.append(g)
 print(f"{'○' if g else '×'} 含み損の最大(mae)≦0・伸びの最大(mfe)≧取れた分")
+t = run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=5,n8=True,reenter=True,tp=('4h',3.5))[0]
+g = (t.why == '利確').sum() > 0 and (t[t.why == '利確'].pips > 0).all(); ok.append(g)
+print(f"{'○' if g else '×'} 利確(4h+3.5σ)は入り値より上の時だけ効く:利確 {(t.why=='利確').sum()}玉、負けの利確 {int(((t.why=='利確')&(t.pips<=0)).sum())}(11-06 直したミスの照らし)")
+t = run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=5,n8=True,reenter=True,lock=50,lockcore=False)[0]
+g = ((t.why == '建値') & (t.n == 1)).sum() == 0 and (t.why == '建値').sum() > 0; ok.append(g)
+print(f"{'○' if g else '×'} しあわせセットを足した玉だけ(lockcore=False):芯の建値 {int(((t.why=='建値')&(t.n==1)).sum())}・足しの建値 {int((t.why=='建値').sum())}")
 print('--- ターボ ---')
 space = dict(maxpos=[1, 5], sao=[2.0, 2.5], lock=[0, 50], spr=[0.003, 0.01])
 fn = lambda maxpos, sao, lock, spr: stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=maxpos,sao=sao,n8=True,reenter=True,lock=lock,spr=spr)[0])
