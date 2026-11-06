@@ -81,7 +81,7 @@ class Market:
         self._f[key] = out; return out
     def on(self, base_tf, tf, cols):
         """tf の線を base_tf の足に貼る。base の足が閉じた時に確定している tf の足の値だけ使う"""
-        key = ('on', base_tf, tf, tuple(cols))
+        key = ('on', base_tf, tf, tuple(cols), id(self._f.get(base_tf)), id(self._f.get(tf)))   # 足の表を作り直したら古いしまい場所は使わない(11-06 暴走の元を直した)
         if key in self._f: return self._f[key]
         B = self.feat(base_tf); F = self.feat(tf)
         a = F[['k'] + list(cols)].rename(columns={c: f'{c}' for c in cols}).sort_values('k')
@@ -136,9 +136,9 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                 why = 4
             if np.isnan(ex):
                 if pn[s] == 1:
-                    if XC[i] and KC[i] > T[j]: ex = O[i + 1] - (0.0 if d > 0 else spr); why = 1
+                    if XC[i] and KC[i] > T[j]: ex = O[i + 1] + (0.0 if d > 0 else spr); why = 1   # 売りの降りは買い戻し=スプレッドを払う(11-06 鏡の照らしで見つけたミスを直した)
                 else:
-                    if XA[i] and KA[i] > T[j]: ex = O[i + 1] - (0.0 if d > 0 else spr); why = 2
+                    if XA[i] and KA[i] > T[j]: ex = O[i + 1] + (0.0 if d > 0 else spr); why = 2
             if not np.isnan(ex):
                 out_j[m] = j; out_i[m] = i + (0 if why >= 3 else 1); out_e[m] = pe[s]; out_x[m] = ex; out_n[m] = pn[s]; out_c[m] = pc[s]; out_w[m] = why
                 out_lo[m] = pmin[s]; out_hi[m] = pmax[s]; m += 1

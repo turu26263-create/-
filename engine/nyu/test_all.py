@@ -11,7 +11,7 @@ t0 = time.time(); raw_e = load_cached(H); raw_s = load_cached(M); print(f'読み
 est = Market(raw_e, 'est'); srv = Market(raw_s, 'server')
 print('--- 回帰 ---')
 chk('4時間版の鯛 買い縄8', stat(run_tai(est,'4h','1h','5min',1,('1h','9割れ'),n8=True)[0]), (1969, 3910.8))
-chk('4時間版の鯛 売り', stat(run_tai(est,'4h','1h','5min',-1,('1h','9割れ'))[0]), (1820, 683.4))
+chk('4時間版の鯛 売り', stat(run_tai(est,'4h','1h','5min',-1,('1h','9割れ'))[0]), (1820, -408.6))   # 11-06 売りの降りのスプレッドのミスを直した後(前は +683.4)
 chk('日足版の鯛 買い縄8', stat(run_tai(est,'1D','4h','1h',1,('4h','9割れ'),n8=True)[0]), (265, 3040.5))
 chk('日足クジラ20発', stat(run_tai(est,'1D','4h','1h',1,('1D','9割れ'),maxpos=20,n8=True,reenter=True)[0]), (284, 7942.2))
 print('--- ええやつ帳 ---')
@@ -20,10 +20,10 @@ chk('クジラ5発 日足の大山', stat(hitoyama(run_tai(srv,'1D','4h','1h',1,
 chk('クジラ5発 450hの大山', stat(hitoyama(run_tai(srv,'450h','1D','1h',1,('450h','219'),maxpos=5,n8=True,reenter=True)[0],*FA)), (5, 16604.3))
 chk('上の小魚 日足の大山', stat(hitoyama(kozakana_ue(srv,1,5)[0],*DA)), (30, 217.4))
 chk('上の小魚 450hの大山', stat(hitoyama(kozakana_ue(srv,1,5)[0],*FA)), (534, 5400.2))
-chk('逆目99 4h 日足の大山', stat(hitoyama(gyakume_99(srv,'4h',-1)[0],*DA)), (28, 702.1))
+chk('逆目99 4h 日足の大山', stat(hitoyama(gyakume_99(srv,'4h',-1)[0],*DA)), (28, 685.3))   # 11-06 売りの降りのミスを直した後(前は +702.1)
 chk('鯛 日足段 買い spr1.0', stat(run_tai(est,'1D','4h','1h',1,('4h','9割れ'),n8=True,spr=0.01)[0]), (265, 2855.0))
 chk('クジラmix 日足段 spr1.0', stat(run_tai(est,'1D','4h','1h',1,('1D','9割れ'),('4h','9割れ'),5,n8=True,spr=0.01,reenter=True)[0]), (284, 6051.9))
-chk('鯛 4h段 売り spr1.0', stat(run_tai(est,'4h','1h','5min',-1,('1h','9割れ'),spr=0.01)[0]), (1820, 1957.4))
+chk('鯛 4h段 売り spr1.0', stat(run_tai(est,'4h','1h','5min',-1,('1h','9割れ'),spr=0.01)[0]), (1820, -1682.6))   # 11-06 直した後(前は +1957.4)
 chk('決まった形(クジラ5発・縄8なし・4h3.5σ利確・TS550・日足219・入り降り1時)', stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=5,n8=False,reenter=True,tp=('4h',3.5),ts=550,avoid_in=(0,),avoid_out=(0,))[0]), (299, 12928.4))
 chk('前の決まった形(0時のまま)', stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=5,n8=False,reenter=True,tp=('4h',3.5),ts=550)[0]), (299, 12814.9))
 chk('前の決まった形(縄8あり)', stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=5,n8=True,reenter=True,tp=('4h',3.5),ts=550)[0]), (291, 12448.3))
@@ -60,6 +60,18 @@ g = m1_ == m2_ and m1_['DD95'] >= m1_['DD中央'] >= 0; ok.append(g); print(f"{'
 T_, s_ = lot_sizing(t, b, 1, 102_000, fixed_lot=0.01)
 g = abs(T_['円'].sum() - t.pips.sum() * 10) < 1e-3 and s_['入った玉'] == len(t); ok.append(g)
 print(f"{'○' if g else '×'} エントリー調節:決め打ち0.01ロットなら 円 = pips×10、全部の玉に入る")
+print('--- 暴走チェック2(11-06 たくちん「なんで暴走や?」)---')
+raw_m = raw_s.copy(); K = 300.0
+raw_m[['o', 'c']] = K - raw_s[['o', 'c']].values; raw_m['h'] = K - raw_s['l'].values; raw_m['l'] = K - raw_s['h'].values
+mir = Market(raw_m, 'server')
+KWm = dict(maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,), kai_k9=3, big21_up=True)
+ts_ = run_tai(Market(raw_s, 'server'), '1D', '4h', '1h', -1, ('1D', '219'), **KWm)[0]
+tb_ = run_tai(mir, '1D', '4h', '1h', 1, ('1D', '219'), **KWm)[0]
+g = len(ts_) == len(tb_) and (ts_.ent.values == tb_.ent.values).all() and (ts_.ext.values == tb_.ext.values).all() and np.allclose(ts_.pips.values, tb_.pips.values, atol=1e-6); ok.append(g)
+print(f"{'○' if g else '×'} 鏡の照らし:値段を上下ひっくり返して買い={len(tb_)}玉 {tb_.pips.sum():+.1f}p / 元の売り={len(ts_)}玉 {ts_.pips.sum():+.1f}p(1玉ずつ同じか)")
+m3 = Market(raw_s, 'server'); run_tai(m3, '1D', '4h', '1h', 1, ('1D', '219'), **KWm); after = run_tai(m3, '1D', '4h', '1h', -1, ('1D', '219'), **KWm)[0]
+g = len(after) == len(ts_) and np.allclose(after.pips.values, ts_.pips.values); ok.append(g)
+print(f"{'○' if g else '×'} 順番の照らし:買いを先に回しても売りは同じ {len(after)}玉 {after.pips.sum():+.1f}p")
 print('--- ターボ ---')
 space = dict(maxpos=[1, 5], sao=[2.0, 2.5], lock=[0, 50], spr=[0.003, 0.01])
 fn = lambda maxpos, sao, lock, spr: stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=maxpos,sao=sao,n8=True,reenter=True,lock=lock,spr=spr)[0])
