@@ -44,13 +44,38 @@ def exit_close9(mk, small, tf, d):
 
 EXITS = {'9割れ': exit_ware, '219': exit_219, '終値9': exit_close9}
 
-def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True):
+# ---- 網(上げるだけ)と利確の高さ(入る足に貼る。どれも閉じた足の値)
+def sl_prevday(mk, small, d):
+    """前の日の安値(売りは高値)"""
+    y = mk.on(small, '1D', ['l', 'h']); return (y.l if d > 0 else y.h).values
+
+def sl_line(mk, small, tf, col='e21', buf=0.05, d=1):
+    """tf の線(e9/e21/e200/md)の buf 下(売りは上)"""
+    y = mk.on(small, tf, [col]); return (y[col] - buf * d).values
+
+def tp_sigma(mk, small, tf, k=3.5, d=1):
+    """tf の帯の ±kσ"""
+    y = mk.on(small, tf, ['md', 'sd']); return (y.md + k * y.sd * d).values
+
+def make_sl(mk, small, d, sl):
+    if sl is None: return None
+    if sl == 'prevday': return sl_prevday(mk, small, d)
+    tf, col = sl                       # 例 ('4h','e21')
+    return sl_line(mk, small, tf, col, 0.05, d)
+
+def make_tp(mk, small, d, tp):
+    if tp is None: return None
+    tf, k = tp; return tp_sigma(mk, small, tf, k, d)
+
+def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
+            sl=None, tp=None, lock=0.0):
+    """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC
     base = mk.feat(small)
-    return simulate(base, d, E, XC, KC, XA, KA, None, maxpos, spr, reenter), base
+    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock), base
 
 # ---- 小魚(11-06)
 def kozakana_ue(mk, d=1, maxpos=5, spr=0.003):
