@@ -51,3 +51,20 @@ def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, 
     else: XA, KA = XC, KC
     base = mk.feat(small)
     return simulate(base, d, E, XC, KC, XA, KA, None, maxpos, spr, reenter), base
+
+# ---- 小魚(11-06)
+def kozakana_ue(mk, d=1, maxpos=5, spr=0.003):
+    """上の小魚(クジラと同じ向き):4h終値が21の向き側の間に、1hの終値が4h21をまたいだ足/1hの921で入る(最大 maxpos 発)。4h終値が21の逆側で全部降り【置き換え】"""
+    S = mk.feat('1h'); q = mk.on('1h', '4h', ['c', 'e21'])
+    side = (q.c > q.e21) if d > 0 else (q.c < q.e21); side = side.fillna(False)
+    over = ((S.c > q.e21) & (S.c.shift() <= q.e21)) if d > 0 else ((S.c < q.e21) & (S.c.shift() >= q.e21))
+    up = S.e9 > S.e21; x9 = (up & ~up.shift(1, fill_value=False)) if d > 0 else (~up & up.shift(1, fill_value=False))
+    E = (side & (over | x9)).values; X = (~side).values; K = S.k.values   # 降りは 4h が閉じた時に確定するので、1h の閉じた時刻で見てよい
+    return simulate(S, d, E, X, K, None, None, None, maxpos, spr, True), S
+
+def gyakume_99(mk, tf, d=-1, spr=0.003):
+    """逆目は99(11-06 たくちん「逆目は99でいったら?」):tf の9割れが出た最初の足で入り、逆の9割れ(9に戻った)で降りる【置き換え】"""
+    F = mk.feat(tf)
+    w_in = F.ware_b if d < 0 else F.ware_s; w_out = F.ware_s if d < 0 else F.ware_b
+    E = (w_in & ~w_in.shift(1, fill_value=False)).values
+    return simulate(F, d, E, w_out.values, F.k.values, None, None, None, 1, spr, False), F
