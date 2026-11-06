@@ -7,18 +7,18 @@
 :root{
   --bg:#f3f5f4; --panel:#ffffff; --ink:#18201d; --muted:#5d6b66; --line:#d7dedb;
   --up:#1f8a5b; --down:#c8323b; --e9:#e0701a; --e21:#2f5fd0; --band:#7c8b86;
-  --tp:#14a37f; --ts:#e88a10; --hold:#57615d; --entry:#1f5fd6; --accent:#0f6b52;
+  --tp:#14a37f; --ts:#e88a10; --hold:#57615d; --entry:#1f5fd6;--sell:#d6336c; --accent:#0f6b52;
   --f-ui:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0f1413; --panel:#161d1b; --ink:#e3ebe8; --muted:#93a39d; --line:#2a3532;
   --up:#3fbf86; --down:#ef5b62; --e9:#f29444; --e21:#6f95ff; --band:#7d8c87;
-  --tp:#32d1a6; --ts:#ffa53a; --hold:#a3b0ab; --entry:#5b93ff; --accent:#3fbf96; color-scheme:dark}}
+  --tp:#32d1a6; --ts:#ffa53a; --hold:#a3b0ab; --entry:#5b93ff;--sell:#ff6b9a; --accent:#3fbf96; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1413; --panel:#161d1b; --ink:#e3ebe8; --muted:#93a39d; --line:#2a3532;
   --up:#3fbf86; --down:#ef5b62; --e9:#f29444; --e21:#6f95ff; --band:#7d8c87;
-  --tp:#32d1a6; --ts:#ffa53a; --hold:#a3b0ab; --entry:#5b93ff; --accent:#3fbf96; color-scheme:dark}
+  --tp:#32d1a6; --ts:#ffa53a; --hold:#a3b0ab; --entry:#5b93ff;--sell:#ff6b9a; --accent:#3fbf96; color-scheme:dark}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);}
 .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 32px;display:grid;gap:14px;max-width:1500px;margin:0 auto}
 h1{font-size:1.25rem;margin:0;text-wrap:balance;letter-spacing:.02em}
@@ -58,7 +58,7 @@ tr.row:focus-visible td{outline:2px solid var(--entry)}
 <div class="wrap">
   <header>
     <h1>かきこチャート クジラの刺身</h1>
-    <p class="sub">ぶん回しエンジンで回した決まった形の入り(▲)と降り(▼)。ドル円 MT4 1時間足 2016/03〜2026/09(サーバー時刻)。研究台の数字で、MT4 の実測ではありません。</p>
+    <p class="sub">ぶん回しエンジンで回した決まった形の売り買い(買い=青▲で入り・売り=赤▼で入り、降りは反対向き)。ドル円 MT4 1時間足 2016/03〜2026/09(サーバー時刻)。研究台の数字で、MT4 の実測ではありません。</p>
   </header>
   <section class="stats" id="stats"></section>
   <section class="ctrl" aria-label="足と年">
@@ -78,9 +78,9 @@ tr.row:focus-visible td{outline:2px solid var(--entry)}
       <span><i style="background:var(--e9)"></i>EMA9</span>
       <span><i style="background:var(--e21)"></i>EMA21</span>
       <span><i style="background:var(--band)"></i>±2σ(20本)</span>
-      <span><i class="tri" style="border-bottom:10px solid var(--entry)"></i>入り(番号)</span>
+      <span><i class="tri" style="border-bottom:10px solid var(--entry)"></i>買い・売りの入り(番号)</span>
       <span><i class="tri" style="border-top:10px solid var(--tp)"></i>利確 4h+3.5σ</span>
-      <span><i class="tri" style="border-top:10px solid var(--hold)"></i>日足219で降り</span>
+      <span><i class="tri" style="border-top:10px solid var(--hold)"></i>日足219(売りは921)で降り</span>
       <span><i class="tri" style="border-top:10px solid var(--ts)"></i>TS 550p</span>
     </div>
   </section>
@@ -131,8 +131,8 @@ const bu = chart.addLineSeries({color:css('--band'),lineWidth:1,lineStyle:2,pric
 const bd = chart.addLineSeries({color:css('--band'),lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
 let TF=86400, BARS=[];
 function markers(sec){ const m=[];
-  for(const t of D.trades){ m.push({time:Math.floor(t.en/sec)*sec,position:'belowBar',color:css('--entry'),shape:'arrowUp',text:String(t.i)});
-    m.push({time:Math.floor(t.ex/sec)*sec,position:'aboveBar',color:css(WHY[t.w]||'--hold'),shape:'arrowDown',text:''}); }
+  for(const t of D.trades){ const up=(t.d||1)>0; m.push({time:Math.floor(t.en/sec)*sec,position:up?'belowBar':'aboveBar',color:css(up?'--entry':'--sell'),shape:up?'arrowUp':'arrowDown',text:(up?'買':'売')+t.i});
+    m.push({time:Math.floor(t.ex/sec)*sec,position:up?'aboveBar':'belowBar',color:css(WHY[t.w]||'--hold'),shape:up?'arrowDown':'arrowUp',text:''}); }
   return m.sort((a,b)=>a.time-b.time); }
 function setTF(sec){ const vr = chart.timeScale().getVisibleRange(); TF=sec; BARS=agg(sec);
   cs.setData(BARS); l9.setData(ema(BARS,9)); l21.setData(ema(BARS,21)); const [u,d]=bands(BARS); bu.setData(u); bd.setData(d);
@@ -153,7 +153,7 @@ Object.keys(D.years).forEach(y=>{ const b=document.createElement('button'); b.cl
 document.getElementById('ytbl').innerHTML='<thead><tr><th class="l">年</th><th>玉</th><th>pips</th><th>円(0.01ロット)</th></tr></thead><tbody>'+
   Object.entries(D.years).map(([y,v])=>`<tr class="row" tabindex="0" data-y="${y}"><td class="l">${y}</td><td>${v.n}</td><td class="${v.p>=0?'pos':'neg'}">${pip(v.p)}</td><td class="${v.y>=0?'pos':'neg'}">${yen(v.y)}</td></tr>`).join('')+'</tbody>';
 document.getElementById('ttbl').innerHTML='<thead><tr><th>番号</th><th class="l">入り</th><th>入り値</th><th class="l">降り</th><th>降り値</th><th>pips</th><th>伸びた最大</th><th>含み損の最大</th><th class="l">降りの理由</th></tr></thead><tbody>'+
-  D.trades.map(t=>`<tr class="row" tabindex="0" data-en="${t.en}" data-ex="${t.ex}"><td>${t.i}</td><td class="l">${fmtT(t.en)}</td><td>${t.ep.toFixed(3)}</td><td class="l">${fmtT(t.ex)}</td><td>${t.xp.toFixed(3)}</td><td class="${t.p>=0?'pos':'neg'}">${pip(t.p)}</td><td>+${t.mfe}</td><td>${t.mae}</td><td class="l"><span class="why" style="color:var(${WHY[t.w]||'--hold'})">${t.w==='芯の降り'||t.w==='足しの降り'?'日足219':t.w}</span></td></tr>`).join('')+'</tbody>';
+  D.trades.map(t=>`<tr class="row" tabindex="0" data-en="${t.en}" data-ex="${t.ex}"><td>${(t.d||1)>0?'買':'売'}${t.i}</td><td class="l">${fmtT(t.en)}</td><td>${t.ep.toFixed(3)}</td><td class="l">${fmtT(t.ex)}</td><td>${t.xp.toFixed(3)}</td><td class="${t.p>=0?'pos':'neg'}">${pip(t.p)}</td><td>+${t.mfe}</td><td>${t.mae}</td><td class="l"><span class="why" style="color:var(${WHY[t.w]||'--hold'})">${t.w==='芯の降り'||t.w==='足しの降り'?((t.d||1)>0?'日足219':'日足921'):t.w}</span></td></tr>`).join('')+'</tbody>';
 const act=(sel,fn)=>document.querySelectorAll(sel).forEach(r=>{ r.addEventListener('click',()=>fn(r)); r.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();fn(r);} }); });
 act('#ytbl tr.row',r=>{ const y=+r.dataset.y; if(TF===3600) setTF(14400); show(Date.UTC(y,0,1)/1000,Date.UTC(y,11,31)/1000); el.scrollIntoView({behavior:'smooth',block:'center'}); });
 act('#ttbl tr.row',r=>{ const en=+r.dataset.en, ex=+r.dataset.ex, span=Math.max(ex-en,86400*3); if(TF===86400 && span<86400*20) setTF(14400); show(en-span*0.6,ex+span*0.6); el.scrollIntoView({behavior:'smooth',block:'center'}); });

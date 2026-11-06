@@ -382,6 +382,7 @@ def lot_sizing(t, base, d=1, capital_yen=102_000, margin_cap=0.33, leverage=25, 
     返り値:玉ごとのロットを足した表と、円のまとめ(最後の資金・一番へこんだ資金・維持率・入れなかった合図)"""
     C = base.c.values; idx = base.index.values; T = t.sort_values('ent').reset_index(drop=True).copy()
     A = np.searchsorted(idx, T.ent.values); B = np.searchsorted(idx, T.ext.values)
+    DD = T['d'].values.astype(float) if 'd' in T.columns else np.full(len(T), float(d))   # 玉ごとの向き(売り買いを一緒に回す時。11-06)
     lots = np.zeros(len(T)); skip = 0; realized = 0.0; open_ = []          # (ext_index, entry_price, lot, pips)
     ev = sorted([(a, 1, k) for k, a in enumerate(A)] + [(b, 0, k) for k, b in enumerate(B)])   # 同じ足は降りが先
     for i, kind, k in ev:
@@ -389,7 +390,7 @@ def lot_sizing(t, base, d=1, capital_yen=102_000, margin_cap=0.33, leverage=25, 
             if lots[k] > 0: realized += T.pips[k] * pip_yen_per_lot * lots[k]
             open_ = [o for o in open_ if o != k]; continue
         price = C[max(i - 1, 0)]
-        fl = sum((C[max(i - 1, 0)] - T.e[o]) / PIP * d * pip_yen_per_lot * lots[o] for o in open_)
+        fl = sum((C[max(i - 1, 0)] - T.e[o]) / PIP * DD[o] * pip_yen_per_lot * lots[o] for o in open_)
         eq = (capital_yen + realized + fl) if compound else capital_yen
         used = sum(price * unit * lots[o] / leverage for o in open_)
         per_lot = price * unit / leverage
@@ -406,9 +407,9 @@ def lot_sizing(t, base, d=1, capital_yen=102_000, margin_cap=0.33, leverage=25, 
     T['lot'] = lots; T['円'] = T.pips * pip_yen_per_lot * T.lot
     # 毎本の資金(含み損込み)と証拠金
     n = len(idx); fl = np.zeros(n); rl = np.zeros(n + 1); mg = np.zeros(n)
-    for a, b, e, l, p in zip(A, B, T.e.values, lots, T.pips.values):
+    for a, b, e, l, p, dk in zip(A, B, T.e.values, lots, T.pips.values, DD):
         if l <= 0: continue
-        fl[a:b] += (C[a:b] - e) / PIP * d * pip_yen_per_lot * l; mg[a:b] += C[a:b] * unit * l / leverage; rl[b] += p * pip_yen_per_lot * l
+        fl[a:b] += (C[a:b] - e) / PIP * dk * pip_yen_per_lot * l; mg[a:b] += C[a:b] * unit * l / leverage; rl[b] += p * pip_yen_per_lot * l
     eq = capital_yen + fl + np.cumsum(rl)[:n]
     lvl = np.where(mg > 0, eq / np.maximum(mg, 1e-9) * 100, np.inf)
     so_at = None
