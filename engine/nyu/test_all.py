@@ -87,6 +87,13 @@ cases = [('網=前の日', lambda m, d: run_tai(m,'1D','4h','1h',d,('1D','219'),
          ('5分足の鯛(縄8・1分足で先を決める)', lambda m, d: run_tai(m,'4h','1h','5min',d,('1h','9割れ'),n8=True,tp=('1h',3.5),ts=100,fine=True)[0], raw_e5, 'est')]
 for nm, fn, rw, ck in cases:
     g, msg = kagami(fn, rw, ck); ok.append(g); print(f"{'○' if g else '×'} 鏡:{nm}:{msg}")
+print('--- 引け先取り ---')
+KS = dict(maxpos=5, kai_k9=3, big21_up=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,))
+g, msg = kagami(lambda m, d: run_senbiki(m, '1h', d, 1, **KS)[0], raw_s5, 'server'); ok.append(g); print(f"{'○' if g else '×'} 鏡:引け先取り 1時間前:{msg}")
+res, full = bousou(lambda r: run_senbiki(Market(r, 'server'), '1h', 1, 1, **KS)[0], raw_s, ['2018-06-01', '2021-06-01', '2024-01-10'])
+g = all(s for _, _, s in res); ok.append(g); print(f"{'○' if g else '×'} 引け先取りで先読みなし:", ' '.join(f"{c} {n}玉 {'同じ' if s else '違う'}" for c, n, s in res))
+sd = senbiki_daily(Market(raw_s, 'server'), '1h', 1); hh = pd.Index(sd.index[sd.pre]).hour
+g = len(hh) > 0 and set(hh) <= {22}; ok.append(g); print(f"{'○' if g else '×'} 先取りする足は、日足が閉じる1時間前(22時の足・23時に閉じる)だけ:{sorted(set(hh))}")
 print('--- ターボ ---')
 space = dict(maxpos=[1, 5], sao=[2.0, 2.5], lock=[0, 50], spr=[0.003, 0.01])
 fn = lambda maxpos, sao, lock, spr: stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=maxpos,sao=sao,n8=True,reenter=True,lock=lock,spr=spr)[0])

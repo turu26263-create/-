@@ -120,3 +120,46 @@ def gyakume_99(mk, tf, d=-1, spr=0.003):
     w_in = F.ware_b if d < 0 else F.ware_s; w_out = F.ware_s if d < 0 else F.ware_b
     E = (w_in & ~w_in.shift(1, fill_value=False)).values
     return simulate(F, d, E, w_out.values, F.k.values, None, None, None, 1, spr, False), F
+
+# ---- 引け先取り(11-06 たくちん「びけ先どりは?」)
+def senbiki_daily(mk, small, h=1):
+    """日足が閉じる h 時間前の small の足が閉じた時に、その時の値段を日足の終値とみなして、日足の 9・21・終値>9・9>21 を先取りする【置き換え】。
+    ほかの足では、確定した日足の値を使う。返り値:small の足ごとの {c, e9, e21, up921, c_gt_e9}(先取りした足は先取りの値)"""
+    S = mk.feat(small); D = mk.feat('1D'); cols = ['c', 'e9', 'e21']
+    conf = mk.on(small, '1D', cols)                                           # 確定した日足(閉じた時刻から)
+    k9, k21 = 2 / 10, 2 / 22
+    # small の足が閉じた時刻が、いま作っている日足の終わりの h 時間前か
+    dstart = pd.Series(D.index, index=D.index); dend = D.k
+    cur = pd.merge_asof(pd.DataFrame({'kb': S.k.values}), pd.DataFrame({'ds': D.index, 'de': dend.values}), left_on='kb', right_on='ds', direction='backward')
+    pre = (cur.de.values - S.k.values) == np.timedelta64(int(h * 3600), 's')
+    out = pd.DataFrame({'c': conf.c.values, 'e9': conf.e9.values, 'e21': conf.e21.values}, index=S.index)
+    # 先取りの足:前の確定日足の EMA に、いまの値段を1本足したもの
+    ce9 = conf.e9.values; ce21 = conf.e21.values; px = S.c.values
+    out.loc[pre, 'c'] = px[pre]
+    out.loc[pre, 'e9'] = ce9[pre] * (1 - k9) + px[pre] * k9
+    out.loc[pre, 'e21'] = ce21[pre] * (1 - k21) + px[pre] * k21
+    out['up921'] = out.e9 > out.e21; out['c_gt_e9'] = out.c > out.e9; out['pre'] = pre
+    return out
+
+def run_senbiki(mk, small='1h', d=1, h=1, **kw):
+    """決まった形の 日足の219(売りは921)で降りる所と、許し(日足9上)を、引け h 時間前に先取りする。ほかは run_tai と同じ"""
+    sd = senbiki_daily(mk, small, h)
+    t0, base = None, mk.feat(small)
+    # 降り:先取りの足で 219(売りは921)が見えたら、次の足で降りる。その合図の時刻はその足が閉じた時刻
+    X = (~sd.up921 if d > 0 else sd.up921).fillna(False).values; K = base.k.values
+    # 入り:日足の許しを先取りの値で作り直す(4h・1h の決まりはそのまま)
+    E = tai_entry(mk, '1D', '4h', small, d, kw.get('sao', 2.0), kw.get('n8', False), kw.get('kawa_chi', True), kai_k9=kw.get('kai_k9', 0), big21_up=kw.get('big21_up', False))
+    okd = (sd.c_gt_e9 if d > 0 else ~sd.c_gt_e9).fillna(False).values
+    E = np.asarray(E, bool) & (okd | ~sd.pre.values)                          # 先取りの足では、先取りの日足でも許しが出ている時だけ
+    if kw.get('avoid_in') or kw.get('avoid_out'):
+        fh = np.r_[base.index.hour.values[1:], -1]
+        if kw.get('avoid_in'):
+            E = E.copy(); bad = np.isin(fh, kw['avoid_in'])
+            for i in np.where(E & bad)[0]:
+                E[i] = False; k = i + 1
+                while k < len(E) - 1 and np.isin(fh[k], kw['avoid_in']): k += 1
+                E[k] = True
+        if kw.get('avoid_out'): X = X & ~np.isin(fh, kw['avoid_out'])
+    t = simulate(base, d, E, X, K, None, None, make_sl(mk, small, d, kw.get('sl')), kw.get('maxpos', 5), kw.get('spr', 0.003), True,
+                 make_tp(mk, small, d, kw.get('tp')), kw.get('lock', 0.0), True, kw.get('ts', 0.0), 0.0)
+    return t, base
