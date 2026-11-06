@@ -2,12 +2,12 @@
 import numpy as np, pandas as pd
 from nyu import Market, simulate
 
-def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True):
-    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
+def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0):
+    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
     if key in mk._f: return mk._f[key]
-    E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi); mk._f[key] = E; return E
+    E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9); mk._f[key] = E; return E
 
-def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True):
+def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=0):
     """縄1 big の9上 / 縄2 mid の21上 / 縄3 small の921 / 縄3改 許しが出た時にもう921済み / 縄4 川の外+遅行21本前 / 縄4改 big の21上 / 縄5 竿先で入らない / 縄8 big の角度55度超で入らない"""
     S = mk.feat(small); x = S
     M = mk.on(mid, big, ['c', 'e9']).join(mk.feat(mid)[['c', 'e21', 'k']].rename(columns={'c': 'cm'}))
@@ -24,6 +24,13 @@ def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True):
         p = perm.ps.fillna(False).astype(bool); cross = ~up & up1; side = ~up
         kawa = x.c < x.md - x.sd; chi = x.c < x.l21; qq = q.c < q.e21; ns = x.c >= x.md - sao * x.sd; ang = -q.ang
     e921 = cross & p; kai = p & ~p.shift(1, fill_value=False) & side & ~cross
+    if kai_k9:   # 許しが出た瞬間の入りは、大きい足の終値が9の向こうに kai_k9 本続いてから(たくちん「9のってからロウソク3本目まで竿先」)
+        B = mk.feat(big); s9 = (B.c > B.e9) if d > 0 else (B.c < B.e9); B = B.assign(k9=s9.groupby((~s9).cumsum()).cumsum()); mk._f[big] = B
+        kk = mk.on(small, big, ['k9']).k9.fillna(0).values; kai = kai & (kk >= kai_k9)
+        p_ok = p.copy()
+        # 許しが出た瞬間を4本目まで待った時は、4本目になった最初の足で入る(その時もまだ許しの中・9>21)
+        first = pd.Series(kk >= kai_k9, index=x.index) & ~pd.Series(kk >= kai_k9, index=x.index).shift(1, fill_value=False)
+        kai = kai | (first & p_ok & side & ~cross & (kk == kai_k9))
     filt = (kawa & chi) if kawa_chi else True
     ent = ((e921 & filt) | (kai & qq)) & ns
     if n8: ent = ent & ~(ang > 55)
@@ -73,9 +80,9 @@ def make_tp(mk, small, d, tp):
     tf, k = tp; return tp_sigma(mk, small, tf, k, d)
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=()):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
-    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi)
+    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC
