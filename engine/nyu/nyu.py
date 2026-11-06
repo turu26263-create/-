@@ -76,13 +76,13 @@ class Market:
 
 # ---------------------------------------------------------------- 1玉ずつの売買(numba)
 @njit(cache=True)
-def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reenter, lock, lockcore):
+def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reenter, lock, lockcore, ts, ts_start):
     # E 入り / XC・KC 芯の降り(と、その合図の足が閉じた時刻)/ XA・KA 足し玉の降り / SLV 網の高さ(nan=網なし)/ TPV 利確の高さ(nan=なし)
     # slmode 0=網なし 1=網を上げるだけ(売りは下げるだけ)/ lock>0:玉が lock pips 伸びたら次の足から網を建値へ(しあわせセット)
     # 足の中の順番:網 → 利確 → 合図の降り(損な方を先に見る)
     n = len(O); mp = maxpos
     pj = np.zeros(mp, np.int64); pe = np.zeros(mp); psl = np.zeros(mp); pn = np.zeros(mp, np.int64); pc = np.zeros(mp, np.int64); act = np.zeros(mp, np.bool_)
-    plk = np.zeros(mp, np.bool_); pmin = np.zeros(mp); pmax = np.zeros(mp)
+    plk = np.zeros(mp, np.bool_); pmin = np.zeros(mp); pmax = np.zeros(mp); pts = np.zeros(mp, np.bool_)
     out_j = np.zeros(n, np.int64); out_i = np.zeros(n, np.int64); out_e = np.zeros(n); out_x = np.zeros(n); out_n = np.zeros(n, np.int64); out_c = np.zeros(n, np.int64); out_w = np.zeros(n, np.int64)
     out_lo = np.zeros(n); out_hi = np.zeros(n)
     m = 0; camp = 0; cnt = 0; maxheld = 0
@@ -103,6 +103,7 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                 if d > 0 and L[i] <= psl[s]: ex = min(O[i], psl[s]); why = 3
                 if d < 0 and H[i] >= psl[s]: ex = max(O[i], psl[s]) + spr; why = 3
                 if why == 3 and plk[s] and abs(psl[s] - pe[s]) < 1e-9: why = 5
+                elif why == 3 and pts[s]: why = 6
             if np.isnan(ex) and i > j and not np.isnan(TPV[i]):
                 if d > 0 and TPV[i] > pe[s] and H[i] >= TPV[i]: ex = max(O[i], TPV[i]); why = 4          # 利確は入り値より上にある時だけ(線が入り値より下がったら効かない)
                 if d < 0 and TPV[i] < pe[s] and L[i] <= TPV[i]: ex = min(O[i], TPV[i]) + spr; why = 4
@@ -115,28 +116,33 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                 out_j[m] = j; out_i[m] = i + (0 if why >= 3 else 1); out_e[m] = pe[s]; out_x[m] = ex; out_n[m] = pn[s]; out_c[m] = pc[s]; out_w[m] = why
                 out_lo[m] = pmin[s]; out_hi[m] = pmax[s]; m += 1
                 act[s] = False; cnt -= 1; exited = True
-            elif lock > 0 and not plk[s] and i >= j and (lockcore or pn[s] > 1):
+            else:
+                if ts > 0 and i >= j:                                    # TS:この足までの一番上から ts pips 下へ(次の足から効く)。ts_start pips 伸びてから
+                    fav = (pmax[s] - pe[s]) / 0.01 if d > 0 else (pe[s] - pmin[s]) / 0.01
+                    if fav >= ts_start:
+                        nsl = pmax[s] - ts * 0.01 if d > 0 else pmin[s] + ts * 0.01
+                        if np.isnan(psl[s]) or (d > 0 and nsl > psl[s]) or (d < 0 and nsl < psl[s]):
+                            psl[s] = nsl; pts[s] = True
+            if np.isnan(ex) and lock > 0 and not plk[s] and i >= j and (lockcore or pn[s] > 1):
                 fav = (pmax[s] - pe[s]) / 0.01 if d > 0 else (pe[s] - pmin[s]) / 0.01
                 if fav >= lock:
                     plk[s] = True
-                    if np.isnan(psl[s]): psl[s] = pe[s]
-                    elif d > 0: psl[s] = max(psl[s], pe[s])
-                    else: psl[s] = min(psl[s], pe[s])
+                    if np.isnan(psl[s]) or (d > 0 and pe[s] > psl[s]) or (d < 0 and pe[s] < psl[s]): psl[s] = pe[s]; pts[s] = False
         if E[i] and cnt < mp and (reenter or not exited):
             e = O[i + 1] + (spr if d > 0 else 0.0); sl = SLV[i] if slmode >= 1 else np.nan
             if slmode >= 1 and not np.isnan(sl) and ((d > 0 and sl >= e) or (d < 0 and sl <= e)): continue
             if cnt == 0: camp += 1
             for s in range(mp):
                 if not act[s]:
-                    act[s] = True; pj[s] = i + 1; pe[s] = e; psl[s] = sl; pn[s] = cnt + 1; pc[s] = camp; plk[s] = False
+                    act[s] = True; pj[s] = i + 1; pe[s] = e; psl[s] = sl; pn[s] = cnt + 1; pc[s] = camp; plk[s] = False; pts[s] = False
                     pmin[s] = 1e18; pmax[s] = -1e18; cnt += 1; break
             if cnt > maxheld: maxheld = cnt
     held = cnt
     return out_j[:m], out_i[:m], out_e[:m], out_x[:m], out_n[:m], out_c[:m], out_w[:m], out_lo[:m], out_hi[:m], maxheld, held
 
-WHY = {1: '芯の降り', 2: '足しの降り', 3: '網', 4: '利確', 5: '建値'}
+WHY = {1: '芯の降り', 2: '足しの降り', 3: '網', 4: '利確', 5: '建値', 6: 'TS'}
 
-def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003, reenter=True, TPV=None, lock=0.0, lockcore=True):
+def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003, reenter=True, TPV=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0):
     """base=入る足の表(o,h,l,c と時刻)。真偽の並びを渡すと、1玉ずつの戦の表を返す。
     SLV=網の高さ(上げるだけ)/TPV=利確の高さ/lock=しあわせセット(伸びたら網を建値へ)。玉ごとに 逆に行った最大(mae)・伸びた最大(mfe)も返す"""
     O = base.o.values.astype(np.float64); H = base.h.values.astype(np.float64); L = base.l.values.astype(np.float64)
@@ -147,7 +153,7 @@ def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003
     nan = np.full(len(O), np.nan)
     sl = nan if SLV is None else np.asarray(SLV, dtype=np.float64)
     tp = nan if TPV is None else np.asarray(TPV, dtype=np.float64)
-    r = _sim(O, H, L, T, f(E), f(XC), k(KC), f(XA), k(KA), sl, tp, d, maxpos, spr, 0 if SLV is None else 1, reenter, float(lock), bool(lockcore))
+    r = _sim(O, H, L, T, f(E), f(XC), k(KC), f(XA), k(KA), sl, tp, d, maxpos, spr, 0 if SLV is None else 1, reenter, float(lock), bool(lockcore), float(ts), float(ts_start))
     j, i, e, x, n, c, w, lo, hi, mx, held = r
     t = pd.DataFrame({'ent': base.index.values[j], 'e': e, 'ext': base.index.values[np.minimum(i, len(O) - 1)], 'x': x,
                       'pips': (x - e) / PIP * d, 'n': n, 'camp': c, 'why': [WHY[v] for v in w]})
@@ -179,7 +185,7 @@ def report(t, base=None, d=1, split=SPLIT):
     s = stat(t); r.update(全_p=s['sum'], 全_pf=s['pf'], 玉=s['n'], 勝=s['win'])
     if base is not None: r['含み損込みDD'] = float_dd(t, base, d)
     r['同時最大'] = t.attrs.get('maxheld', 0)
-    for wv in ('芯の降り', '足しの降り', '網', '利確', '建値'): r['降り_' + wv] = int((t.why == wv).sum())
+    for wv in ('芯の降り', '足しの降り', '網', '利確', '建値', 'TS'): r['降り_' + wv] = int((t.why == wv).sum())
     if len(t) and 'mfe' in t:
         w = t.pips > 0
         r['取れた割合%'] = round(float(t.pips[w].sum() / max(t.mfe[w].sum(), 1e-9) * 100), 0) if w.any() else 0
