@@ -139,6 +139,8 @@ def senbiki_daily(mk, small, h=1):
     out.loc[pre, 'e9'] = ce9[pre] * (1 - k9) + px[pre] * k9
     out.loc[pre, 'e21'] = ce21[pre] * (1 - k21) + px[pre] * k21
     out['up921'] = out.e9 > out.e21; out['c_gt_e9'] = out.c > out.e9; out['pre'] = pre
+    # 日足の形がわかった時刻:先取りの足はその足が閉じた時、ほかは確定した日足が閉じた時(11-06 前から219のままを「いま出た合図」と読んで、入った次の足で降りていたミスを直した)
+    out['k'] = np.where(pre, S.k.values, conf['k_1D'].values)
     return out
 
 def run_senbiki(mk, small='1h', d=1, h=1, **kw):
@@ -146,7 +148,7 @@ def run_senbiki(mk, small='1h', d=1, h=1, **kw):
     sd = senbiki_daily(mk, small, h)
     t0, base = None, mk.feat(small)
     # 降り:先取りの足で 219(売りは921)が見えたら、次の足で降りる。その合図の時刻はその足が閉じた時刻
-    X = (~sd.up921 if d > 0 else sd.up921).fillna(False).values; K = base.k.values
+    X = (~sd.up921 if d > 0 else sd.up921).fillna(False).values; K = sd.k.values
     # 入り:日足の許しを先取りの値で作り直す(4h・1h の決まりはそのまま)
     E = tai_entry(mk, '1D', '4h', small, d, kw.get('sao', 2.0), kw.get('n8', False), kw.get('kawa_chi', True), kai_k9=kw.get('kai_k9', 0), big21_up=kw.get('big21_up', False))
     okd = (sd.c_gt_e9 if d > 0 else ~sd.c_gt_e9).fillna(False).values
