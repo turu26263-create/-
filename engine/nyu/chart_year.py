@@ -32,4 +32,5 @@ cum = y.sort_values('ext'); ax2.step(cum.ext, cum.pips.cumsum(), where='post', c
 ax2.set_ylabel('降りた順の合計 p'); ax2.grid(alpha=0.3); ax.set_xlim(a - pd.Timedelta('5D'), z + pd.Timedelta('5D'))
 plt.tight_layout(); plt.savefig(out, dpi=110)
 print(f'{Y}年 {len(y)}玉 合計{y.pips.sum():+.1f}p')
-for k, r in y.iterrows(): print(f" {k+1:2} {r.ent:%m/%d %H時} {r.e:.3f} → {r.ext:%m/%d %H時} {r.x:.3f} {r.pips:+7.1f}p {r.why} (伸びた最大+{r.mfe:.0f} 含み損の最大{r.mae:.0f})")
+NAME = {'芯の降り': '日足219で降り', '足しの降り': '日足219で降り', '利確': '利確(4h+3.5σ)', 'TS': 'TS 550p', '網': '網', '建値': '建値'}
+for k, r in y.iterrows(): print(f" {k+1:2}番 {r.ent:%m/%d %H時} {r.e:.3f}で買い → {r.ext:%m/%d %H時} {r.x:.3f}で降り {r.pips:+.0f}p {NAME.get(r.why, r.why)}(一番伸びた時 +{r.mfe:.0f}p・一番沈んだ時 {r.mae:.0f}p)")
