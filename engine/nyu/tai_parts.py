@@ -2,12 +2,22 @@
 import numpy as np, pandas as pd
 from nyu import Market, simulate
 
-def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0, big21_up=False):
-    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
+def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0, big21_up=False, big_sao=0, k9_max=0, mid_sao=0):
+    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up, big_sao, k9_max, mid_sao)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
     if key in mk._f: return mk._f[key]
     E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9)
     if big21_up:   # 大きい足の21が向きの方へ傾いている時だけ(下向きの21で買わない)
         a = mk.on(small, big, ['ang']).ang.values; E = E & ((a > 0) if d > 0 else (a < 0))
+    px = mk.feat(small).c.values                                     # 合図の足の終値(この値段で次の足に入る)
+    for tf, k in ((big, big_sao), (mid, mid_sao)):                   # 11-06 A:日足の竿先 / C:4時間の竿先(確定した足の ±kσ の外)では入らない
+        if k:
+            b = mk.on(small, tf, ['md', 'sd']); hi = (b.md + k * b.sd).values; lo = (b.md - k * b.sd).values
+            E = E & ((px <= hi) if d > 0 else (px >= lo)) & ~np.isnan(hi)
+    if k9_max:                                                       # 11-06 B:大きい足の終値が9の向こうに k9_max 本より多く続いたら入らない(上げの後半)
+        B = mk.feat(big); kc = 'k9b' if d > 0 else 'k9s'
+        if kc not in B.columns:
+            s9 = (B.c > B.e9) if d > 0 else (B.c < B.e9); mk._f[big] = B.assign(**{kc: s9.groupby((~s9).cumsum()).cumsum()})
+        kk = mk.on(small, big, [kc])[kc].fillna(0).values; E = E & (kk <= k9_max)
     mk._f[key] = E; return E
 
 def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=0):
@@ -85,9 +95,9 @@ def make_tp(mk, small, d, tp):
     tf, k = tp; return tp_sigma(mk, small, tf, k, d)
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, big_sao=0, k9_max=0, mid_sao=0):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
-    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up)
+    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, big_sao=big_sao, k9_max=k9_max, mid_sao=mid_sao)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC
@@ -150,7 +160,7 @@ def run_senbiki(mk, small='1h', d=1, h=1, **kw):
     # 降り:先取りの足で 219(売りは921)が見えたら、次の足で降りる。その合図の時刻はその足が閉じた時刻
     X = (~sd.up921 if d > 0 else sd.up921).fillna(False).values; K = sd.k.values
     # 入り:日足の許しを先取りの値で作り直す(4h・1h の決まりはそのまま)
-    E = tai_entry(mk, '1D', '4h', small, d, kw.get('sao', 2.0), kw.get('n8', False), kw.get('kawa_chi', True), kai_k9=kw.get('kai_k9', 0), big21_up=kw.get('big21_up', False))
+    E = tai_entry(mk, '1D', '4h', small, d, kw.get('sao', 2.0), kw.get('n8', False), kw.get('kawa_chi', True), kai_k9=kw.get('kai_k9', 0), big21_up=kw.get('big21_up', False), big_sao=kw.get('big_sao', 0), k9_max=kw.get('k9_max', 0), mid_sao=kw.get('mid_sao', 0))
     okd = (sd.c_gt_e9 if d > 0 else ~sd.c_gt_e9).fillna(False).values
     E = np.asarray(E, bool) & (okd | ~sd.pre.values)                          # 先取りの足では、先取りの日足でも許しが出ている時だけ
     if kw.get('avoid_in') or kw.get('avoid_out'):
