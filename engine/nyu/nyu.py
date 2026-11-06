@@ -104,8 +104,8 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                 if d < 0 and H[i] >= psl[s]: ex = max(O[i], psl[s]) + spr; why = 3
                 if why == 3 and plk[s] and abs(psl[s] - pe[s]) < 1e-9: why = 5
             if np.isnan(ex) and i > j and not np.isnan(TPV[i]):
-                if d > 0 and H[i] >= TPV[i]: ex = max(O[i], TPV[i]); why = 4
-                if d < 0 and L[i] <= TPV[i]: ex = min(O[i], TPV[i]) + spr; why = 4
+                if d > 0 and TPV[i] > pe[s] and H[i] >= TPV[i]: ex = max(O[i], TPV[i]); why = 4          # 利確は入り値より上にある時だけ(線が入り値より下がったら効かない)
+                if d < 0 and TPV[i] < pe[s] and L[i] <= TPV[i]: ex = min(O[i], TPV[i]) + spr; why = 4
             if np.isnan(ex):
                 if pn[s] == 1:
                     if XC[i] and KC[i] > T[j]: ex = O[i + 1] - (0.0 if d > 0 else spr); why = 1
