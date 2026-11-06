@@ -3,6 +3,7 @@
 import sys,glob,numpy as np,pandas as pd
 sys.path.insert(0,__file__.rsplit('/',1)[0]); from engine_ichi import ema
 from engine_tai import load,JST
+from engine_ichi import angle21
 AGG=dict(o='first',h='max',l='min',c='last')
 def bars(m1,tf):
     b=m1.resample(tf).agg(AGG).dropna(); b['k']=b.index+pd.Timedelta(tf); return b
@@ -18,18 +19,22 @@ def prep(m1,LAG=21):
     # 1h の許しは「その1h足が閉じた時に確定している4h」で作る(engine_tai と同じ)
     h1=attach(h1.assign(kakutei=h1.k),h4,['c','e9','e21'],'f_')
     h1['pb']=(h1.f_c>h1.f_e9)&(h1.c>h1.e21); h1['ps']=(h1.f_c<h1.f_e9)&(h1.c<h1.e21)
-    x=attach(m,h1,['pb','ps'],'g_'); x=attach(x,h4,['c','e21'],'q_')
+    x=attach(m,h1,['pb','ps'],'g_'); h4['ang']=angle21(h4); x=attach(x,h4,['c','e21','ang'],'q_')
     return x.drop(columns=['k'])
 def add_exit(x,m1,tf):
     b=bars(m1,tf); b['e9']=ema(b.c,9); mid=(b.o+b.c)/2
     b['wb']=(mid<b.e9)&(b.c<b.e9); b['ws']=(mid>b.e9)&(b.c>b.e9)
     return attach(x,b,['wb','ws'],'w_')
-def signals(x,d,sao=2.0):
+def signals(x,d,sao=2.0,n8=False):
     up=x.e9>x.e21; up1=x.e9.shift()>x.e21.shift()
     if d>0: perm=x.g_pb.fillna(False).astype(bool); cross=up&~up1; side=up; kawa=x.c>x['mid']+x.sd; chi=x.c>x.hL; q=x.q_c>x.q_e21; ns=x.c<=x['mid']+sao*x.sd
     else:   perm=x.g_ps.fillna(False).astype(bool); cross=~up&up1; side=~up; kawa=x.c<x['mid']-x.sd; chi=x.c<x.lL; q=x.q_c<x.q_e21; ns=x.c>=x['mid']-sao*x.sd
     e921=cross&perm; kai=perm&~perm.shift(1,fill_value=False)&side&~cross
-    return ((e921&kawa&chi)|(kai&q))&ns
+    ent=((e921&kawa&chi)|(kai&q))&ns
+    if n8:   # 縄8 4時間の竿先で入らない:入る時に確定している4h足の21の角度が向きに55度を超えていたら入らない【置き換え:だまし回避の角度の段階 55度超=竿先】(11-06 たくちん「うりもして 1と」)
+        ang=x.q_ang if d>0 else -x.q_ang
+        ent=ent&~(ang>55)
+    return ent
 def run(x,d,ent,spr=0.003):
     E=ent.values; W=(x.w_wb if d>0 else x.w_ws).fillna(False).astype(bool).values; K=x.w_k.values; O=x.o.values; H=x.h.values; L=x.l.values; T=x.index.values; tr=[]; pos=None
     for i in range(len(x)-1):
