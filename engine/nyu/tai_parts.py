@@ -76,13 +76,18 @@ def tp_sigma(mk, small, tf, k=3.5, d=1):
 
 def make_sl(mk, small, d, sl):
     if sl is None: return None
-    if sl == 'prevday': return sl_prevday(mk, small, d)
+    if sl == 'prevday': return _mae1(sl_prevday(mk, small, d))
     tf, col = sl[0], sl[1]; buf = sl[2] if len(sl) > 2 else 0.05     # 例 ('4h','e21') / ('4h','e21',0.20)
-    return sl_line(mk, small, tf, col, buf, d)
+    return _mae1(sl_line(mk, small, tf, col, buf, d))
+
+def _mae1(v):
+    """足の中で使う線(利確・網)は、その足が始まる前に分かっている値=1本前の足が閉じた時の値を使う(11-07 先読みを見つけて直した:
+    いま動いている1時間足が閉じる時に閉じる4時間足の線を、その1時間足の中で使っていた)"""
+    v = np.asarray(v, dtype=float); return np.r_[np.nan, v[:-1]]
 
 def make_tp(mk, small, d, tp):
     if tp is None: return None
-    tf, k = tp; return tp_sigma(mk, small, tf, k, d)
+    tf, k = tp; return _mae1(tp_sigma(mk, small, tf, k, d))
 
 YASUMI = [((12, 20), (12, 31)), ((1, 1), (1, 5)), ((4, 29), (5, 6))]   # 11-07 たくちん「サンタの休み、寝正月、イカの産卵時期ゴールデンウィーク」【置き換え】月日(はじめ, おわり)
 
