@@ -84,14 +84,23 @@ def make_tp(mk, small, d, tp):
     if tp is None: return None
     tf, k = tp; return tp_sigma(mk, small, tf, k, d)
 
+YASUMI = [((12, 20), (12, 31)), ((1, 1), (1, 5)), ((4, 29), (5, 6))]   # 11-07 たくちん「サンタの休み、寝正月、イカの産卵時期ゴールデンウィーク」【置き換え】月日(はじめ, おわり)
+
+def yasumi_mask(idx):
+    """i の合図が約定する足(i+1)の日付が休みの間なら True。休みの間は新しく入らない(持っている玉はそのまま)"""
+    nx = pd.DatetimeIndex(np.r_[idx.values[1:], idx.values[-1:]]); md = nx.month * 100 + nx.day; m = np.zeros(len(idx), bool)
+    for (a1, a2), (b1, b2) in YASUMI: m |= (md >= a1 * 100 + a2) & (md <= b1 * 100 + b2)
+    return m
+
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC
     base = mk.feat(small)
+    if yasumi: E = np.asarray(E, bool) & ~yasumi_mask(base.index)
     if avoid_in or avoid_out:                                   # 0時をずらす(11-06):約定の足の時刻が avoid にある時は、次の足まで待つ
         fh = np.r_[base.index.hour.values[1:], -1]               # i の合図が約定する足(i+1)の時刻
         if avoid_in:
@@ -123,6 +132,7 @@ def gyakume_99(mk, tf, d=-1, spr=0.003):
 
 # ---- 引け先取り(11-06 たくちん「びけ先どりは?」)
 def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
+    yas = kw.get('yasumi', False)
     """11-07 たくちん「うりの利確からのドテンで差し込み折り返しポイントやから、連鎖できたらなぁ」【置き換え】
     決まった形の -d 向きの玉が利確(4h ±3.5σ)したら構えて、small の足で向きの方の9と21の交わり(買いなら921)が出た次の足で、d 向きにドテン1玉。
     降り:small の足で 9 と 21 の並びが、入った後に向きと逆へ新しく交わった時(買いなら219が新しく出た時。前から続く並びでは降りない)+TS ts pips。
@@ -137,7 +147,7 @@ def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
     for i in range(len(idx)):
         if E[i]: armed = True
         if armed and cr[i]: W[i] = True; armed = False
-    E = W
+    E = W & ~yasumi_mask(idx) if yas else W
     X = (up1 & ~up) if d > 0 else (~up1 & up)                                     # 新しく出た219(売りは921)
     K = S.k.values
     if xtf:   # 11-07 降りを xtf の足の新しく出た219(売りは921)にする(1hでは折り返しの胴体を取る前に降ろされた)
