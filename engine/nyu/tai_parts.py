@@ -122,7 +122,7 @@ def gyakume_99(mk, tf, d=-1, spr=0.003):
     return simulate(F, d, E, w_out.values, F.k.values, None, None, None, 1, spr, False), F
 
 # ---- 引け先取り(11-06 たくちん「びけ先どりは?」)
-def run_doten(mk, d, small='1h', ts=550.0, **kw):
+def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
     """11-07 たくちん「うりの利確からのドテンで差し込み折り返しポイントやから、連鎖できたらなぁ」【置き換え】
     決まった形の -d 向きの玉が利確(4h ±3.5σ)したら構えて、small の足で向きの方の9と21の交わり(買いなら921)が出た次の足で、d 向きにドテン1玉。
     降り:small の足で 9 と 21 の並びが、入った後に向きと逆へ新しく交わった時(買いなら219が新しく出た時。前から続く並びでは降りない)+TS ts pips。
@@ -139,5 +139,10 @@ def run_doten(mk, d, small='1h', ts=550.0, **kw):
         if armed and cr[i]: W[i] = True; armed = False
     E = W
     X = (up1 & ~up) if d > 0 else (~up1 & up)                                     # 新しく出た219(売りは921)
-    t = simulate(base, d, E, X, S.k.values, None, None, None, 1, kw.get('spr', 0.003), True, None, 0.0, True, ts, 0.0)
+    K = S.k.values
+    if xtf:   # 11-07 降りを xtf の足の新しく出た219(売りは921)にする(1hでは折り返しの胴体を取る前に降ろされた)
+        F = mk.feat(xtf); u = F.e9 > F.e21; u1 = u.shift(1, fill_value=False); kc = 'x219' if d > 0 else 'x921'
+        if kc not in F.columns: mk._f[xtf] = F.assign(x219=u1 & ~u, x921=~u1 & u)
+        y = mk.on(small, xtf, [kc]); X = y[kc].fillna(False).astype(bool).values; K = y['k_' + xtf].values
+    t = simulate(base, d, E, X, K, None, None, None, 1, kw.get('spr', 0.003), True, None, 0.0, True, ts, 0.0)
     return t, base

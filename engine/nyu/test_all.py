@@ -94,6 +94,8 @@ print('--- 利確の後921待ちドテン(11-07)---')
 KD = dict(maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,), kai_k9=3, big21_up=True)
 g, msg = kagami(lambda m, d: run_doten(m, d, **KD)[0], raw_s5, 'server'); ok.append(g); print(f"{'○' if g else '×'} 鏡:ドテン:{msg}")
 chk('売りの利確の後921待ちドテン買い', stat(run_doten(srv, 1, **KD)[0]), (41, -67.0))
+chk('同じ・降りは4hの新しい219', stat(run_doten(srv, 1, xtf='4h', **KD)[0]), (39, 1791.9))
+g, msg = kagami(lambda m, d: run_doten(m, d, xtf='4h', **KD)[0], raw_s5, 'server'); ok.append(g); print(f"{'○' if g else '×'} 鏡:ドテン降り4h:{msg}")
 from bugbug import bugbug
 KB = dict(maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,))
 g, _ = bugbug(lambda mk, d: run_tai(mk, '1D', '4h', '1h', d, ('1D', '219'), **KB)[0], raw_s5, 'server', 5, 0.003); ok.append(g)
