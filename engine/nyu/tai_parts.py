@@ -95,7 +95,7 @@ def make_tp(mk, small, d, tp):
     tf, k = tp; return tp_sigma(mk, small, tf, k, d)
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, big_sao=0, k9_max=0, mid_sao=0):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, big_sao=0, k9_max=0, mid_sao=0, gap=0.0):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, big_sao=big_sao, k9_max=k9_max, mid_sao=mid_sao)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
@@ -112,7 +112,7 @@ def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, 
                 E[k] = True
         if avoid_out:
             bad = np.isin(fh, avoid_out); XC = np.asarray(XC, bool) & ~bad; XA = np.asarray(XA, bool) & ~bad   # 降りの合図は続く(219 など)ので、次の足で降りる
-    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None), base
+    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None, gap=gap), base
 
 # ---- 小魚(11-06)
 def kozakana_ue(mk, d=1, maxpos=5, spr=0.003, lock=0.0):
@@ -173,5 +173,5 @@ def run_senbiki(mk, small='1h', d=1, h=1, **kw):
                 E[k] = True
         if kw.get('avoid_out'): X = X & ~np.isin(fh, kw['avoid_out'])
     t = simulate(base, d, E, X, K, None, None, make_sl(mk, small, d, kw.get('sl')), kw.get('maxpos', 5), kw.get('spr', 0.003), True,
-                 make_tp(mk, small, d, kw.get('tp')), kw.get('lock', 0.0), True, kw.get('ts', 0.0), 0.0)
+                 make_tp(mk, small, d, kw.get('tp')), kw.get('lock', 0.0), True, kw.get('ts', 0.0), 0.0, gap=kw.get('gap', 0.0))
     return t, base
