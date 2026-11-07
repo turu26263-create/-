@@ -9,7 +9,7 @@
 import numpy as np, pandas as pd
 from nyu import Market, kagami, bousou
 
-NAMES = {'芯の降り', '足しの降り', '網', '利確', '建値', 'TS', '伸びた後の降り'}
+NAMES = {'芯の降り', '足しの降り', '網', '利確', '建値', 'TS'}
 
 
 def _overlap_max(t):
@@ -80,20 +80,22 @@ def bugbug(make, raw, clock, maxpos=5, spr=0.003, cuts=None, bar='1h', both=True
 
 if __name__ == '__main__':
     import sys
-    from nyu import load_cached
-    from tai_parts import run_tai, run_senbiki
+    from nyu import load_cached, simulate
+    from tai_parts import run_tai, run_doten
+    import tai_parts as tp_
     raw = load_cached(sys.argv[1]).loc['2016-03-01':'2020-12-31']
-    KW = dict(maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,))
-    for nm, f in [('決まった形', lambda mk, d: run_tai(mk, '1D', '4h', '1h', d, ('1D', '219'), **KW)[0]),
-                  ('引け先取り', lambda mk, d: run_senbiki(mk, '1h', d, 1, **KW)[0])]:
+    KW = dict(maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,), kai_k9=3, big21_up=True)
+    for nm, f in [('決まった形2', lambda mk, d: run_tai(mk, '1D', '4h', '1h', d, ('1D', '219'), **KW)[0]),
+                  ('利確の後921待ちドテン', lambda mk, d: run_doten(mk, d, **KW)[0])]:
         print(f'===== {nm} =====')
         ok, L = bugbug(f, raw, 'server', 5, 0.003); print('\n'.join(L))
-    # わざと壊した形(11-06 の引け先取りのミスを戻す)を、修正機が見つけるか
-    import tai_parts as tp_
-    orig = tp_.senbiki_daily
-    def broken(mk, small, h=1):
-        o = orig(mk, small, h); o['k'] = mk.feat(small).k.values; return o
-    tp_.senbiki_daily = broken
-    print('===== わざと壊した引け先取り(見つけられるか) =====')
-    ok, L = bugbug(lambda mk, d: run_senbiki(mk, '1h', d, 1, **KW)[0], raw, 'server', 5, 0.003); print('\n'.join(L))
-    tp_.senbiki_daily = orig
+    # わざと壊した形:ドテンの降りを「新しく出た219」でなく、入った時から続いている並びで読む(11-06 の引け先取りと同じ型のミス)を、修正機が見つけるか
+    orig = tp_.simulate
+    def broken(base, d, E, X, K, *a, **k):
+        if len(a) > 3 and a[3] == 1:                                   # ドテンの玉(1玉)の時だけ壊す
+            up = (base.e9 > base.e21).values; X = up if d > 0 else ~up   # 入った時から続いている並び(921の後の9>21)を降りの合図と読む
+        return orig(base, d, E, X, K, *a, **k)
+    tp_.simulate = broken
+    print('===== わざと壊したドテン(見つけられるか) =====')
+    ok, L = bugbug(lambda mk, d: run_doten(mk, d, **KW)[0], raw, 'server', 1, 0.003); print('\n'.join(L))
+    tp_.simulate = orig
