@@ -94,8 +94,18 @@ def make_tp(mk, small, d, tp):
     if tp is None: return None
     tf, k = tp; return tp_sigma(mk, small, tf, k, d)
 
+def _nobi(mk, small, d, nobi):
+    """11-07 E 伸びた後の守り【置き換え】nobi=(足, pips):その玉の伸びが pips 以上になったら、その足の新しく出た219(売りは921)でも降りる"""
+    if not nobi: return {}
+    tf, gx = nobi; F = mk.feat(tf); kc = 'x219' if d > 0 else 'x921'
+    if kc not in F.columns:
+        up = F.e9 > F.e21; up1 = up.shift(1, fill_value=False)
+        mk._f[tf] = F.assign(x219=up1 & ~up, x921=~up1 & up)
+    y = mk.on(small, tf, [kc])
+    return dict(XB=y[kc].fillna(False).astype(bool).values, KB=y['k_' + tf].values, gx=float(gx))
+
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, big_sao=0, k9_max=0, mid_sao=0, gap=0.0):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, big_sao=0, k9_max=0, mid_sao=0, gap=0.0, nobi=None):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, big_sao=big_sao, k9_max=k9_max, mid_sao=mid_sao)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
@@ -112,7 +122,7 @@ def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, 
                 E[k] = True
         if avoid_out:
             bad = np.isin(fh, avoid_out); XC = np.asarray(XC, bool) & ~bad; XA = np.asarray(XA, bool) & ~bad   # 降りの合図は続く(219 など)ので、次の足で降りる
-    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None, gap=gap), base
+    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None, gap=gap, **_nobi(mk, small, d, nobi)), base
 
 # ---- 小魚(11-06)
 def kozakana_ue(mk, d=1, maxpos=5, spr=0.003, lock=0.0):
@@ -176,7 +186,7 @@ def run_senbiki(mk, small='1h', d=1, h=1, **kw):
                  make_tp(mk, small, d, kw.get('tp')), kw.get('lock', 0.0), True, kw.get('ts', 0.0), 0.0, gap=kw.get('gap', 0.0))
     return t, base
 
-def run_doten(mk, d, small='1h', ts=550.0, **kw):
+def run_doten(mk, d, small='1h', ts=550.0, wait=False, **kw):
     """11-07 たくちん「うりの利確からのドテンで差し込み折り返しポイントやから、連鎖できたらなぁ」【置き換え】
     決まった形の -d 向きの玉が利確(4h ±3.5σ)した足の次の足の始値で、d 向きにドテンで1玉入る。
     降り:small の足で 9 と 21 の並びが、入った後に向きと逆へ新しく交わった時(買いなら219が新しく出た時。前から続く並びでは降りない)+TS ts pips。
@@ -186,6 +196,12 @@ def run_doten(mk, d, small='1h', ts=550.0, **kw):
     tp = main[main.why == '利確']
     if len(tp): E[np.searchsorted(idx.values, pd.to_datetime(tp.ext).values)] = True   # 利確した足(その足の中で届いた)→ 次の足で入る
     S = mk.feat(small); up = (S.e9 > S.e21).values; up1 = np.r_[up[0], up[:-1]]
+    if wait:   # 11-07 後出しじゃんけん:利確したら構えて待ち、small の足で向きの方へ9と21が新しく交わった足(買いなら921)が閉じたら、次の足でドテン
+        cr = (~up1 & up) if d > 0 else (up1 & ~up); W = np.zeros(len(idx), bool); armed = False
+        for i in range(len(idx)):
+            if E[i]: armed = True
+            if armed and cr[i]: W[i] = True; armed = False
+        E = W
     X = (up1 & ~up) if d > 0 else (~up1 & up)                                     # 新しく出た219(売りは921)
     t = simulate(base, d, E, X, S.k.values, None, None, None, 1, kw.get('spr', 0.003), True, None, 0.0, True, ts, 0.0)
     return t, base
