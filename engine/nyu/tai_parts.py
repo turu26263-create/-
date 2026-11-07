@@ -175,3 +175,17 @@ def run_senbiki(mk, small='1h', d=1, h=1, **kw):
     t = simulate(base, d, E, X, K, None, None, make_sl(mk, small, d, kw.get('sl')), kw.get('maxpos', 5), kw.get('spr', 0.003), True,
                  make_tp(mk, small, d, kw.get('tp')), kw.get('lock', 0.0), True, kw.get('ts', 0.0), 0.0, gap=kw.get('gap', 0.0))
     return t, base
+
+def run_doten(mk, d, small='1h', ts=550.0, **kw):
+    """11-07 たくちん「うりの利確からのドテンで差し込み折り返しポイントやから、連鎖できたらなぁ」【置き換え】
+    決まった形の -d 向きの玉が利確(4h ±3.5σ)した足の次の足の始値で、d 向きにドテンで1玉入る。
+    降り:small の足で 9 と 21 の並びが、入った後に向きと逆へ新しく交わった時(買いなら219が新しく出た時。前から続く並びでは降りない)+TS ts pips。
+    連鎖:ドテンの玉を降りた後は、決まった形の入りがそのまま続く(この部品はドテンの玉だけを返す)"""
+    main, base = run_tai(mk, '1D', '4h', small, -d, ('1D', '219'), **kw)
+    idx = base.index; E = np.zeros(len(idx), bool)
+    tp = main[main.why == '利確']
+    if len(tp): E[np.searchsorted(idx.values, pd.to_datetime(tp.ext).values)] = True   # 利確した足(その足の中で届いた)→ 次の足で入る
+    S = mk.feat(small); up = (S.e9 > S.e21).values; up1 = np.r_[up[0], up[:-1]]
+    X = (up1 & ~up) if d > 0 else (~up1 & up)                                     # 新しく出た219(売りは921)
+    t = simulate(base, d, E, X, S.k.values, None, None, None, 1, kw.get('spr', 0.003), True, None, 0.0, True, ts, 0.0)
+    return t, base
