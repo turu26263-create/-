@@ -28,7 +28,7 @@ def tama_check(t, maxpos, spr, d, bar='1h'):
     bad = int((ext <= ent).sum()); r.append(('○' if bad == 0 else '×', f'降りが入りより後(違う玉 {bad})'))
     odd = sorted(set(t.why) - NAMES); r.append(('○' if not odd else '×', f'降りの理由が決まった名前だけ{"" if not odd else " 知らない名前 " + str(odd)}'))
     m = _overlap_max(t); r.append(('○' if m <= maxpos else '×', f'同時に持つ玉 最大{m}(上限{maxpos})'))
-    tp = t[t.why == '利確']; lo = int((tp.pips < -P - 1e-6).sum())
+    tp = t[t.why == '利確']; lo = int((tp.pips < -1e-6).sum())   # 利確はスプレッド込みでも負けない(11-07 売りのミスを見逃したので許しを0に)
     r.append(('○' if lo == 0 else '×', f'利確で負けた玉が無い(負け {lo})'))
     be = t[t.why == '建値']; lo = int((be.pips < -P - 1.0).sum())
     r.append(('○' if lo == 0 else '△', f'建値で大きく負けた玉(窓開けなら作りどおり) {lo}'))

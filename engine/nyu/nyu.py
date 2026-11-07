@@ -118,7 +118,7 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
             if i > j and not np.isnan(psl[s]):
                 slhit = (d > 0 and L[i] <= psl[s] + 1e-9) or (d < 0 and H[i] >= psl[s] - 1e-9)        # ぴったり届いた時に計算の端数で入れかわらないように(11-06)
             if i > j and not np.isnan(TPV[i]):
-                tphit = (d > 0 and TPV[i] > pe[s] and H[i] >= TPV[i] - 1e-9) or (d < 0 and TPV[i] < pe[s] and L[i] <= TPV[i] + 1e-9)   # 利確は入り値より上にある時だけ
+                tphit = (d > 0 and TPV[i] > pe[s] and H[i] >= TPV[i] - 1e-9) or (d < 0 and TPV[i] < pe[s] - spr - 1e-12 and L[i] <= TPV[i] + 1e-9)   # 利確は入り値より上にある時だけ(売りは買い戻しのスプレッド分下:11-07 鏡で見つけたミス。売りが損で「利確」していた)
             tp_first = False
             if slhit and tphit:                                          # 同じ足で網と利確の両方に届いた:HLO で先を決める(0=わからない→損な方=網)
                 amb += 1
