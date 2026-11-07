@@ -4,7 +4,7 @@ import sys, json, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0
 from nyu import *; from tai_parts import *
 here = __file__.rsplit('/', 1)[0]; cfg = json.load(open(here + '/settei_kimari.json')); f = cfg['形']; k = cfg['口座']
 srv = Market(load_cached(sys.argv[1]), 'server')
-KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False))
+KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
 t, b = run_tai(srv, f['big'], f['mid'], f['small'], 1, tuple(f['core_exit']), **KW); t['d'] = 1
 if f.get('uri'):   # 売りも同じ決まりの鏡うつし(11-06)。0.01ロット決め打ちなので円は pips×10 を玉ごとに足す
     u, _ = run_tai(srv, f['big'], f['mid'], f['small'], -1, tuple(f['core_exit']), **KW); u['d'] = -1; t = pd.concat([t, u], ignore_index=True)
