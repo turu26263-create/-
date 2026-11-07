@@ -86,10 +86,10 @@ def make_tp(mk, small, d, tp):
 
 YASUMI = [((12, 20), (12, 31)), ((1, 1), (1, 5)), ((4, 29), (5, 6))]   # 11-07 たくちん「サンタの休み、寝正月、イカの産卵時期ゴールデンウィーク」【置き換え】月日(はじめ, おわり)
 
-def yasumi_mask(idx):
+def yasumi_mask(idx, ys=None):
     """i の合図が約定する足(i+1)の日付が休みの間なら True。休みの間は新しく入らない(持っている玉はそのまま)"""
     nx = pd.DatetimeIndex(np.r_[idx.values[1:], idx.values[-1:]]); md = nx.month * 100 + nx.day; m = np.zeros(len(idx), bool)
-    for (a1, a2), (b1, b2) in YASUMI: m |= (md >= a1 * 100 + a2) & (md <= b1 * 100 + b2)
+    for (a1, a2), (b1, b2) in (ys or YASUMI): m |= (md >= a1 * 100 + a2) & (md <= b1 * 100 + b2)
     return m
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
@@ -100,7 +100,7 @@ def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, 
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC
     base = mk.feat(small)
-    if yasumi: E = np.asarray(E, bool) & ~yasumi_mask(base.index)
+    if yasumi: E = np.asarray(E, bool) & ~yasumi_mask(base.index, yasumi if isinstance(yasumi, list) else None)
     if avoid_in or avoid_out:                                   # 0時をずらす(11-06):約定の足の時刻が avoid にある時は、次の足まで待つ
         fh = np.r_[base.index.hour.values[1:], -1]               # i の合図が約定する足(i+1)の時刻
         if avoid_in:
@@ -147,7 +147,7 @@ def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
     for i in range(len(idx)):
         if E[i]: armed = True
         if armed and cr[i]: W[i] = True; armed = False
-    E = W & ~yasumi_mask(idx) if yas else W
+    E = W & ~yasumi_mask(idx, yas if isinstance(yas, list) else None) if yas else W
     X = (up1 & ~up) if d > 0 else (~up1 & up)                                     # 新しく出た219(売りは921)
     K = S.k.values
     if xtf:   # 11-07 降りを xtf の足の新しく出た219(売りは921)にする(1hでは折り返しの胴体を取る前に降ろされた)
