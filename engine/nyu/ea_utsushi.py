@@ -32,7 +32,10 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
         dx = done1(ts1); h = done4(ts1)
         for p in list(pos):
             d = p['d']
-            if p['kind'] == 'ドテン買い':
+            if p['kind'] == '鯛':
+                a = H4.iloc[h]
+                if bool(a.ware_b) and hour != avoid and H4.k.iloc[h] > p['t']: close(p, O[i], t, '4h9割れ'); continue
+            elif p['kind'] == 'ドテン買い':
                 a, b = H4.iloc[h], H4.iloc[h - 1]
                 x219 = (b.e9 > b.e21) and not (a.e9 > a.e21)
                 if x219 and H4.k.iloc[h] > p['t']: close(p, O[i], t, '4h219'); continue
@@ -44,7 +47,7 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
             if eb <= i - 1:
                 if d > 0: mx = Hh[eb:i].max(); ns = mx - ts; p['sl'] = ns if p['sl'] is None or ns > p['sl'] else p['sl']
                 else: mn = Lh[eb:i].min(); ns = mn + ts + spr; p['sl'] = ns if p['sl'] is None or ns < p['sl'] else p['sl']
-            if p['kind'] != 'ドテン買い':
+            if p['kind'] not in ('ドテン買い', '鯛'):
                 tpl = H4.md.iloc[h] + tpk * H4.sd.iloc[h] * d; p['tp'] = None
                 if d > 0 and tpl > p['e']: p['tp'] = tpl
                 if d < 0 and tpl < p['e'] - spr: p['tp'] = tpl + spr
@@ -67,8 +70,10 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
             if hour == avoid:
                 if sig: pend[d] = True
             else: go = sig or pend[d]; pend[d] = False
-            if go and sum(1 for q in pos if q['d'] == d and q['kind'] != 'ドテン買い') < maxpos:
+            if go and sum(1 for q in pos if q['d'] == d and q['kind'] in ('買い', '売り')) < maxpos:
                 pos.append(dict(kind='買い' if d > 0 else '売り', d=d, t=t, i=i, e=O[i] + (spr if d > 0 else 0), sl=None, tp=None))
+            if go and d > 0 and tai and not any(q['kind'] == '鯛' for q in pos):
+                pos.append(dict(kind='鯛', d=1, t=t, i=i, e=O[i] + spr, sl=None, tp=None))
         if use_doten and arm:
             if (e9[i - 1] > e21[i - 1]) and not (e9[i - 2] > e21[i - 2]):
                 arm = False
@@ -89,7 +94,7 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
 
 if __name__ == '__main__':
     mk = Market(load_cached(sys.argv[1]), 'server')
-    ea = ea_run(mk)
+    ea = ea_run(mk, tai=True)
     ref = pd.read_csv(sys.argv[2])
     ref['ent'] = pd.to_datetime(ref['入り(サーバー時刻)'], format='%Y.%m.%d %H:%M'); ref['ext'] = pd.to_datetime(ref['降り(サーバー時刻)'], format='%Y.%m.%d %H:%M')
     ea['ent'] = pd.to_datetime(ea.ent); ea['ext'] = pd.to_datetime(ea.ext)

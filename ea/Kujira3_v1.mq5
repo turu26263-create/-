@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//| Kujira3_v1.mq5  決まった形3(クジラの刺身 売り買い+ドテン買い+休み)      |
+//| Kujira3_v1.mq5  決まった形3(クジラの刺身 売り買い+ドテン買い+休み+鯛の刺身買い) |
 //| 2026-11-09 たくちん「mt5でやって」                                     |
 //| 研究台(engine/nyu)の決まった形3を、そのまま MT5 に写した物。決まりは変えない |
 //| 未検証:コンパイル・テスター・デモはまだ(クラウドに MetaEditor が無い)      |
@@ -16,6 +16,7 @@ input double TpSigma       = 3.5;    // 利確:4時間の帯 ±3.5σ(1本前の4
 input double TsPips        = 550;    // TS:一番伸びた所から 550p
 input bool   UseSell       = true;   // 売りも入れる
 input bool   UseDoten      = true;   // 売りの利確の後、1時間921を待ってドテン買い
+input bool   UseTai        = true;   // 鯛の刺身(買いだけ):同じ入りで1玉、4時間の9割れで降り、TS550、利確なし
 input bool   UseYasumi     = true;   // サンタの休み 12/20-12/31・寝正月 1/1-1/5・GW 4/29-5/6 は新しく入らない
 input int    AvoidHour     = 0;      // この時刻(サーバー)の足では入り・降りしない(次の足へ)
 input double MaxSpreadPips = 5.0;    // 入る直前のスプレッドがこれより広ければ入らない(研究台には無い守り)
@@ -23,6 +24,7 @@ input int    SlipPoints    = 30;     // 許す滑り(ポイント)
 input long   MagicBuy      = 26110901;
 input long   MagicSell     = 26110902;
 input long   MagicDoten    = 26110903;
+input long   MagicTai      = 26110904;
 
 //--- 線
 int hD9, hD21, hH4_9, hH4_21, hH4bb, hH1_9, hH1_21, hH1bb1, hH1bb2;
@@ -270,6 +272,30 @@ void ManageDoten(datetime T)
    }
 }
 
+void ManageTai(datetime T, datetime TS1)
+{
+   // 降り:4時間の9割れ(実体の真ん中と終値が9の下)の4時間足が、入った後に閉じたら + TS550。0時の足では降りない
+   int h = Done(PERIOD_H4, TS1);
+   double o = iOpen(_Symbol, PERIOD_H4, h), c = iClose(_Symbol, PERIOD_H4, h), e9 = V(hH4_9, 0, h);
+   bool ware = (e9 != EMPTY_VALUE) && ((o + c) / 2 < e9) && (c < e9);
+   datetime hc = iTime(_Symbol, PERIOD_H4, h) + PeriodSeconds(PERIOD_H4);
+   MqlDateTime m; TimeToStruct(T, m);
+   for(int i = PositionsTotal() - 1; i >= 0; i--)
+   {
+      ulong tkt = PositionGetTicket(i);
+      if(tkt == 0 || PositionGetString(POSITION_SYMBOL) != _Symbol || PositionGetInteger(POSITION_MAGIC) != MagicTai) continue;
+      datetime ot = (datetime)PositionGetInteger(POSITION_TIME);
+      if(ware && m.hour != AvoidHour && hc > ot) { if(ClosePos(tkt, "鯛 4h9割れ")) continue; }
+      int eb = iBarShift(_Symbol, PERIOD_H1, ot, false);
+      if(eb >= 1)
+      {
+         double mx = iHigh(_Symbol, PERIOD_H1, iHighest(_Symbol, PERIOD_H1, MODE_HIGH, eb, 1));
+         double sl = PositionGetDouble(POSITION_SL), ns = mx - TsPips * PIP;
+         if(sl == 0 || ns > sl) Modify(tkt, ns, 0);
+      }
+   }
+}
+
 //+------------------------------------------------------------------+
 //| 入り(研究台の入りと同じ:1時間921 か 許しの瞬間)                      |
 //+------------------------------------------------------------------+
@@ -318,6 +344,7 @@ void OnTick()
    ManageMain(1, MagicBuy, T, TS1);
    if(UseSell) ManageMain(-1, MagicSell, T, TS1);
    if(UseDoten) ManageDoten(TS1);
+   if(UseTai) ManageTai(T, TS1);
 
    // 2. 入り
    for(int k = 0; k < 2; k++)
@@ -331,6 +358,7 @@ void OnTick()
       if(avoid) { if(sig) { if(d > 0) pendBuy = true; else pendSell = true; Log("0時をよけて次の足へ", T, d, 0, 0, ""); } }
       else { go = sig || pend; if(d > 0) pendBuy = false; else pendSell = false; }
       if(go && CountPos(mg) < MaxPos) Open(d, mg, T, sig ? "入り" : "0時をよけた入り");
+      if(go && d > 0 && UseTai && CountPos(MagicTai) < 1) Open(1, MagicTai, T, "鯛の刺身");
    }
 
    // 3. ドテン買い:売りの利確で構え、1時間の921が出た次の足で入る
@@ -355,7 +383,7 @@ void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest 
    if(!HistoryDealSelect(trans.deal)) return;
    if(HistoryDealGetString(trans.deal, DEAL_SYMBOL) != _Symbol) return;
    long mg = HistoryDealGetInteger(trans.deal, DEAL_MAGIC);
-   if(mg != MagicBuy && mg != MagicSell && mg != MagicDoten) return;
+   if(mg != MagicBuy && mg != MagicSell && mg != MagicDoten && mg != MagicTai) return;
    long entry = HistoryDealGetInteger(trans.deal, DEAL_ENTRY);
    double px = HistoryDealGetDouble(trans.deal, DEAL_PRICE);
    if(entry == DEAL_ENTRY_IN) { Log("約定(入り)", 0, mg == MagicSell ? -1 : 1, 0, px, "deal=" + (string)trans.deal); return; }
