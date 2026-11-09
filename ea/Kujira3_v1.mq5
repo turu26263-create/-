@@ -88,7 +88,13 @@ double V(int h, int buf, int shift)
 }
 
 // 時刻 t に「閉じている」一番新しい足の番号(t ちょうどに閉じた足も入る)
-int Done(ENUM_TIMEFRAMES tf, datetime t) { return(iBarShift(_Symbol, tf, t, false) + 1); }
+int Done(ENUM_TIMEFRAMES tf, datetime t)
+{
+   int s = iBarShift(_Symbol, tf, t - 1, false);              // t の1秒前を含む足(週末の穴では手前の足)
+   if(s < 0) return(-1);
+   if(iTime(_Symbol, tf, s) + PeriodSeconds(tf) <= t) return(s); // その足が t までに閉じていればそれ
+   return(s + 1);                                              // まだ動いている足なら1本前
+}
 
 // 許し:大きい足(日足)の終値が9の向こう かつ 中の足(4時間)の終値が21の向こう(時刻 t で閉じている足で見る)
 bool Perm(datetime t, int d)
@@ -203,17 +209,17 @@ void Modify(ulong ticket, double sl, double tp)
 //+------------------------------------------------------------------+
 //| 持っている玉の 降り(合図)・利確・TS                                 |
 //+------------------------------------------------------------------+
-void ManageMain(int d, long magic, datetime T)
+void ManageMain(int d, long magic, datetime T, datetime TS1)
 {
    // 日足の219(売りは921):時刻 T で閉じている日足で 9 と 21 の並びが逆。その日足が閉じたのが入った後なら降りる
-   int dx = Done(PERIOD_D1, T);
+   int dx = Done(PERIOD_D1, TS1);
    double d9 = V(hD9, 0, dx), d21 = V(hD21, 0, dx);
    datetime dclose = iTime(_Symbol, PERIOD_D1, dx) + PeriodSeconds(PERIOD_D1);
    bool sig = (d9 != EMPTY_VALUE && d21 != EMPTY_VALUE) && (d > 0 ? !(d9 > d21) : (d9 > d21));
    MqlDateTime m; TimeToStruct(T, m);
    bool avoid = (m.hour == AvoidHour);
    // 利確の線:1本前の4時間足が閉じた時の ±3.5σ
-   int h = Done(PERIOD_H4, T);
+   int h = Done(PERIOD_H4, TS1);
    double tpl = d > 0 ? V(hH4bb, 1, h) : V(hH4bb, 2, h);
    MqlTick tk; SymbolInfoTick(_Symbol, tk); double spr = tk.ask - tk.bid;
    for(int i = PositionsTotal() - 1; i >= 0; i--)
@@ -267,7 +273,7 @@ void ManageDoten(datetime T)
 //+------------------------------------------------------------------+
 //| 入り(研究台の入りと同じ:1時間921 か 許しの瞬間)                      |
 //+------------------------------------------------------------------+
-bool EntrySignal(int d, datetime T)
+bool EntrySignal(int d, datetime TS1, datetime TS2)
 {
    double e9a = V(hH1_9, 0, 1), e21a = V(hH1_21, 0, 1), e9b = V(hH1_9, 0, 2), e21b = V(hH1_21, 0, 2);
    double md = V(hH1bb1, 0, 1), up1 = V(hH1bb1, 1, 1), lo1 = V(hH1bb1, 2, 1), up2 = V(hH1bb2, 1, 1), lo2 = V(hH1bb2, 2, 1);
@@ -276,8 +282,8 @@ bool EntrySignal(int d, datetime T)
    bool upA = e9a > e21a, upB = e9b > e21b;
    bool side  = d > 0 ? upA : !upA;
    bool cross = d > 0 ? (upA && !upB) : (!upA && upB);
-   bool p = Perm(T, d), pp = Perm(T - PeriodSeconds(PERIOD_H1), d);
-   int dq = Done(PERIOD_D1, T);
+   bool p = Perm(TS1, d), pp = Perm(TS2, d);
+   int dq = Done(PERIOD_D1, TS1);
    double dc = iClose(_Symbol, PERIOD_D1, dq), d21 = V(hD21, 0, dq), d21b = V(hD21, 0, dq + 3);
    if(d21 == EMPTY_VALUE || d21b == EMPTY_VALUE) return(false);
    bool qq = d > 0 ? dc > d21 : dc < d21;
@@ -287,7 +293,7 @@ bool EntrySignal(int d, datetime T)
    bool ns   = d > 0 ? c <= up2 : c >= lo2;                               // 竿先(±2σの外)では入らない
    bool e921 = cross && p;
    bool kai  = p && !pp && side && !cross;
-   int k9 = K9(dq, d), k9p = K9(Done(PERIOD_D1, T - PeriodSeconds(PERIOD_H1)), d);
+   int k9 = K9(dq, d), k9p = K9(Done(PERIOD_D1, TS2), d);
    kai = kai && (k9 >= KaiK9);
    bool first = (k9 >= KaiK9) && !(k9p >= KaiK9) && p && side && !cross && (k9 == KaiK9);
    kai = kai || first;
@@ -301,14 +307,17 @@ void OnTick()
    if(T <= 0 || T == lastBar) return;
    if(lastBar == 0) { lastBar = T; return; }                 // 起動した直後は過去の足で撃たない
    lastBar = T;
+   // 合図の足(1本前)が閉じた時刻。週末をまたぐと新しい足の始まり T とは違う(11-09 写しの照らしで見つけた)
+   datetime TS1 = iTime(_Symbol, PERIOD_H1, 1) + PeriodSeconds(PERIOD_H1);
+   datetime TS2 = iTime(_Symbol, PERIOD_H1, 2) + PeriodSeconds(PERIOD_H1);
    MqlDateTime m; TimeToStruct(T, m);
    bool avoid = (m.hour == AvoidHour);
    bool yas = UseYasumi && Yasumi(T);
 
    // 1. 降り(合図)と、利確・TS の付け替え
-   ManageMain(1, MagicBuy, T);
-   if(UseSell) ManageMain(-1, MagicSell, T);
-   if(UseDoten) ManageDoten(T);
+   ManageMain(1, MagicBuy, T, TS1);
+   if(UseSell) ManageMain(-1, MagicSell, T, TS1);
+   if(UseDoten) ManageDoten(TS1);
 
    // 2. 入り
    for(int k = 0; k < 2; k++)
@@ -316,7 +325,7 @@ void OnTick()
       int d = k == 0 ? 1 : -1;
       if(d < 0 && !UseSell) continue;
       long mg = d > 0 ? MagicBuy : MagicSell;
-      bool sig = EntrySignal(d, T) && !yas;
+      bool sig = EntrySignal(d, TS1, TS2) && !yas;
       bool pend = d > 0 ? pendBuy : pendSell;
       bool go = false;
       if(avoid) { if(sig) { if(d > 0) pendBuy = true; else pendSell = true; Log("0時をよけて次の足へ", T, d, 0, 0, ""); } }
