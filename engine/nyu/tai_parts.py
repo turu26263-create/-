@@ -98,18 +98,12 @@ def yasumi_mask(idx, ys=None):
     return m
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, xcross=None):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC
-    if xcross:   # 11-10 売りの降りの研鑽:xcross の足で9と21が逆へ新しく交わったら(売りなら新しい921)も降りる
-        F = mk.feat(xcross); kc = 'x219' if d > 0 else 'x921'
-        if kc not in F.columns:
-            u = F.e9 > F.e21; u1 = u.shift(1, fill_value=False); mk._f[xcross] = F.assign(x219=u1 & ~u, x921=~u1 & u)
-        y = mk.on(small, xcross, [kc]); XJ = y[kc].fillna(False).astype(bool).values; KJ = y['k_' + xcross].values
-        KC = np.where(XJ, KJ, np.asarray(KC)); XC = np.asarray(XC, bool) | XJ; XA, KA = XC, KC
     base = mk.feat(small)
     if yasumi: E = np.asarray(E, bool) & ~yasumi_mask(base.index, yasumi if isinstance(yasumi, list) else None)
     if avoid_in or avoid_out:                                   # 0時をずらす(11-06):約定の足の時刻が avoid にある時は、次の足まで待つ
