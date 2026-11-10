@@ -32,6 +32,7 @@ def tama_check(t, maxpos, spr, d, bar='1h'):
     r.append(('○' if lo == 0 else '×', f'利確で負けた玉が無い(負け {lo})'))
     be = t[t.why == '建値']; lo = int((be.pips < -P - 1.0).sum())
     r.append(('○' if lo == 0 else '△', f'建値で大きく負けた玉(窓開けなら作りどおり) {lo}'))
+    hi = int((be.pips > 0.05).sum()); r.append(('○' if hi == 0 else '×', f'建値で降りた玉は損益0より上にならない(上になった玉 {hi})'))   # 11-11 竿先のしあわせセットを足した時、わざと壊した形(建値の玉に+5p)を拾えなかったので足した
     # 前から続いている合図を、いま出た合図と読む型(11-06 引け先取りのミス):入った次の足で合図で降りる玉が多すぎないか
     one = pd.Timedelta(bar)
     q = t[(t.why == '芯の降り') & ((ext - ent) <= one)]; share = len(q) / len(t)

@@ -99,9 +99,32 @@ def yasumi_mask(idx, ys=None):
     for (a1, a2), (b1, b2) in (ys or YASUMI): m |= (md >= a1 * 100 + a2) & (md <= b1 * 100 + b2)
     return m
 
+def range5_on(mk, raw_fine, small='1h', shift_h=7, n=100, ratio=0.8):
+    """11-11 5分足がレンジか(【置き換え】5分足の±2σの幅が直近 n 本の平均の ratio 倍より狭い=鏡R の決め方を5分足に)を、small の足が閉じた時に確定している5分足で見る。
+    raw_fine=細かい足(HistData 1分足・EST)。shift_h 時間ずらしてサーバー時刻に合わせる(照らし:1時間足の終値の差 0.2〜0.4p)。mk.r5 にしまう。5分足が無い所は False"""
+    r = raw_fine.copy(); r.index = r.index + pd.Timedelta(hours=shift_h)
+    b = r.resample('5min').agg({'o': 'first', 'h': 'max', 'l': 'min', 'c': 'last'}).dropna()
+    w = 4 * b.c.rolling(20).std(ddof=0); rg = (w < ratio * w.rolling(n).mean())
+    f = pd.DataFrame({'k': b.index + pd.Timedelta('5min'), 'rg': rg.values, 'w': (w / 0.01).values}).dropna()
+    S = mk.feat(small)
+    y = pd.merge_asof(pd.DataFrame({'kb': S.k.values}), f, left_on='kb', right_on='k', direction='backward', tolerance=pd.Timedelta('15min'))   # 5分足が15分より古い(データ無し・休み)なら使わない
+    mk.r5 = pd.Series(y.rg.fillna(False).astype(bool).values, index=S.index); mk.w5 = pd.Series(y.w.values, index=S.index); return mk.r5
+
+def sao_lock(mk, small, d, sao=2.0, tf=None, win=6):
+    """11-11 たくちん「竿先 5分でれんじになったら 竿元で買ったエントリーをしあわせセットに移行」【置き換え】
+    竿先=tf の足の終値が ±sao σ の外。tf が small と同じなら、外で閉じてから win 本のうち(その足を含む)。上の足(4h など)なら、直近に閉じたその足が外
+    5分がレンジ=mk.r5。両方そろった small の足が閉じた時の終値を返す(そろわない足は nan)"""
+    x = mk.feat(small); tf = tf or small
+    if tf == small:
+        out = (x.c > x.md + sao * x.sd) if d > 0 else (x.c < x.md - sao * x.sd)
+        near = out.rolling(win, min_periods=1).max().astype(bool).values
+    else:
+        y = mk.on(small, tf, ['c', 'md', 'sd']); near = ((y.c > y.md + sao * y.sd) if d > 0 else (y.c < y.md - sao * y.sd)).fillna(False).values
+    return np.where(near & mk.r5.values, x.c.values, np.nan)
+
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False):
-    """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False, saolock=False):
+    """鯛・クジラを1回まわす。saolock=竿先を見る足('1h'・'4h'。False=なし):竿先で5分がレンジになったら持っている玉の網を建値へ。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, narabi=narabi)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
@@ -118,7 +141,7 @@ def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, 
                 E[k] = True
         if avoid_out:
             bad = np.isin(fh, avoid_out); XC = np.asarray(XC, bool) & ~bad; XA = np.asarray(XA, bool) & ~bad   # 降りの合図は続く(219 など)ので、次の足で降りる
-    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None), base
+    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None, sao_lock(mk, small, d, sao, saolock) if saolock else None), base
 
 # ---- 小魚(11-06)
 def kozakana_ue(mk, d=1, maxpos=5, spr=0.003, lock=0.0):
