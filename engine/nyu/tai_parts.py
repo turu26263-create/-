@@ -142,7 +142,7 @@ def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
     決まった形の -d 向きの玉が利確(4h ±3.5σ)したら構えて、small の足で向きの方の9と21の交わり(買いなら921)が出た次の足で、d 向きにドテン1玉。
     降り:small の足で 9 と 21 の並びが、入った後に向きと逆へ新しく交わった時(買いなら219が新しく出た時。前から続く並びでは降りない)+TS ts pips。
     連鎖:ドテンの玉を降りた後は、決まった形の入りがそのまま続く(この部品はドテンの玉だけを返す)"""
-    main, base = run_tai(mk, '1D', '4h', small, -d, ('1D', '219'), **kw)
+    main, base = run_tai(mk, '1D', '4h', small, -d, ('1D', '219'), ts=ts, **kw)   # 11-10 元の売りにも同じ TS を渡す(ts がここで止まって、元の売りが TS なしで作られていた。数字は変わらなかったが、つながりの切れ)
     idx = base.index; E = np.zeros(len(idx), bool)
     tp = main[main.why == '利確']
     if len(tp): E[np.searchsorted(idx.values, pd.to_datetime(tp.ext).values)] = True   # 利確した足(その足の中で届いた)で構える
