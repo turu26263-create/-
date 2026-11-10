@@ -69,6 +69,8 @@ int OnInit()
    armDoten = GlobalVariableCheck(GVName("arm")) && GlobalVariableGet(GVName("arm")) > 0;
    pendBuy  = GlobalVariableCheck(GVName("pb")) && GlobalVariableGet(GVName("pb")) > 0;
    pendSell = GlobalVariableCheck(GVName("ps")) && GlobalVariableGet(GVName("ps")) > 0;
+   oPend[0] = GlobalVariableCheck(GVName("ob")) && GlobalVariableGet(GVName("ob")) > 0;
+   oPend[1] = GlobalVariableCheck(GVName("os")) && GlobalVariableGet(GVName("os")) > 0;
    Log("起動", 0, 0, 0, 0, "arm=" + (string)armDoten);
    return(INIT_SUCCEEDED);
 }
@@ -88,6 +90,8 @@ void   SaveFlags()
    GlobalVariableSet(GVName("arm"), armDoten ? 1 : 0);
    GlobalVariableSet(GVName("pb"), pendBuy ? 1 : 0);
    GlobalVariableSet(GVName("ps"), pendSell ? 1 : 0);
+   GlobalVariableSet(GVName("ob"), oPend[0] ? 1 : 0);          // 押し目巡航の「次の足で入る待ち」も残す(11-10 再起動で忘れる抜けを直した)
+   GlobalVariableSet(GVName("os"), oPend[1] ? 1 : 0);
 }
 
 double V(int h, int buf, int shift)

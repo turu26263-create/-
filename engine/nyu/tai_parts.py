@@ -3,7 +3,7 @@ import numpy as np, pandas as pd
 from nyu import Market, simulate
 
 def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0, big21_up=False):
-    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
+    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up, narabi)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
     if key in mk._f: return mk._f[key]
     E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9)
     if big21_up:   # 大きい足の21が向きの方へ傾いている時だけ(下向きの21で買わない)
