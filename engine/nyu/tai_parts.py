@@ -161,3 +161,40 @@ def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
         y = mk.on(small, xtf, [kc]); X = y[kc].fillna(False).astype(bool).values; K = y['k_' + xtf].values
     t = simulate(base, d, E, X, K, None, None, None, 1, kw.get('spr', 0.003), True, None, 0.0, True, ts, 0.0)
     return t, base
+
+def run_oshime_d(mk, d, small='1h', maxpos=5, spr=0.003, pk=10, wk=3, tpk=3.5, avoid=0, yasumi=True):
+    """11-10 たくちん「ブレンドして」:かがみ無限の「日足の巡航・押し目の無限リーチ」(かがみ無限_決まり帳_20261030 の 抜1・無1・出1)【置き換え】
+    抜1 日足の帯(±2σ)の幅が3本前より広い/前の山の後に9まで押した/終値が前の山(10本の高値)を超えた → 巡航。次の1時の足で1玉
+    無1 巡航の中で、日足の終値が9の向こうで確定した後、21まで押して向きの足(陽線)が確定したら1玉足す
+    出1 日足の ±3.5σ に触れたら全部利確/日足の219(売りは921)で全部降り/網は前の日足のひげ先(毎日寄せる、上げるだけ)
+    1玉=0.01ロットで数える(元のEAは押し目ごとに8単位)"""
+    D = mk.feat('1D'); H = mk.feat(small)
+    o, h, l, c, e9, e21 = D.o.values, D.h.values, D.l.values, D.c.values, D.e9.values, D.e21.values
+    w = (4 * D.sd).values; n = len(D); sig = np.zeros(n, bool)
+    up = e9 > e21 if d > 0 else e9 < e21
+    armed = False; incr = False; last_peak_i = -1
+    for i in range(pk + wk, n):
+        if not up[i]: incr = False; armed = False; continue
+        prev = h[i - pk:i].max() if d > 0 else l[i - pk:i].min()
+        pk_i = i - pk + (int(np.argmax(h[i - pk:i])) if d > 0 else int(np.argmin(l[i - pk:i])))
+        pulled = (l[pk_i:i] <= e9[pk_i:i]).any() if d > 0 else (h[pk_i:i] >= e9[pk_i:i]).any()
+        brk = (c[i] > prev) if d > 0 else (c[i] < prev)
+        if not incr and w[i] > w[i - wk] and pulled and brk: sig[i] = True; incr = True; armed = False; continue
+        if incr:
+            if (c[i] > e9[i]) if d > 0 else (c[i] < e9[i]): armed = True
+            touch = (l[i] <= e21[i]) if d > 0 else (h[i] >= e21[i])
+            yang = (c[i] > o[i]) if d > 0 else (c[i] < o[i])
+            if armed and touch and yang: sig[i] = True; armed = False
+    # 日足の合図 → その日足が閉じた後の1時間足(0時の足は1時へ)
+    base = H; k1 = D.k.values; E = np.zeros(len(base), bool)
+    for i in np.where(sig)[0]:
+        j = np.searchsorted(base.index.values, k1[i])                   # 日足が閉じた時刻に始まる1時間足
+        while j < len(base) and base.index[j].hour == avoid: j += 1
+        if j - 1 >= 0 and j < len(base): E[j - 1] = True                 # E は合図の足(j-1)に立てる → j で約定
+    if yasumi: E = E & ~yasumi_mask(base.index)
+    XC, KC = EXITS['219'](mk, small, '1D', d)
+    fh = np.r_[base.index.hour.values[1:], -1]; XC = np.asarray(XC, bool) & ~(fh == avoid)
+    y = mk.on(small, '1D', ['l', 'h', 'md', 'sd'])
+    SLV = _mae1(y.l.values if d > 0 else y.h.values)                     # 前の日足のひげ先(網の値は売り値で持つ。売りの買い戻しのスプレッドは試験機が足す:11-10 鏡で二重に足していたのを直した)
+    TPV = _mae1((y.md + tpk * y.sd * d).values)
+    return simulate(base, d, E, XC, KC, None, None, SLV, maxpos, spr, True, TPV, 0.0, True, 0.0, 0.0), base
