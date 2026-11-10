@@ -108,6 +108,17 @@ print(f"{'○' if g else '×'} バグバグ修正機:決まった形(売り買�
 z = srv.feat('1h'); tl = make_tp(srv, '1h', 1, ('4h', 3.5)); raw_tl = tp_sigma(srv, '1h', '4h', 3.5, 1)
 g = np.isnan(tl[0]) and np.allclose(tl[1:], raw_tl[:-1], equal_nan=True); ok.append(g)
 print(f"{'○' if g else '×'} 足の中で使う利確・網の線は、1本前の足が閉じた時の値(11-07 先読みを見つけて直した)")
+from ea_utsushi import ea_run
+_ea = ea_run(srv, tai=True, oshime=True); _ea['ent'] = pd.to_datetime(_ea.ent); _ea['ext'] = pd.to_datetime(_ea.ext)
+_R = []
+for _t, _k in [(run_tai(srv,'1D','4h','1h',1,('1D','219'),**KD,yasumi=True)[0],'買い'), (run_tai(srv,'1D','4h','1h',-1,('1D','219'),**KD,yasumi=True)[0],'売り'), (run_doten(srv,1,xtf='4h',**KD,yasumi=True)[0],'ドテン買い'),
+               (run_tai(srv,'1D','4h','1h',1,('4h','9割れ'),**{**KD,'maxpos':1,'tp':None},yasumi=True)[0],'鯛'), (run_oshime_d(srv,1)[0],'押し目買い'), (run_oshime_d(srv,-1)[0],'押し目売り')]:
+    _t = _t.copy(); _t['kind'] = _k; _R.append(_t)
+_R = pd.concat(_R); _R['ext'] = pd.to_datetime(_R.ext)
+_m = _ea.merge(_R, on=['kind', 'ent'], how='outer', suffixes=('_ea', '_r'), indicator=True)
+_same = _m[(_m._merge == 'both') & (_m.ext_ea == _m.ext_r) & ((_m.pips_ea - _m.pips_r).abs() < 0.15)]
+g = len(_same) == len(_R) and int((_m._merge == 'right_only').sum()) == 0; ok.append(g)
+print(f"{'○' if g else '×'} EA の写し(EA と同じ手順)と研究台の決まった形が1玉ずつ同じ:{len(_same)}/{len(_R)}玉(11-10 幽霊の売りのミスの後に足した)")
 print('--- ターボ ---')
 space = dict(maxpos=[1, 5], sao=[2.0, 2.5], lock=[0, 50], spr=[0.003, 0.01])
 fn = lambda maxpos, sao, lock, spr: stat(run_tai(srv,'1D','4h','1h',1,('1D','219'),maxpos=maxpos,sao=sao,n8=True,reenter=True,lock=lock,spr=spr)[0])
