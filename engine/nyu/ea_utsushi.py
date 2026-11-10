@@ -22,7 +22,7 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
         while dd - n >= 0 and s[dd - n]: n += 1
         return n
     def yas(t):
-        m = t.month * 100 + t.day; return (1220 <= m <= 1231) or (101 <= m <= 105) or (429 <= m <= 506)
+        m = t.month * 100 + t.day; return 429 <= m <= 506
     pos = []; out = []; arm = False; pend = {1: False, -1: False}
     def close(p, px, t, why): out.append(dict(kind=p['kind'], d=p['d'], ent=p['t'], e=p['e'], ext=t, x=px, why=why)); pos.remove(p)
     for i in range(30, len(T) - 1):

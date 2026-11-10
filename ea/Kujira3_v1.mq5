@@ -17,7 +17,7 @@ input double TsPips        = 550;    // TS:一番伸びた所から 550p
 input bool   UseSell       = true;   // 売りも入れる
 input bool   UseDoten      = true;   // 売りの利確の後、1時間921を待ってドテン買い
 input bool   UseTai        = true;   // 鯛の刺身(買いだけ):同じ入りで1玉、4時間の9割れで降り、TS550、利確なし
-input bool   UseYasumi     = true;   // サンタの休み 12/20-12/31・寝正月 1/1-1/5・GW 4/29-5/6 は新しく入らない
+input bool   UseYasumi     = true;   // GW 4/29-5/6 は新しく入らない(11-10 サンタ・寝正月はやめた)
 input int    AvoidHour     = 0;      // この時刻(サーバー)の足では入り・降りしない(次の足へ)
 input double MaxSpreadPips = 5.0;    // 入る直前のスプレッドがこれより広ければ入らない(研究台には無い守り)
 input int    SlipPoints    = 30;     // 許す滑り(ポイント)
@@ -126,7 +126,7 @@ int K9(int dd, int d)
 bool Yasumi(datetime t)
 {
    MqlDateTime m; TimeToStruct(t, m); int md = m.mon * 100 + m.day;
-   return((md >= 1220 && md <= 1231) || (md >= 101 && md <= 105) || (md >= 429 && md <= 506));
+   return(md >= 429 && md <= 506);                            // 11-10 たくちん「さんたと寝正月やめる」→ GW だけ
 }
 
 int CountPos(long magic)
