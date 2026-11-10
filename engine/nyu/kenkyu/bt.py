@@ -3,7 +3,7 @@ from nyu import *; from ea_utsushi import ea_run
 exec(open(sys.argv[2]).read().split("def sp(t):")[0].split("H=srv.feat('1h')")[0].split("raw=load_cached")[0])
 SA={2016:0.5,2017:1.2,2018:2.0,2019:2.3,2020:0.5,2021:0.2,2022:1.8,2023:5.1,2024:5.0,2025:3.7,2026:2.8}
 mk=Market(load_cached(sys.argv[1]),'server'); base=mk.feat('1h')
-t=ea_run(mk,tai=True,oshime=True); t['ent']=pd.to_datetime(t.ent); t['ext']=pd.to_datetime(t.ext)
+t=ea_run(mk,tai=True,oshime=True)  # 利確は ea_run の今の値(4.0σ); t['ent']=pd.to_datetime(t.ent); t['ext']=pd.to_datetime(t.ext)
 def swap(r):
     days=pd.date_range(r.ent.normalize(),r.ext,freq='D'); days=days[(days>r.ent)&(days<=r.ext)]; v=0
     for dd in days:

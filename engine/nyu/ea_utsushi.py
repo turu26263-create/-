@@ -3,7 +3,7 @@
 import sys, warnings; warnings.filterwarnings('ignore')
 from nyu import *
 
-def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sell=True, use_doten=True, yasumi=True, avoid=0, tai=None, oshime=False):
+def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=4.0, ts=5.50, use_sell=True, use_doten=True, yasumi=True, avoid=0, tai=None, oshime=False):
     H = mk.feat('1h'); H4 = mk.feat('4h'); D = mk.feat('1D')
     O, Hh, Lh, C = H.o.values, H.h.values, H.l.values, H.c.values; T = H.index
     e9, e21, md, sd = H.e9.values, H.e21.values, H.md.values, H.sd.values
