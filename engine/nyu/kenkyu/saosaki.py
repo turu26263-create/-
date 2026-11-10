@@ -1,3 +1,4 @@
+# ×(11-11)。部品(竿先で5分がレンジ → 網を建値へ)はエンジンから外した。この書き物はそのままでは動かない。部品は git の記録 7eaed35 にある。結果は engine/kekka_tai/nyu/竿先で5分レンジ_しあわせセットへ移す.txt
 # 11-11 たくちん「竿先 5分でれんじになったら 竿元で買ったエントリーをしあわせセットに移行にできん?」「ご」
 # 使い方: python3 saosaki.py <MT4 1時間足の置き場> <HistData 1分足の置き場> [seiseki]
 import sys, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0,'/home/user/-/engine/nyu')
