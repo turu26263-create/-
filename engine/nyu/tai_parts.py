@@ -2,12 +2,14 @@
 import numpy as np, pandas as pd
 from nyu import Market, simulate
 
-def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0, big21_up=False):
-    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
+def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0, big21_up=False, narabi=False):
+    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up, narabi)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
     if key in mk._f: return mk._f[key]
     E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9)
     if big21_up:   # 大きい足の21が向きの方へ傾いている時だけ(下向きの21で買わない)
         a = mk.on(small, big, ['ang']).ang.values; E = E & ((a > 0) if d > 0 else (a < 0))
+    if narabi:   # 11-10:大きい足の青(9)と赤(21)の並びが向きと同じ時だけ入る(買いは日足921の並び)。逆の並びで入ると、次の日足が閉じた時に「日足219」ですぐ降ろされる(前から続く合図)
+        u = mk.on(small, big, ['up921']).up921; E = E & ((u == True).values if d > 0 else (u == False).values)
     mk._f[key] = E; return E
 
 def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=0):
@@ -98,9 +100,9 @@ def yasumi_mask(idx, ys=None):
     return m
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
-    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up)
+    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, narabi=narabi)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC

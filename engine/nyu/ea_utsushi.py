@@ -3,7 +3,7 @@
 import sys, warnings; warnings.filterwarnings('ignore')
 from nyu import *
 
-def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=4.0, ts=5.50, use_sell=True, use_doten=True, yasumi=True, avoid=0, tai=None, oshime=False):
+def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=4.0, ts=5.50, use_sell=True, use_doten=True, yasumi=True, avoid=0, tai=None, oshime=False, narabi_kai=False):
     H = mk.feat('1h'); H4 = mk.feat('4h'); D = mk.feat('1D')
     O, Hh, Lh, C = H.o.values, H.h.values, H.l.values, H.c.values; T = H.index
     e9, e21, md, sd = H.e9.values, H.e21.values, H.md.values, H.sd.values
@@ -98,6 +98,7 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=4.0, ts=5.50, use_sel
             kai = p_ and not pp and side and not cross and kk >= kai_k9
             first = kk >= kai_k9 and not (kp >= kai_k9) and p_ and side and not cross and kk == kai_k9
             sig = (((cross and p_) and kawa and chi) or ((kai or first) and qq)) and ns_ and b21 and not y
+            if narabi_kai and d > 0 and not (D.e9.iloc[dq] > D.e21.iloc[dq]): sig = False   # 買いは日足が921の並びの時だけ
             go = False
             if hour == avoid:
                 if sig: pend[d] = True
