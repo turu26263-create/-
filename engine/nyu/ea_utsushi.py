@@ -3,7 +3,7 @@
 import sys, warnings; warnings.filterwarnings('ignore')
 from nyu import *
 
-def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sell=True, use_doten=True, yasumi=True, avoid=0, tai=None):
+def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sell=True, use_doten=True, yasumi=True, avoid=0, tai=None, oshime=False):
     H = mk.feat('1h'); H4 = mk.feat('4h'); D = mk.feat('1D')
     O, Hh, Lh, C = H.o.values, H.h.values, H.l.values, H.c.values; T = H.index
     e9, e21, md, sd = H.e9.values, H.e21.values, H.md.values, H.sd.values
@@ -24,6 +24,23 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
     def yas(t):
         m = t.month * 100 + t.day; return 429 <= m <= 506
     pos = []; out = []; arm = False; pend = {1: False, -1: False}
+    # 押し目巡航:日足ごとの合図(EA の OshStep と同じ手順)
+    osig = {1: np.zeros(len(D), bool), -1: np.zeros(len(D), bool)}
+    if oshime:
+        o_, h_, l_, c_, e9d, e21d, wd = D.o.values, D.h.values, D.l.values, D.c.values, D.e9.values, D.e21.values, (4 * D.sd).values
+        for d in (1, -1):
+            inc = False; arm_ = False
+            for i in range(13, len(D)):
+                up_ = e9d[i] > e21d[i] if d > 0 else e9d[i] < e21d[i]
+                if not up_: inc = False; arm_ = False; continue
+                seg = h_[i - 10:i] if d > 0 else l_[i - 10:i]
+                pk = i - 10 + (int(np.argmax(seg)) if d > 0 else int(np.argmin(seg))); prev = seg.max() if d > 0 else seg.min()
+                pulled = (l_[pk:i] <= e9d[pk:i]).any() if d > 0 else (h_[pk:i] >= e9d[pk:i]).any()
+                if not inc and wd[i] > wd[i - 3] and pulled and ((c_[i] > prev) if d > 0 else (c_[i] < prev)): osig[d][i] = True; inc = True; arm_ = False; continue
+                if inc:
+                    if (c_[i] > e9d[i]) if d > 0 else (c_[i] < e9d[i]): arm_ = True
+                    if arm_ and ((l_[i] <= e21d[i]) if d > 0 else (h_[i] >= e21d[i])) and ((c_[i] > o_[i]) if d > 0 else (c_[i] < o_[i])): osig[d][i] = True; arm_ = False
+    opend = {1: False, -1: False}; olast = -1
     def close(p, px, t, why): out.append(dict(kind=p['kind'], d=p['d'], ent=p['t'], e=p['e'], ext=t, x=px, why=why)); pos.remove(p)
     for i in range(30, len(T) - 1):
         t = T[i]; hour = t.hour
@@ -32,6 +49,15 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
         dx = done1(ts1); h = done4(ts1)
         for p in list(pos):
             d = p['d']
+            if p['kind'] in ('押し目買い', '押し目売り'):
+                sig = (not (D.e9.iloc[dx] > D.e21.iloc[dx])) if d > 0 else (D.e9.iloc[dx] > D.e21.iloc[dx])
+                if sig and hour != avoid and D.k.iloc[dx] > p['t']: close(p, O[i] + (0 if d > 0 else spr), t, '日足219/921'); continue
+                net = D.l.iloc[dx] if d > 0 else D.h.iloc[dx] + spr
+                p['sl'] = net if p['sl'] is None or (net > p['sl'] if d > 0 else net < p['sl']) else p['sl']
+                tpl = D.md.iloc[dx] + 3.5 * D.sd.iloc[dx] * d; p['tp'] = None
+                if d > 0 and tpl > p['e']: p['tp'] = tpl
+                if d < 0 and tpl < p['e'] - spr: p['tp'] = tpl + spr
+                continue
             if p['kind'] == '鯛':
                 a = H4.iloc[h]
                 if bool(a.ware_b) and hour != avoid and H4.k.iloc[h] > p['t']: close(p, O[i], t, '4h9割れ'); continue
@@ -51,6 +77,12 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
                 tpl = H4.md.iloc[h] + tpk * H4.sd.iloc[h] * d; p['tp'] = None
                 if d > 0 and tpl > p['e']: p['tp'] = tpl
                 if d < 0 and tpl < p['e'] - spr: p['tp'] = tpl + spr
+        # 押し目巡航:日足が閉じたら合図を見る(EA の OshimeDaily)
+        if oshime and dx != olast:
+            if olast >= 0:
+                for d in (1, -1):
+                    if osig[d][dx]: opend[d] = True
+            olast = dx
         # 入り
         y = yasumi and yas(t)
         for d in ((1, -1) if use_sell else (1,)):
@@ -74,6 +106,15 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
                 pos.append(dict(kind='買い' if d > 0 else '売り', d=d, t=t, i=i, e=O[i] + (spr if d > 0 else 0), sl=None, tp=None))
             if go and d > 0 and tai and not any(q['kind'] == '鯛' for q in pos):
                 pos.append(dict(kind='鯛', d=1, t=t, i=i, e=O[i] + spr, sl=None, tp=None))
+        if oshime and hour != avoid:
+            for d in (1, -1):
+                if not opend[d]: continue
+                opend[d] = False
+                if y or sum(1 for q in pos if q['kind'] == ('押し目買い' if d > 0 else '押し目売り')) >= 5: continue
+                sl0 = D.l.iloc[dx] if d > 0 else D.h.iloc[dx] + spr
+                e0 = O[i] + (spr if d > 0 else 0)
+                if (sl0 >= e0) if d > 0 else (sl0 <= O[i] + spr): continue
+                pos.append(dict(kind='押し目買い' if d > 0 else '押し目売り', d=d, t=t, i=i, e=e0, sl=None, tp=None))
         if use_doten and arm:
             if (e9[i - 1] > e21[i - 1]) and not (e9[i - 2] > e21[i - 2]):
                 arm = False
@@ -94,7 +135,7 @@ def ea_run(mk, spr=0.003, maxpos=5, kai_k9=3, sao=2.0, tpk=3.5, ts=5.50, use_sel
 
 if __name__ == '__main__':
     mk = Market(load_cached(sys.argv[1]), 'server')
-    ea = ea_run(mk, tai=True)
+    ea = ea_run(mk, tai=True, oshime=True)
     ref = pd.read_csv(sys.argv[2])
     ref['ent'] = pd.to_datetime(ref['入り(サーバー時刻)'], format='%Y.%m.%d %H:%M'); ref['ext'] = pd.to_datetime(ref['降り(サーバー時刻)'], format='%Y.%m.%d %H:%M')
     ea['ent'] = pd.to_datetime(ea.ent); ea['ext'] = pd.to_datetime(ea.ext)

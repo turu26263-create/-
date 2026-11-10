@@ -98,6 +98,8 @@ chk('同じ・降りは4hの新しい219', stat(run_doten(srv, 1, xtf='4h', **KD
 chk('決まった形3(形2+ドテン買い)', stat(pd.concat([run_tai(srv,'1D','4h','1h',d,('1D','219'),**KD)[0] for d in (1,-1)] + [run_doten(srv, 1, xtf='4h', **KD)[0]])), (410, 11053.2))
 chk('決まった形3+GWの休み(11-10 サンタ・寝正月やめる)', stat(pd.concat([run_tai(srv,'1D','4h','1h',d,('1D','219'),**KD,yasumi=True)[0] for d in (1,-1)] + [run_doten(srv, 1, xtf='4h', **KD, yasumi=True)[0]])), (404, 11017.3))
 chk('決まった形3+休み+鯛の刺身(買いだけ)(11-09「ご」)', stat(pd.concat([run_tai(srv,'1D','4h','1h',d,('1D','219'),**KD,yasumi=True)[0] for d in (1,-1)] + [run_doten(srv, 1, xtf='4h', **KD, yasumi=True)[0], run_tai(srv,'1D','4h','1h',1,('4h','9割れ'),**{**KD,'maxpos':1,'tp':None},yasumi=True)[0]])), (596, 13130.5))
+chk('ブレンド:形3+鯛+日足の押し目巡航(11-10「ご」)', stat(pd.concat([run_tai(srv,'1D','4h','1h',d,('1D','219'),**KD,yasumi=True)[0] for d in (1,-1)] + [run_doten(srv, 1, xtf='4h', **KD, yasumi=True)[0], run_tai(srv,'1D','4h','1h',1,('4h','9割れ'),**{**KD,'maxpos':1,'tp':None},yasumi=True)[0]] + [run_oshime_d(srv, d)[0] for d in (1,-1)])), (765, 16833.4))
+g, msg = kagami(lambda m, d: run_oshime_d(m, d)[0], raw_s5, 'server'); ok.append(g); print(f"{'○' if g else '×'} 鏡:日足の押し目巡航:{msg}")
 g, msg = kagami(lambda m, d: run_doten(m, d, xtf='4h', **KD)[0], raw_s5, 'server'); ok.append(g); print(f"{'○' if g else '×'} 鏡:ドテン降り4h:{msg}")
 from bugbug import bugbug
 KB = dict(maxpos=5, n8=False, reenter=True, tp=('4h', 3.5), ts=550, avoid_in=(0,), avoid_out=(0,))

@@ -12,6 +12,9 @@ if f.get('doten'):   # 11-07 決まった形3:売りの利確の後921待ちド�
     dz = f['doten']; dt_, _ = run_doten(srv, dz['d'], xtf=dz.get('xtf'), **KW); dt_['d'] = dz['d']; t = pd.concat([t, dt_], ignore_index=True)
 if f.get('tai'):   # 11-09 鯛の刺身(買いだけ)
     tz = f['tai']; KT = {**KW, 'maxpos': tz['maxpos'], 'tp': None, 'ts': tz['ts']}; tt_, _ = run_tai(srv, f['big'], f['mid'], f['small'], tz['d'], tuple(tz['exit']), **KT); tt_['d'] = tz['d']; t = pd.concat([t, tt_], ignore_index=True)
+if f.get('oshime'):   # 11-10 ブレンド:かがみ無限の日足巡航・押し目
+    for dz in (1, -1):
+        oo, _ = run_oshime_d(srv, dz, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False)); oo['d'] = dz; t = pd.concat([t, oo], ignore_index=True)
 T, s = lot_sizing(t, b, 1, k['資金'], margin_cap=k['証拠金の上限'], leverage=k['レバレッジ'], fixed_lot=k['決め打ちのロット'], stopout=k['強制決済の維持率'])
 H = srv.bars('1h'); sec = H.index.values.astype('datetime64[s]').astype('int64')       # 時刻は秒(サーバー時刻をそのまま)
 bars = [[int(a), int(round(o * 1000)), int(round(h * 1000)), int(round(l * 1000)), int(round(c * 1000))] for a, o, h, l, c in zip(sec, H.o, H.h, H.l, H.c)]
