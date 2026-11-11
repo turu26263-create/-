@@ -4,11 +4,12 @@
 #   5で合わす:5分足の新しい921(9が21を上抜けて閉じた足)で、終値が5分の9の上 → 次の5分足の始値で1発。上の3つがそろっている間は5分の921のたびに足す(無限リーチ・最大5発)
 #   21のうえを取る:日足のロウソク(終値)が日足21の下で閉じたら全部降りる(売りは上)。利確・TS・網は無し。0時の入り降りは1時へ。スプレッド0.3p
 # 11-11「ご」2本目:上を週足まで1段伸ばす=週足も閉じた週で 9>21 かつ 終値が9の上(売りは逆)の時だけ入る。週足=月曜0時からの7日足(閉じた週だけ)
+# 11-11 たくちん「週足までみんでも 日足でとれん？ 四時間、ならだましほとんどないけどな」3本目:週足は外す。1本目に、4時間の帯が開いている(直近に閉じた4時間足で +2σ が上がり −2σ が下がった)時だけ5分で入る、を1つ足す
 # データ:HistData 1分足(EST)を7時間ずらしてサーバー時刻にした物(1時間足の終値の差 0.2〜0.4p で合わせ済み)。2015/01〜2025/04。5分足の有る所だけ
 import sys, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0,'/home/user/-/engine/nyu')
 from nyu import *; from tai_parts import *
 fine=load_cached(sys.argv[1]).copy(); fine.index=fine.index+pd.Timedelta(hours=7)
-mk=Market(fine,'server'); SPR=0.003; SHUU=False
+mk=Market(fine,'server'); SPR=0.003; SHUU=False; HIRAKU=False
 B=mk.feat('5min')
 def run(d):
     x=B; up=(x.e9>x.e21) if d>0 else (x.e9<x.e21); c9=(x.c>x.e9) if d>0 else (x.c<x.e9)
@@ -23,6 +24,10 @@ def run(d):
         W['e9']=W.c.ewm(span=9,adjust=False).mean(); W['e21']=W.c.ewm(span=21,adjust=False).mean()
         yw=pd.merge_asof(pd.DataFrame({'kb':x.k.values}),W[['k','c','e9','e21']].sort_values('k'),left_on='kb',right_on='k',direction='backward')
         ok&=(((yw.e9>yw.e21)&(yw.c>yw.e9)) if d>0 else ((yw.e9<yw.e21)&(yw.c<yw.e9))).fillna(False).values
+    if HIRAKU:
+        F=mk.feat('4h'); ub=F.md+2*F.sd; lb=F.md-2*F.sd; kc='hiraku4'
+        if kc not in F.columns: mk._f['4h']=F.assign(hiraku4=(ub>ub.shift(1))&(lb<lb.shift(1)))
+        ok&=mk.on('5min','4h',[kc])[kc].fillna(False).astype(bool).values
     E=cross&ok
     fh=np.r_[x.index.hour.values[1:],-1]
     E=E.copy()
@@ -33,7 +38,7 @@ def run(d):
     yd=mk.on('5min','1D',['c','e21']); XC=(((yd.c<yd.e21) if d>0 else (yd.c>yd.e21)).fillna(False).values)&~(fh==0); KC=yd['k_1D'].values
     t=simulate(x,d,E,XC,KC,None,None,None,5,SPR,True)
     return t
-for SHUU,NM in [(False,'1本目(日足・4時間・1時間)'),(True,'2本目(週足も足す)')]:
+for SHUU,HIRAKU,NM in [(False,False,'1本目(日足・4時間・1時間)'),(False,True,'3本目(4時間の帯が開いている時だけ)')]:
     t=pd.concat([run(1).assign(d=1),run(-1).assign(d=-1)],ignore_index=True); y=pd.to_datetime(t.ent).dt.year
     t=t[pd.to_datetime(t.ent)>='2015-06-01']; y=pd.to_datetime(t.ent).dt.year
     st=stat(t)
