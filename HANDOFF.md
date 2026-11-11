@@ -65,7 +65,7 @@
   - 10本目(11-11 たくちん「スキル だまし回避 と 極めて優位性の高いシグナル もっと研究して」):日足の竿元60回に見分けを1つずつ。記録 engine/kekka_tai/nyu/だまし回避_日足の竿元.txt(書き物 engine/nyu/kenkyu/saomoto_damashi.py)
     - だ1〜3・局面は日足ではほぼ効かない(だ3 は大山の始まりを消す)
     - 週足と比べると分かれた:週足と逆向きの竿元 33回 +5,987p(確かめる年 +1,207)/同じ向き 27回 −6,519p(確かめる年 −7,531)。大山の始まりは週の流れが変わる所、負けは週の竿先。後から分けた見方なので【黄】
-    - だまし回避スキル(.claude/skills/damashi-kaihi)に「日足の竿元での照らし【黄】」を足した → 皿・zip・台帳へ
+    - だまし回避スキル(.claude/skills/damashi-kaihi)に「日足の竿元での照らし【黄】」を足した。皿に置いた:だまし回避_標準装備_20261111.md(12,598バイト)・damashi-kaihi.zip(5,584バイト、元と同じ大きさ)/古い版 20261021 は倉庫/台帳を作り直して スキルホスト_台帳_20261111.md(古い 20261110 は倉庫)。口座の入れ替えはたくちん、まだ
 
 ## 11-11 占いを外に置く(たくちん「占いも 家計簿と同じ様にして」)→ 包みと依頼書まで済み。外のページはまだ
 - あゆみの家計簿と同じやり方:公開の置き場所 uranai-kantei を作り GitHub Pages で開く。見込みURL https://turu26263-create.github.io/uranai-kantei/
@@ -85,7 +85,7 @@
 - データ(作業場。消えたら取り直す。11-11 取り直して 54/54):MT4 1時間足 USDJPY60.csv(Drive)・HistData 1分足(GitHub yukkiya/usd-jpy-data)
 - EA:ea/Kujira3_v1.mq5(MT5・未コンパイル)・ea/README_Kujira3_MT5.md・ea/Kujira3_研究台の玉_MT5あわせ用.csv
 - かきこチャート第9版 https://claude.ai/artifact/FPRUFZsCfHjKWaXpZfoBAt(engine/nyu/kakiko_make.py で作る)
-- スキルの皿(Drive 1VyRs0OJDovi90MjK9dY7Kx5V55wI2BVT):制作図面 20261110・バグバグ修正機 20261110・台帳 20261110。Drive 引き継ぎ置き場に 00_引き継ぎ_Kujira3ブレンド利確4.0_20261110.md
+- スキルの皿(Drive 1VyRs0OJDovi90MjK9dY7Kx5V55wI2BVT):制作図面 20261110・バグバグ修正機 20261110・だまし回避 20261111・台帳 20261111。Drive 引き継ぎ置き場に 00_引き継ぎ_Kujira3ブレンド利確4.0_20261110.md
 
 ## 照らして×にした物(部品はエンジンに無い。数字は HANDOFF_kako と engine/kekka_tai/nyu/)
 - 引け先取り/日足の竿先・日足9上10本超・4時間の竿先・足しの間(※先読みを直す前の照らし。照らし直していない)
