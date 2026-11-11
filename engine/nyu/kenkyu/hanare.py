@@ -1,4 +1,3 @@
-# ×(11-11)。部品(帯から離れ出したら利確)はエンジンから外した。この書き物はそのままでは動かない。部品は git の記録 3248faa にある。結果は engine/kekka_tai/nyu/帯から離れ出したら利確.txt
 # 11-11 たくちん「しあわせセットは決めてない研鑽して 竿元からbb2丸まりがレンジ突入やから bb2からロウソク離れ出したら利確?にしたら上飛びが取れん?」
 # 使い方: python3 hanare.py <MT4 1時間足の置き場> [seiseki]
 import sys, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0,'/home/user/-/engine/nyu')
@@ -21,6 +20,10 @@ def aruki(a,bb):
         u=up[ts]; k1=r.k; ev=(k1-pd.Timedelta('1h') in x.index) and not np.isnan(PX[x.index.get_loc(k1-pd.Timedelta('1h'))]) if (k1-pd.Timedelta('1h')) in x.index else False
         print(f'  {ts:%m/%d %H時} 高値 {r.h:.3f} 終値 {r.c:.3f} +2σ {u:.3f}({"上がる" if u>pu[ts] else "丸まり"}) 高値が+2σに{"届いた" if r.h>=u else "届かない"}{" ← 離れ出した(合図)" if ev else ""}')
 aruki(pd.Timestamp('2016-11-09 12:00'),pd.Timestamp('2016-11-30 00:00'))
+m=b.merge(b0,on=['ent','n'],how='inner',suffixes=('','_0')); q=m[m.why=='離れ利確'].assign(sa=lambda z:z.pips-z.pips_0)
+print(f'同じ入りの玉で比べた離れ利確 {len(q)}玉:今の形より得 {int((q.sa>0.05).sum())}玉 {q.sa[q.sa>0].sum():+,.0f}p / 損 {int((q.sa<-0.05).sum())}玉 {q.sa[q.sa<0].sum():+,.0f}p')
+for nm,z in [('一番得',q.sort_values('sa').tail(3)),('一番損',q.sort_values('sa').head(3))]:
+    for r in z.itertuples(): print(f'  {nm} {r.ent:%Y/%m/%d %H時} {r.e:.3f} → 離れ利確 {r.ext:%m/%d %H時} {r.x:.3f} {r.pips:+.0f}p / 今の形 {r.ext_0:%m/%d %H時} {r.x_0:.3f} {r.pips_0:+.0f}p {r.why_0}')
 if len(sys.argv)>2:
     def blend(hf):
         KB={**K,'hanare_tf':hf}
@@ -29,7 +32,7 @@ if len(sys.argv)>2:
         for t,k,d in [(bb,'買い',1),(ss,'売り',-1),(dt,'ドテン買い',1),(tb,'鯛',1),(ob,'押し目買い',1),(os_,'押し目売り',-1)]: t['kind']=k; t['d']=d
         return pd.concat([bb,ss,dt,tb,ob,os_],ignore_index=True),base
     print('決め方(先に決めた・前と同じ):確かめる年の合計が上がり、落ち込み率が上がらなければ残す')
-    for nm,hf in [('今の形',None),('4時間の+2σから離れ出したら、利が乗っている玉を利確',TF)]:
+    for nm,hf in [('今の形',None),('4時間の+2σに3本続けて乗った後、離れ出したら、利が乗っている玉を利確',TF)]:
         t,base=blend(hf); y=pd.to_datetime(t.ent).dt.year; T_,st=lot_sizing(t,base,1,102000,leverage=2000,fixed_lot=0.01,stopout=20)
         f=lambda k: f"{int((t.kind==k).sum())}玉 {t.pips[t.kind==k].sum():+,.0f}p"; g=lambda w: f"{int((t.why==w).sum())}玉 {t.pips[t.why==w].sum():+,.0f}p"
         print(f"  {nm}:\n     買い {f('買い')} / 売り {f('売り')} / ドテン買い {f('ドテン買い')} / 全部 {len(t)}玉 {t.pips.sum():+,.0f}p 選22-24 {t.pips[y.between(2022,2024)].sum():+,.0f} 確かめる年 {t.pips[y.between(2016,2021)|(y>=2025)].sum():+,.0f} 落ち込み率 {st['落ち込み率']}%\n     降りの中身:4時間4.0σの利確 {g('利確')} / 離れ利確 {g('離れ利確')} / 日足219・921 {int(t.why.isin(['芯の降り','足しの降り']).sum())}玉 {t.pips[t.why.isin(['芯の降り','足しの降り'])].sum():+,.0f}p / TS {g('TS')}")

@@ -99,8 +99,25 @@ def yasumi_mask(idx, ys=None):
     for (a1, a2), (b1, b2) in (ys or YASUMI): m |= (md >= a1 * 100 + a2) & (md <= b1 * 100 + b2)
     return m
 
+def hanare(mk, small, tf, d, k=2.0, tsuzuki=3):
+    """11-11 たくちん「竿元からbb2丸まりがレンジ突入やから bb2からロウソク離れ出したら利確?にしたら上飛びが取れん?」【置き換え】
+    乗っている=tf の足の高値が +kσ に届いた(売りは安値が −kσ)。離れ出した=乗った後、高値が +kσ に届かず、+kσ の線が前の足より上がっていない(丸まり)で閉じた最初の足。
+    その tf の足が閉じた small の足に、small の終値を立てる(ほかは nan)。合図は出た時の1回だけ(前から続く合図にしない)
+    11-11「ご」:乗っている間に、帯に届いた足が tsuzuki 本続いた事がある時だけ合図にする(上げの途中の踊り場と、上飛びの後を分ける。3本=巡航の3本【置き換え】)"""
+    F = mk.feat(tf); band = (F.md + k * d * F.sd).values; h = F.h.values if d > 0 else -F.l.values; b = band * d
+    ev = np.zeros(len(F), bool); ride = False; run = 0; best = 0
+    for i in range(21, len(F)):
+        if np.isnan(b[i]) or np.isnan(b[i - 1]): continue
+        if h[i] >= b[i] - 1e-9: ride = True; run += 1; best = max(best, run)
+        else:
+            run = 0
+            if ride and b[i] <= b[i - 1]: ev[i] = best >= tsuzuki; ride = False; best = 0
+    S = mk.feat(small); out = np.full(len(S), np.nan)
+    j = np.searchsorted(S.k.values, F.k.values[ev]); ok = (j < len(S)) & (S.k.values[np.clip(j, 0, len(S) - 1)] == F.k.values[ev])
+    out[j[ok]] = S.c.values[j[ok]]; return out
+
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False, hanare_tf=None):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, narabi=narabi)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
@@ -118,7 +135,13 @@ def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, 
                 E[k] = True
         if avoid_out:
             bad = np.isin(fh, avoid_out); XC = np.asarray(XC, bool) & ~bad; XA = np.asarray(XA, bool) & ~bad   # 降りの合図は続く(219 など)ので、次の足で降りる
-    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None), base
+    PXV = None
+    if hanare_tf:                                               # 離れ利確の合図。約定が0時になる時は次の足へ(その足の終値で見直す)
+        PXV = hanare(mk, small, hanare_tf, d).copy(); fh2 = np.r_[base.index.hour.values[1:], -1]; c_ = base.c.values
+        for i in np.where(~np.isnan(PXV) & np.isin(fh2, avoid_out))[0] if avoid_out else []:
+            PXV[i] = np.nan
+            if i + 1 < len(PXV): PXV[i + 1] = c_[i + 1]
+    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None, PXV), base
 
 # ---- 小魚(11-06)
 def kozakana_ue(mk, d=1, maxpos=5, spr=0.003, lock=0.0):
