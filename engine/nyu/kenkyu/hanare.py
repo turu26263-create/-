@@ -1,3 +1,4 @@
+# ×(11-11・2本とも)。部品(帯から離れ出したら利確)はエンジンから外した。この書き物はそのままでは動かない。部品は git の記録 1060de9 にある。結果は engine/kekka_tai/nyu/帯から離れ出したら利確.txt
 # 11-11 たくちん「しあわせセットは決めてない研鑽して 竿元からbb2丸まりがレンジ突入やから bb2からロウソク離れ出したら利確?にしたら上飛びが取れん?」
 # 使い方: python3 hanare.py <MT4 1時間足の置き場> [seiseki]
 import sys, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0,'/home/user/-/engine/nyu')
