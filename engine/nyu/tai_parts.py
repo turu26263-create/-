@@ -200,3 +200,60 @@ def run_oshime_d(mk, d, small='1h', maxpos=5, spr=0.003, pk=10, wk=3, tpk=3.5, a
     SLV = _mae1(y.l.values if d > 0 else y.h.values)                     # 前の日足のひげ先(網の値は売り値で持つ。売りの買い戻しのスプレッドは試験機が足す:11-10 鏡で二重に足していたのを直した)
     TPV = _mae1((y.md + tpk * y.sd * d).values)
     return simulate(base, d, E, XC, KC, None, None, SLV, maxpos, spr, True, TPV, 0.0, True, 0.0, 0.0), base
+
+def run_shiawase(mk, d, small='1h', spr=0.003, nflip=3, win=30, kar=3, tame_max=5, tpk=2.0, tamek=3.5, naka=1.0, avoid=0, yasumi=True):
+    """11-11 たくちん「1」(しあわせセットを決まった形に B=1単位0.01ロットで入れる)。研鑽7回目(kenkyu/shiawase_hako2.py)をエンジンに移した【置き換え】
+    レンジ=日足の遅行スパン(終値と21本前の終値の上下)が直近 win 日で nflip 回以上入れ替わる/921・219は見ない
+    箱=レンジに入ってからの高値・安値(続いているレンジの1日目の win 日前から。レンジでない日は win 日)
+    入り:レンジの間、前の日足の −2σ(売りは+2σ)に値が届いたら、その値で kar+1 単位(kar=刈る・1=ため)。日足200の上下 naka×1σ の中では入らない(箱の真ん中)。0時は入らない
+    降り:刈る=反対の ±tpk σ で利確/ため=±tamek σ で利確/全部=日足の終値が入った時の箱の外で閉じたら次の足(0時は1時)
+    次のセットは前の刈るが全部降りた後/ためは tame_max まで/休み(GW)は新しく入らない(決まった形と同じ)。1単位=0.01ロットで数える"""
+    P = 0.01; D = mk.feat('1D')
+    if 'sh_rng' not in D.columns:
+        sg = np.sign(D.c - D.c.shift(21)); fl = (sg != sg.shift(1)) & sg.shift(1).notna() & (sg != 0)
+        rg = (fl.astype(int).rolling(win).sum() >= nflip).values; h_, l_ = D.h.values, D.l.values
+        bh = np.full(len(D), np.nan); bl = np.full(len(D), np.nan); st = None
+        for k in range(len(D)):
+            if rg[k]:
+                if st is None: st = max(0, k - win + 1)
+                a = st
+            else: st = None; a = max(0, k - win + 1)
+            bh[k] = h_[a:k + 1].max(); bl[k] = l_[a:k + 1].min()
+        mk._f['1D'] = D.assign(sh_rng=rg, sh_bhi=bh, sh_blo=bl)
+    x = mk.feat(small); n = len(x); O, H, L = x.o.values, x.h.values, x.l.values; idx = x.index; hr = idx.hour.values
+    y = mk.on(small, '1D', ['c', 'md', 'sd', 'e200', 'sh_rng', 'sh_bhi', 'sh_blo']); kd = y['k_1D'].values
+    md, sd, dc, e2 = y.md.values, y.sd.values, y.c.values, y.e200.values
+    rg = y.sh_rng.fillna(False).values.astype(bool); bhi, blo = y.sh_bhi.values, y.sh_blo.values
+    newday = np.r_[False, kd[1:] != kd[:-1]]; ym = yasumi_mask(idx) if yasumi else np.zeros(n, bool)   # ym[i-1]=足 i が休みの日
+    pos = []; out = []; pair = False; camp = 0
+    for i in range(1, n - 1):
+        lv = md[i-1] - 2 * d * sd[i-1]; tp2 = md[i-1] + tpk * d * sd[i-1]; tp35 = md[i-1] + tamek * d * sd[i-1]
+        keep = []
+        for p in pos:
+            ex = None
+            if i > p['j']:
+                if p['brk'] and hr[i] != avoid: ex = (O[i] + (0 if d > 0 else spr), '芯の降り')   # 箱割れ
+                else:
+                    tv = tp2 if p['r'] == '刈る' else tp35
+                    if not np.isnan(tv) and ((d > 0 and tv > p['e'] and H[i] >= tv) or (d < 0 and tv < p['e'] - spr and L[i] <= tv)):
+                        ex = (max(O[i], tv) if d > 0 else min(O[i], tv) + spr, '利確')
+            if ex:
+                seg = slice(p['j'], i + 1)
+                mfe = ((H[seg].max() - p['e']) if d > 0 else (p['e'] - L[seg].min() - spr)) / P
+                mae = ((p['e'] - L[seg].min()) if d > 0 else (H[seg].max() + spr - p['e'])) / P
+                out.append(dict(ent=idx[p['j']], e=p['e'], ext=idx[i], x=ex[0], pips=(ex[0] - p['e']) / P * d, why=ex[1], r=p['r'], n=p['n'], camp=p['c'], mfe=mfe, mae=mae))
+            else: keep.append(p)
+        pos = keep
+        if newday[i]:
+            for p in pos:
+                if (d > 0 and dc[i] < p['bx']) or (d < 0 and dc[i] > p['bx']): p['brk'] = True
+        if pair and not any(p['r'] == '刈る' for p in pos): pair = False
+        if rg[i-1] and not ym[i-1] and not pair and hr[i] != avoid and sum(1 for p in pos if p['r'] == 'ため') < tame_max and not np.isnan(lv) and ((d > 0 and L[i] <= lv) or (d < 0 and H[i] >= lv)):
+            e = (min(O[i], lv) + spr) if d > 0 else max(O[i], lv); bx = blo[i-1] if d > 0 else bhi[i-1]
+            if ((d > 0 and e > bx) or (d < 0 and e < bx)) and abs(e - e2[i-1]) > naka * sd[i-1]:
+                camp += 1
+                for k, r in enumerate(['刈る'] * kar + ['ため']): pos.append(dict(j=i, e=e, r=r, n=k + 1, c=camp, bx=bx, brk=False))
+                pair = True
+    t = pd.DataFrame(out, columns=['ent', 'e', 'ext', 'x', 'pips', 'why', 'r', 'n', 'camp', 'mfe', 'mae'])
+    t = t.sort_values(['ent', 'n'], kind='stable').reset_index(drop=True); t.attrs['open_left'] = len(pos)
+    return t, x

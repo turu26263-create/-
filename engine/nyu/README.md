@@ -74,3 +74,4 @@ python3 engine/nyu/turbo.py engine/nyu/sekkeizu/kujira_nichi.json
 ```
 - データ:HistData 1分足 2015/1〜2025/4(GitHub yukkiya/usd-jpy-data の zip を解いた csv)/MT4 1時間足 USDJPY60.csv(Drive、2016/03〜2026/09)
 - 研究台の数字。MT4/MT5 の実測ではない
+- run_shiawase(mk, d)(tai_parts.py・11-11 たくちん「1」):しあわせセット(レンジの箱)。日足の遅行スパンが30日で3回入れ替わる間、日足±2σで4単位(刈る3・ため1)、200の上下1σの中は入らない、刈る=反対の±2σ・ため=±3.5σ利確、箱(レンジに入ってからの高安)の外で日足が閉じたら全部降り。決まった形に入っている(settei_kimari.json の shiawase)。EA(ea/Kujira3_v1.mq5)と EA の写しにはまだ無い
