@@ -201,13 +201,13 @@ def run_oshime_d(mk, d, small='1h', maxpos=5, spr=0.003, pk=10, wk=3, tpk=3.5, a
     TPV = _mae1((y.md + tpk * y.sd * d).values)
     return simulate(base, d, E, XC, KC, None, None, SLV, maxpos, spr, True, TPV, 0.0, True, 0.0, 0.0), base
 
-def run_shiawase(mk, d, small='1h', spr=0.003, nflip=3, win=30, kar=3, tame_max=5, tpk=2.0, tamek=3.5, naka=1.0, avoid=0, yasumi=True):
+def run_shiawase(mk, d, small='1h', spr=0.003, nflip=3, win=30, kar=3, tame_max=5, tpk=2.0, tamek=3.5, naka=1.0, avoid=0, yasumi=True, ok=None):
     """11-11 たくちん「1」(しあわせセットを決まった形に B=1単位0.01ロットで入れる)。研鑽7回目(kenkyu/shiawase_hako2.py)をエンジンに移した【置き換え】
     レンジ=日足の遅行スパン(終値と21本前の終値の上下)が直近 win 日で nflip 回以上入れ替わる/921・219は見ない
     箱=レンジに入ってからの高値・安値(続いているレンジの1日目の win 日前から。レンジでない日は win 日)
     入り:レンジの間、前の日足の −2σ(売りは+2σ)に値が届いたら、その値で kar+1 単位(kar=刈る・1=ため)。日足200の上下 naka×1σ の中では入らない(箱の真ん中)。0時は入らない
     降り:刈る=反対の ±tpk σ で利確/ため=±tamek σ で利確/全部=日足の終値が入った時の箱の外で閉じたら次の足(0時は1時)
-    次のセットは前の刈るが全部降りた後/ためは tame_max まで/休み(GW)は新しく入らない(決まった形と同じ)。1単位=0.01ロットで数える"""
+    次のセットは前の刈るが全部降りた後/ためは tame_max まで/休み(GW)は新しく入らない(決まった形と同じ)。ok=小さい足ごとの真偽(ok[i-1] が偽の足では入らない。上の足の縛りを外から渡す:11-11 売りの研鑽)。1単位=0.01ロットで数える"""
     P = 0.01; D = mk.feat('1D')
     if 'sh_rng' not in D.columns:
         sg = np.sign(D.c - D.c.shift(21)); fl = (sg != sg.shift(1)) & sg.shift(1).notna() & (sg != 0)
@@ -248,7 +248,7 @@ def run_shiawase(mk, d, small='1h', spr=0.003, nflip=3, win=30, kar=3, tame_max=
             for p in pos:
                 if (d > 0 and dc[i] < p['bx']) or (d < 0 and dc[i] > p['bx']): p['brk'] = True
         if pair and not any(p['r'] == '刈る' for p in pos): pair = False
-        if rg[i-1] and not ym[i-1] and not pair and hr[i] != avoid and sum(1 for p in pos if p['r'] == 'ため') < tame_max and not np.isnan(lv) and ((d > 0 and L[i] <= lv) or (d < 0 and H[i] >= lv)):
+        if rg[i-1] and not ym[i-1] and (ok is None or ok[i-1]) and not pair and hr[i] != avoid and sum(1 for p in pos if p['r'] == 'ため') < tame_max and not np.isnan(lv) and ((d > 0 and L[i] <= lv) or (d < 0 and H[i] >= lv)):
             e = (min(O[i], lv) + spr) if d > 0 else max(O[i], lv); bx = blo[i-1] if d > 0 else bhi[i-1]
             if ((d > 0 and e > bx) or (d < 0 and e < bx)) and abs(e - e2[i-1]) > naka * sd[i-1]:
                 camp += 1
