@@ -217,8 +217,8 @@ input{width:100%;min-width:0;padding:12px;border-radius:12px;border:0;font-size:
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:440px){.grid2{grid-template-columns:1fr}}
 /* 11-11 撮るボタン:見えない入れ口をボタンの上に重ね、指が入れ口そのものを押す(ボタン→隠した入れ口を呼ぶ形は、アプリの中の画面で止められる事がある) */
-#snapBtn{overflow:hidden}
-#snapBtn input[type=file]{position:absolute;top:0;left:0;width:100%;height:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:none;opacity:0;cursor:pointer;font-size:200px;z-index:1}
+#snapBtn,#pickBtn{overflow:hidden}
+#snapBtn input[type=file],#pickBtn input[type=file]{position:absolute;top:0;left:0;width:100%;height:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:none;opacity:0;cursor:pointer;font-size:200px;z-index:1}
 .photo{display:flex;gap:12px;align-items:center}
 .photo img{width:96px;height:96px;object-fit:cover;border-radius:12px;border:2px solid var(--edge-hi);box-shadow:0 4px 0 #0f3242,0 8px 10px #000a}
 .status{margin:0;min-height:1.4em;color:var(--sub);font-weight:700;font-size:.92rem}
@@ -369,6 +369,7 @@ input{width:100%;min-width:0;padding:12px;border-radius:12px;border:0;font-size:
     <h2><span class="no">2</span>駐車場を登録</h2>
     <p class="note">入口の看板や料金表を撮ると、名前・料金・営業時間を読み取って入れます。違う所は直してから登録してください。</p>
     <label class="btn" id="snapBtn">📷 看板・料金表を撮る<input id="snap" type="file" accept="image/*" capture="environment" aria-label="看板・料金表を撮る"></label>
+    <label class="btn dark" id="pickBtn">🖼 写真から選ぶ<input id="pick" type="file" accept="image/*" aria-label="看板・料金表の写真を選ぶ"></label>
     <div class="photo" id="photoRow" hidden><img id="photoImg" alt="撮った看板"><p class="status" id="readStatus"></p></div>
     <form id="addForm" style="display:grid;gap:10px">
       <label class="field"><span>名前</span><input id="fName" required maxlength="40" placeholder="例: タイムズ梅田第5"></label>
@@ -511,6 +512,8 @@ $("#snap").onchange = async e=>{
     if(err&&(err.code==="not_granted"||err.code==="sampling_disabled"||err.code==="images_unavailable")) sample=null;
   }finally{ reading=false; }
 };
+
+$("#pick").onchange = $("#snap").onchange;   // 11-11 写真から選ぶ:撮った時と同じ流れ(小さい写真を出して読み取る)
 
 $("#addForm").addEventListener("submit", async e=>{
   e.preventDefault();
