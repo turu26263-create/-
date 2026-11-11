@@ -91,7 +91,7 @@ class Market:
 
 # ---------------------------------------------------------------- 1玉ずつの売買(numba)
 @njit(cache=True)
-def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reenter, lock, lockcore, ts, ts_start, HLO):
+def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reenter, lock, lockcore, ts, ts_start, HLO, PXV):
     # E 入り / XC・KC 芯の降り(と、その合図の足が閉じた時刻)/ XA・KA 足し玉の降り / SLV 網の高さ(nan=網なし)/ TPV 利確の高さ(nan=なし)
     # slmode 0=網なし 1=網を上げるだけ(売りは下げるだけ)/ lock>0:玉が lock pips 伸びたら次の足から網を建値へ(しあわせセット)
     # 足の中の順番:網 → 利確 → 合図の降り(損な方を先に見る)
@@ -134,13 +134,15 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
                 if d > 0: ex = max(O[i], TPV[i])
                 else: ex = min(O[i], TPV[i]) + spr
                 why = 4
+            if np.isnan(ex) and not np.isnan(PXV[i]) and i >= j:        # 11-11 離れ利確:帯から離れ出した足が閉じた時の値(PXV)が建値より向こうにある玉だけ、次の足の始値で利確
+                if (d > 0 and PXV[i] > pe[s]) or (d < 0 and PXV[i] < pe[s] - spr): ex = O[i + 1] + (0.0 if d > 0 else spr); why = 7
             if np.isnan(ex):
                 if pn[s] == 1:
                     if XC[i] and KC[i] > T[j]: ex = O[i + 1] + (0.0 if d > 0 else spr); why = 1   # 売りの降りは買い戻し=スプレッドを払う(11-06 鏡の照らしで見つけたミスを直した)
                 else:
                     if XA[i] and KA[i] > T[j]: ex = O[i + 1] + (0.0 if d > 0 else spr); why = 2
             if not np.isnan(ex):
-                out_j[m] = j; out_i[m] = i + (0 if why >= 3 else 1); out_e[m] = pe[s]; out_x[m] = ex; out_n[m] = pn[s]; out_c[m] = pc[s]; out_w[m] = why
+                out_j[m] = j; out_i[m] = i + (1 if (why < 3 or why == 7) else 0); out_e[m] = pe[s]; out_x[m] = ex; out_n[m] = pn[s]; out_c[m] = pc[s]; out_w[m] = why
                 out_lo[m] = pmin[s]; out_hi[m] = pmax[s]; m += 1
                 act[s] = False; cnt -= 1; exited = True
             else:
@@ -168,9 +170,9 @@ def _sim(O, H, L, T, E, XC, KC, XA, KA, SLV, TPV, d, maxpos, spr, slmode, reente
     held = cnt
     return out_j[:m], out_i[:m], out_e[:m], out_x[:m], out_n[:m], out_c[:m], out_w[:m], out_lo[:m], out_hi[:m], maxheld, held, amb, amb_tp
 
-WHY = {1: '芯の降り', 2: '足しの降り', 3: '網', 4: '利確', 5: '建値', 6: 'TS'}
+WHY = {1: '芯の降り', 2: '足しの降り', 3: '網', 4: '利確', 5: '建値', 6: 'TS', 7: '離れ利確'}
 
-def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003, reenter=True, TPV=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, HLO=None):
+def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003, reenter=True, TPV=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, HLO=None, PXV=None):
     """base=入る足の表(o,h,l,c と時刻)。真偽の並びを渡すと、1玉ずつの戦の表を返す。
     SLV=網の高さ(上げるだけ)/TPV=利確の高さ/lock=しあわせセット(伸びたら網を建値へ)。玉ごとに 逆に行った最大(mae)・伸びた最大(mfe)も返す"""
     O = base.o.values.astype(np.float64); H = base.h.values.astype(np.float64); L = base.l.values.astype(np.float64)
@@ -181,7 +183,7 @@ def simulate(base, d, E, XC, KC, XA=None, KA=None, SLV=None, maxpos=1, spr=0.003
     nan = np.full(len(O), np.nan)
     sl = nan if SLV is None else np.asarray(SLV, dtype=np.float64)
     tp = nan if TPV is None else np.asarray(TPV, dtype=np.float64)
-    r = _sim(O, H, L, T, f(E), f(XC), k(KC), f(XA), k(KA), sl, tp, d, maxpos, spr, 0 if SLV is None else 1, reenter, float(lock), bool(lockcore), float(ts), float(ts_start), np.zeros(len(O), np.int64) if HLO is None else np.asarray(HLO, dtype=np.int64))
+    r = _sim(O, H, L, T, f(E), f(XC), k(KC), f(XA), k(KA), sl, tp, d, maxpos, spr, 0 if SLV is None else 1, reenter, float(lock), bool(lockcore), float(ts), float(ts_start), np.zeros(len(O), np.int64) if HLO is None else np.asarray(HLO, dtype=np.int64), nan if PXV is None else np.asarray(PXV, dtype=np.float64))
     j, i, e, x, n, c, w, lo, hi, mx, held, amb, amb_tp = r
     t = pd.DataFrame({'ent': base.index.values[j], 'e': e, 'ext': base.index.values[np.minimum(i, len(O) - 1)], 'x': x,
                       'pips': (x - e) / PIP * d, 'n': n, 'camp': c, 'why': [WHY[v] for v in w]})
