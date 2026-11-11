@@ -1,5 +1,10 @@
 # 引き継ぎ(自動で読み込まれる) — 最終更新 2026-10-30 13:40
 
+## 11-11 ゆたかけいぼ カメラ(あすかと同じ直し)
+- 済:アーティファクト ゆたかけいぼ 版16 に公開(https://claude.ai/artifact/1waMNuudb8nHXTecNTYmaA)。どの機種でも「カメラで撮る」を出す/画面がカメラを渡さない時は写真選び+「ブラウザで開く」案内(github.io/ayumi-kakeibo/yutaka/)/撮影中の印を yutaka-kamera-chu に分けた
+- 照らし済み(Playwright・Android の顔):ブラウザ→ページ内にカメラ映る(1920幅)/カメラを渡さない枠→案内が出て写真選びが開く/エラー0
+- まだ:ayumi-kakeibo リポの yutaka/index.html に同じ直し(このセッションに押す許しが無く止まった。直しは kakeibo/yutaka_kamera_port.py で同じ物が当てられる)/実機の携帯での確認
+
 ## いま進めている事:スカイネット(パソコン起こし=ザメハ と キャッスル防衛AI)
 - 家のルーター名「skynet」。キャッスル防衛AI(Downloads\キャッスル防衛AI\castle_defense.py)は skynet につながる家のパソコン(有線LAN)にある
 - 10-30 昼:城が「起きてない」(たくちん確認)。たくちんは外出中
