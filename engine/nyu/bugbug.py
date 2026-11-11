@@ -9,7 +9,7 @@
 import numpy as np, pandas as pd
 from nyu import Market, kagami, bousou
 
-NAMES = {'芯の降り', '足しの降り', '網', '利確', '建値', 'TS', '離れ利確'}
+NAMES = {'芯の降り', '足しの降り', '網', '利確', '建値', 'TS'}
 
 
 def _overlap_max(t):
