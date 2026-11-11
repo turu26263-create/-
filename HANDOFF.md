@@ -1,9 +1,10 @@
 # 引き継ぎ(自動で読み込まれる) — 最終更新 2026-10-30 13:40
 
-## 11-11 ゆたかけいぼ カメラ(あすかと同じ直し)
-- 済:アーティファクト ゆたかけいぼ 版16 に公開(https://claude.ai/artifact/1waMNuudb8nHXTecNTYmaA)。どの機種でも「カメラで撮る」を出す/画面がカメラを渡さない時は写真選び+「ブラウザで開く」案内(github.io/ayumi-kakeibo/yutaka/)/撮影中の印を yutaka-kamera-chu に分けた
-- 照らし済み(Playwright・Android の顔):ブラウザ→ページ内にカメラ映る(1920幅)/カメラを渡さない枠→案内が出て写真選びが開く/エラー0
-- まだ:ayumi-kakeibo リポの yutaka/index.html に同じ直し(このセッションに押す許しが無く止まった。直しは kakeibo/yutaka_kamera_port.py で同じ物が当てられる)/実機の携帯での確認
+## 11-11 ゆたかけいぼ カメラ(あすかと同じ直し+AQUOS対策)
+- 済:アーティファクト版17(https://claude.ai/artifact/1waMNuudb8nHXTecNTYmaA)と GitHub ayumi-kakeibo main 64869e2(yutaka/index.html)に同じ物
+- たくちん報告「AQUOSでカメラ出来ない」→ 見込み:カメラが返事をしないまま止まる。対策:7秒で打ち切り/撮影の幕に「写真を選ぶ」/止まった理由を画面1行(gamenYosu)に出す/失敗後に勝手に写真選びを開かない(指の操作から離れると止められるため)
+- 照らし済み(Playwright・Android顔):普通→ページ内に映る1920幅/返事しない→7秒で案内+理由TimeoutError、「写真を選ぶ」で選ぶ窓が開く/カメラを渡さない枠→案内+写真選び/エラー0
+- まだ:AQUOS実機。たくちんに画面の1行「この画面:… / カメラの許し:… / 止まった理由:…」を教えてもらう
 
 ## いま進めている事:スカイネット(パソコン起こし=ザメハ と キャッスル防衛AI)
 - 家のルーター名「skynet」。キャッスル防衛AI(Downloads\キャッスル防衛AI\castle_defense.py)は skynet につながる家のパソコン(有線LAN)にある
