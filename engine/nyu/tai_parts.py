@@ -201,13 +201,14 @@ def run_oshime_d(mk, d, small='1h', maxpos=5, spr=0.003, pk=10, wk=3, tpk=3.5, a
     TPV = _mae1((y.md + tpk * y.sd * d).values)
     return simulate(base, d, E, XC, KC, None, None, SLV, maxpos, spr, True, TPV, 0.0, True, 0.0, 0.0), base
 
-def run_shiawase(mk, d, small='1h', spr=0.003, nflip=3, win=30, kar=3, tame_max=5, tpk=2.0, tamek=3.5, naka=1.0, avoid=0, yasumi=True, ok=None):
+def run_shiawase(mk, d, small='1h', spr=0.003, nflip=3, win=30, kar=3, tame_max=5, tpk=2.0, tamek=3.5, naka=1.0, avoid=0, yasumi=True, ok=None, shuu_muki=False):
     """11-11 たくちん「1」(しあわせセットを決まった形に B=1単位0.01ロットで入れる)。研鑽7回目(kenkyu/shiawase_hako2.py)をエンジンに移した【置き換え】
     レンジ=日足の遅行スパン(終値と21本前の終値の上下)が直近 win 日で nflip 回以上入れ替わる/921・219は見ない
     箱=レンジに入ってからの高値・安値(続いているレンジの1日目の win 日前から。レンジでない日は win 日)
     入り:レンジの間、前の日足の −2σ(売りは+2σ)に値が届いたら、その値で kar+1 単位(kar=刈る・1=ため)。日足200の上下 naka×1σ の中では入らない(箱の真ん中)。0時は入らない
     降り:刈る=反対の ±tpk σ で利確/ため=±tamek σ で利確/全部=日足の終値が入った時の箱の外で閉じたら次の足(0時は1時)
-    次のセットは前の刈るが全部降りた後/ためは tame_max まで/休み(GW)は新しく入らない(決まった形と同じ)。ok=小さい足ごとの真偽(ok[i-1] が偽の足では入らない。上の足の縛りを外から渡す:11-11 売りの研鑽)。1単位=0.01ロットで数える"""
+    次のセットは前の刈るが全部降りた後/ためは tame_max まで/休み(GW)は新しく入らない(決まった形と同じ)。ok=小さい足ごとの真偽(ok[i-1] が偽の足では入らない。上の足の縛りを外から渡す:11-11 売りの研鑽)。
+    shuu_muki=True(11-12 たくちん「ご」):週足(月曜0時からの7日足・閉じた週だけ)の並びが入る向きの時だけ入る。売りは週足219の間だけ(週足921=上げの大山の途中では売らない)、買いは週足921の間だけ(鏡うつし)。決まった形では売りだけに使う1単位=0.01ロットで数える"""
     P = 0.01; D = mk.feat('1D')
     if 'sh_rng' not in D.columns:
         sg = np.sign(D.c - D.c.shift(21)); fl = (sg != sg.shift(1)) & sg.shift(1).notna() & (sg != 0)
@@ -224,6 +225,11 @@ def run_shiawase(mk, d, small='1h', spr=0.003, nflip=3, win=30, kar=3, tame_max=
     y = mk.on(small, '1D', ['c', 'md', 'sd', 'e200', 'sh_rng', 'sh_bhi', 'sh_blo']); kd = y['k_1D'].values
     md, sd, dc, e2 = y.md.values, y.sd.values, y.c.values, y.e200.values
     rg = y.sh_rng.fillna(False).values.astype(bool); bhi, blo = y.sh_bhi.values, y.sh_blo.values
+    if shuu_muki:
+        W = mk.raw.resample('W-MON', label='left', closed='left').agg(dict(o='first', h='max', l='min', c='last')).dropna()
+        W['k'] = W.index + pd.Timedelta('7D'); W['w219'] = (W.c.ewm(span=9, adjust=False).mean() - W.c.ewm(span=21, adjust=False).mean()) * d > 0   # 入る向きの並び(売り=219・買い=921)
+        wk = pd.merge_asof(pd.DataFrame({'kb': idx + (idx[1] - idx[0] if n > 1 else pd.Timedelta('1h'))}), W[['k', 'w219']], left_on='kb', right_on='k', direction='backward').w219.fillna(False).values.astype(bool)
+        ok = wk if ok is None else (np.asarray(ok, bool) & wk)
     newday = np.r_[False, kd[1:] != kd[:-1]]; ym = yasumi_mask(idx) if yasumi else np.zeros(n, bool)   # ym[i-1]=足 i が休みの日
     pos = []; out = []; pair = False; camp = 0
     for i in range(1, n - 1):

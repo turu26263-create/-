@@ -9,8 +9,8 @@ u, _ = run_tai(srv, f['big'], f['mid'], f['small'], -1, tuple(f['core_exit']), *
 dz = f['doten']; dt_, _ = run_doten(srv, dz['d'], xtf=dz.get('xtf'), **KW); dt_['d'] = dz['d']; t = pd.concat([t, dt_], ignore_index=True)
 tz = f['tai']; KT = {**KW, 'maxpos': tz['maxpos'], 'tp': None, 'ts': tz['ts']}; tt_, _ = run_tai(srv, f['big'], f['mid'], f['small'], tz['d'], tuple(tz['exit']), **KT); tt_['d'] = tz['d']; t = pd.concat([t, tt_], ignore_index=True)
 for d in (1, -1): oo, _ = run_oshime_d(srv, d, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False)); oo['d'] = d; t = pd.concat([t, oo], ignore_index=True)
-sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs')}
-sh = pd.concat([run_shiawase(srv, d, yasumi=f.get('yasumi', False), **sz)[0].assign(d=d) for d in f['shiawase'].get('dirs', [1, -1])], ignore_index=True)
+sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}
+sh = pd.concat([run_shiawase(srv, d, yasumi=f.get('yasumi', False), shuu_muki=d in f['shiawase'].get('shuu_muki', []), **sz)[0].assign(d=d) for d in f['shiawase'].get('dirs', [1, -1])], ignore_index=True)
 sh = sh[sh.ent >= t.ent.min()]
 for nm, tt in (('今の決まった形', t), ('しあわせセット入り', pd.concat([t, sh], ignore_index=True))):
     T, s = lot_sizing(tt, b, 1, k['資金'], margin_cap=k['証拠金の上限'], leverage=k['レバレッジ'], fixed_lot=k['決め打ちのロット'], stopout=k['強制決済の維持率'])
