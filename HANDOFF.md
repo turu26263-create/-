@@ -7,6 +7,17 @@
 - なので「起きてない」一番の見込み:パソコン自体が寝ている/切れている。次:ログインしていない(Run はログイン後に動く)
 - 10-30 13:35 時点で Remote Control でつなげるパソコンは0台 → 実機作業は帰宅待ち
 
+## 占い(総合運勢鑑定書) — 11-14 整理済み
+- いまの物: アプリの中 https://claude.ai/artifact/VLdArk99B4kiq7sqoYxn2F (版15) / 外 GitHub Pages https://turu26263-create.github.io/uranai-kantei/ (リポジトリ uranai-kantei)
+- 手元の正本: 占い/live2/kanteisho.html + hinagata4.jpg。古い作業ファイルは消した(git の記録には残る)
+- 固定: ホームと2ページ目は言われた所だけ直す。変える時は先に聞いて「ご」
+- 15画は「福寿円満運・大吉」(たくちんの決め)
+- カメラ: アプリの中(AQUOS wish)は開かない。外の Pages で撮る/写真を選ぶ
+- 名前: 開き直し・裏から3秒以上で戻す・読み直しで空になる(手元で照らし済み)
+- Pages も版15と同じ中身(uranai-kantei main c377edb、公開ページと照合済み 11-14)。このチャットから uranai-kantei に入れる(/home/user/uranai-kantei)
+- まだ: 実機の確認 / 占成人の基準数の決まり(式が分からず手で入れる形)
+- 試験の1枚 https://claude.ai/artifact/MK2XMnpisv5dLsA1W5XiaZ (写真ファイルを選べるか)。結果待ち
+
 ## 置いた物(Drive フォルダ 1izpPoOGTy6yW2eeNR8-0RKUcXN5vYKHV)
 - パソコン起こし_準備_v2.ps1:管理者で1回流す。失敗を「入れた」と言わない版。最後に読み直して表示、デスクトップ「パソコン起こし_住所.txt」に書き出し。照らし済み:同報先の計算。まだ:Windows で実際に流すこと
 - パソコン起こし.py:家のネットの中から起こし合図を送る(合図102バイト照らし済み)

@@ -1,0 +1,42 @@
+<title>写真ファイル試験</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 試験だけの1枚。押して、結果の文を読むだけ */
+:root { --bg: #f4f2f7; --fg: #1d1a24; --muted: #5d5868; --line: #c9c3d6; --ok: #1f7a3a; --ng: #b3261e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16131c; --fg: #f1eef6; --muted: #aaa3b8; --line: #3d3649; --ok: #6fd28e; --ng: #ff8a80; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #16131c; --fg: #f1eef6; --muted: #aaa3b8; --line: #3d3649; --ok: #6fd28e; --ng: #ff8a80; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.7 "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+main { max-width: 520px; margin: 0 auto; display: grid; gap: 14px; }
+h1 { font-size: 1.3rem; margin: 0; }
+.t { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; }
+.t b { font-size: 1rem; }
+input[type="file"] { font-size: 16px; max-width: 100%; color: var(--fg); }
+#out { font-size: 1.1rem; font-weight: 700; min-height: 2em; }
+#out.ok { color: var(--ok); } #out.ng { color: var(--ng); }
+img { max-width: 160px; border-radius: 8px; }
+.m { color: var(--muted); font-size: .9rem; margin: 0; }
+</style>
+<main>
+  <h1>写真ファイル試験</h1>
+  <p class="m">固定のページは触っていません。Claude アプリの中で、写真のファイルを選べるかだけを確かめる紙です。下の2つを順に押して、緑の文が出るか見てください。</p>
+  <div class="t"><b>1. 写真を選ぶ</b><input id="a" type="file" accept="image/*"></div>
+  <div class="t"><b>2. カメラで撮る</b><input id="b" type="file" accept="image/*" capture="environment"></div>
+  <p id="out">まだ押していません</p>
+  <img id="im" alt="選んだ写真" hidden>
+</main>
+<script>
+(function () {
+  const out = document.getElementById("out"), im = document.getElementById("im");
+  function say(t, ok) { out.textContent = t; out.className = ok === true ? "ok" : ok === false ? "ng" : ""; }
+  [["a", "写真を選ぶ"], ["b", "カメラで撮る"]].forEach(([id, n]) => {
+    const el = document.getElementById(id);
+    el.addEventListener("click", () => say(n + "：押せました。選ぶ画面が出るか見てください"));
+    el.addEventListener("change", () => {
+      const f = el.files && el.files[0];
+      if (!f) { say(n + "：画面は出たが、写真が戻ってきませんでした", false); return; }
+      say(n + "：できました（" + Math.round(f.size / 1024) + "KB）", true);
+      const r = new FileReader(); r.onload = () => { im.src = r.result; im.hidden = false; }; r.readAsDataURL(f);
+    });
+  });
+})();
+</script>
