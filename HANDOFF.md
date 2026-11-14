@@ -7,6 +7,12 @@
 - まだ: Claudeアプリの中・実機の携帯での確認(写真のカメラ起動、IndexedDBがアプリ内で残るか)。AI欄は未照らし
 - 控え: リポジトリ markfactory/(index.html は出した物と同じ、test.js で照らし直せる。jsQR は npm pack jsqr@1.4.0 で手元に)
 
+## 11-14 スキルパック(済)
+- 作った4つ:アプリに足して動作確認(tashite-dousakakunin)・時系列会話(jikeiretsu-kaiwa)・伝票処理(denpyo-shori)・文字起こし(mojiokoshi)。正本 .claude/skills/、zip は skills_sync/
+- Drive の皿に .md と zip、パック takuchin-skillpack_20261114.zip(中の zip を1つずつ口座に入れる。README_入れ方.md)。大きさは全部手元と同じを照らした。台帳は 20261114b を皿、古い 20261111b・20261114 は倉庫
+- 照らし済み:時系列の並べ(見本)、伝票OCR→読み違い3つを突き合わせで検出、zip から出した物で道具が動く
+- まだ:口座(claude.ai)への入れ替えはたくちん。音声の文字起こし(モデルが作業場から取れない)。本物のレシート
+
 ## いま進めている事:スカイネット(パソコン起こし=ザメハ と キャッスル防衛AI)
 - 家のルーター名「skynet」。キャッスル防衛AI(Downloads\キャッスル防衛AI\castle_defense.py)は skynet につながる家のパソコン(有線LAN)にある
 - 10-30 昼:城が「起きてない」(たくちん確認)。たくちんは外出中
