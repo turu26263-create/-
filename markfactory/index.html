@@ -1,0 +1,1030 @@
+<title>マークファクトリー</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* 整備工場の帳場: 鋼の青ねずみ地に、信号の黄色を1色だけ。ナンバー札と車検ステッカーを部品として使う */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --sunk:#e4e9ee; --ink:#16202b; --muted:#566473; --line:#cfd7e0;
+  --accent:#e8a317; --accent-ink:#1d1500; --steel:#2c4a66; --steel-ink:#ffffff;
+  --ok:#2c8a4b; --warn:#b86e00; --bad:#bf3a2b; --plate:#ffffff; --plate-ink:#0f5a32;
+  --paper:#ffffff; --paper-ink:#16202b; --paper-line:#c3ccd6; --scrim:rgba(8,12,18,.88);
+  --display:"Dela Gothic One","Hiragino Kaku Gothic StdN","Noto Sans JP",sans-serif;
+  --body:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic","Meiryo",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f151c; --panel:#17202a; --sunk:#111922; --ink:#e6ecf2; --muted:#9caab8; --line:#2b3745;
+  --accent:#f2b63a; --accent-ink:#1d1500; --steel:#7fa9d0; --steel-ink:#0f151c;
+  --ok:#5cc27d; --warn:#f0a33a; --bad:#f0705f; --plate:#eef3ee; --plate-ink:#0f5a32; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151c; --panel:#17202a; --sunk:#111922; --ink:#e6ecf2; --muted:#9caab8; --line:#2b3745;
+  --accent:#f2b63a; --accent-ink:#1d1500; --steel:#7fa9d0; --steel-ink:#0f151c;
+  --ok:#5cc27d; --warn:#f0a33a; --bad:#f0705f; --plate:#eef3ee; --plate-ink:#0f5a32; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;font-size:clamp(15px,1rem,16px);line-height:1.6;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--steel)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--steel);color:var(--steel-ink)}
+header.top .wrap{padding-block:14px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{font-family:var(--display);font-size:24px;letter-spacing:.02em;line-height:1.1;margin:0}
+.logo small{display:block;font-family:var(--body);font-size:12px;letter-spacing:.08em;opacity:.85;font-weight:600;margin-top:4px}
+.mark{width:40px;height:40px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--display);font-size:20px;flex:none}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:4px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
+nav.tabs .wrap::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid transparent;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:14px;padding:8px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.tab .dot{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;text-align:center;margin-left:4px;padding:0 4px}
+main{padding-block:16px 48px}
+section.pane{display:grid;gap:16px}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0;text-wrap:balance}
+h3{font-size:16px;margin:0}
+.lead{color:var(--muted);margin:0;font-size:14px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:12px;min-width:0}
+details.box>summary{cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;gap:8px}
+details.box>summary::before{content:"＋";display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-weight:900}
+details.box[open]>summary::before{content:"－"}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+label.f{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;min-width:0}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+textarea{min-height:76px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,.btn:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-weight:700;font-size:14px;border-radius:8px;padding:9px 14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;text-decoration:none;min-height:40px}
+.btn.main{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{padding:5px 10px;min-height:32px;font-size:13px}
+.btn.big{font-size:16px;padding:14px 18px;min-height:52px;flex:1 1 180px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.list{display:grid;gap:10px}
+.item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;min-width:0}
+.item.low{border-color:var(--warn)}
+.ihead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.meta{color:var(--muted);font-size:13px}
+.plate{display:inline-flex;align-items:center;gap:6px;background:var(--plate);color:var(--plate-ink);border:2px solid var(--plate-ink);border-radius:5px;padding:2px 8px;font-weight:800;font-size:14px;letter-spacing:.04em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sticker{display:inline-grid;grid-template-columns:auto auto;align-items:center;gap:8px}
+.sticker b{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:400;font-size:18px;background:var(--sunk);color:var(--ink);border:2px solid var(--line)}
+.sticker.soon b{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sticker.over b{background:var(--bad);color:#fff;border-color:var(--bad)}
+.sticker span{font-size:12px;line-height:1.3;color:var(--muted)}
+.sticker span strong{display:block;color:var(--ink);font-size:14px}
+.chip{display:inline-block;justify-self:start;width:max-content;max-width:100%;font-size:11px;font-weight:800;letter-spacing:.06em;border-radius:4px;padding:1px 6px;border:1px solid currentColor}
+.chip.warn{color:var(--warn)} .chip.bad{color:var(--bad)} .chip.ok{color:var(--ok)} .chip.mute{color:var(--muted)}
+.mono{font-family:var(--mono);font-size:13px;word-break:break-all}
+.qty{display:inline-flex;align-items:center;gap:6px}
+.qty b{min-width:44px;text-align:center;font-size:20px;font-variant-numeric:tabular-nums}
+.qty button{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--sunk);color:var(--ink);font-size:20px;font-weight:800;cursor:pointer}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:middle}
+th{font-size:12px;color:var(--muted);letter-spacing:.04em}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td input,td select{padding:6px 8px}
+.total{display:grid;gap:4px;justify-content:end;text-align:right;font-variant-numeric:tabular-nums}
+.total .g{font-family:var(--display);font-weight:400;font-size:24px}
+.msg{white-space:pre-wrap;background:var(--sunk);border-radius:8px;padding:10px;font-size:14px}
+.hist{border-left:3px solid var(--line);padding-left:10px;display:grid;gap:8px}
+.hist div{font-size:14px}
+.preview{max-width:100%;max-height:280px;border-radius:10px;border:1px solid var(--line);display:block}
+.result{border-radius:10px;padding:12px;background:var(--sunk);display:grid;gap:8px}
+.law{display:grid;gap:10px}
+.law details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.law summary{font-weight:800;cursor:pointer}
+.law ul{margin:8px 0 0;padding-left:20px;display:grid;gap:4px}
+.law .src{font-size:12px;color:var(--muted);margin-top:8px}
+.law a{color:var(--steel)}
+.ai-out{white-space:pre-wrap;background:var(--sunk);border-radius:8px;padding:12px;font-size:14px;min-height:48px}
+.note{font-size:13px;color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:18px;border:1px dashed var(--line);border-radius:12px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:700;font-size:14px;z-index:20;max-width:calc(100% - 32px);text-align:center}
+@media (max-width:600px){
+  .tbl table{min-width:0}
+  .tbl thead{display:none}
+  .tbl tr{display:grid;grid-template-columns:1fr 1fr 40px;gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .tbl td{border:0;padding:0}
+  .tbl td:nth-child(1){grid-column:1/3}
+  .tbl td:nth-child(2){grid-column:1/-1;grid-row:2}
+  .tbl td:nth-child(3)::before{content:"数";font-size:11px;color:var(--muted);display:block}
+  .tbl td:nth-child(4)::before{content:"単価(円)";font-size:11px;color:var(--muted);display:block}
+  .tbl td:nth-child(3){grid-row:3;grid-column:1}
+  .tbl td:nth-child(4){grid-row:3;grid-column:2/-1}
+  .tbl td:nth-child(5){grid-row:4;grid-column:1/-1;font-weight:800}
+  .tbl td:nth-child(6){grid-row:1;grid-column:3}
+}
+/* 書類(請求書・領収書)は両方の画面の色で白い紙のまま */
+.paper{background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-line);border-radius:4px;padding:20px 18px;display:grid;gap:12px;font-size:14px;min-width:0}
+.paper h4{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:.4em;text-align:center;margin:0;border-bottom:3px double var(--paper-ink);padding-bottom:6px}
+.paper .two{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.paper .who{font-size:17px;font-weight:800;border-bottom:1px solid var(--paper-ink);padding-bottom:2px}
+.paper .amt{font-family:var(--display);font-size:26px;border-bottom:2px solid var(--paper-ink);display:inline-block;padding:0 8px;font-variant-numeric:tabular-nums}
+.paper .from{text-align:right;font-size:13px;line-height:1.5}
+.paper .small{font-size:12px}
+.dtbl{overflow-x:auto}
+.dtbl table{min-width:0;font-size:13px}
+.dtbl th,.dtbl td{border-color:var(--paper-line);color:var(--paper-ink);padding:5px 4px}
+.inshi{width:76px;height:76px;border:1px dashed var(--paper-ink);display:grid;place-items:center;text-align:center;font-size:11px;line-height:1.3;flex:none}
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.tile{background:var(--sunk);border-radius:10px;padding:10px 12px;display:grid;gap:2px;min-width:0}
+.tile span{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.tile b{font-size:20px;font-variant-numeric:tabular-nums}
+.tile.hi{background:var(--steel);color:var(--steel-ink)} .tile.hi span{color:var(--steel-ink);opacity:.85}
+.chart svg{width:100%;height:auto;display:block;max-width:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend i,.pip{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;margin-right:4px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .dow{font-size:11px;text-align:center;color:var(--muted);font-weight:800}
+.cal .d{min-height:54px;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:4px;display:grid;align-content:start;gap:3px;font:inherit;color:var(--ink);cursor:pointer;text-align:left;min-width:0}
+.cal .d.out{opacity:.45}
+.cal .d.today{border:2px solid var(--accent)}
+.cal .d.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.cal .d .n{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.cal .d.sun:not(.sel) .n{color:var(--bad)} .cal .d.sat:not(.sel) .n{color:var(--steel)}
+.cal .d .pips{display:flex;flex-wrap:wrap;gap:2px}
+.cal .d .pip{width:8px;height:8px;border-radius:50%;margin:0}
+.pip.bk{background:var(--steel)} .pip.sk{background:var(--bad)} .pip.ck{background:var(--accent)} .pip.lp{background:var(--ok)}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.ph{display:grid;gap:2px;min-width:0}
+.ph button.img{padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sunk);cursor:zoom-in;aspect-ratio:1;max-width:100%}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph .meta{font-size:11px;line-height:1.3}
+.viewer{position:fixed;inset:0;z-index:30;background:var(--scrim);display:grid;grid-template-rows:auto 1fr;gap:8px;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.viewer .vbar{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#fff;font-weight:700}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain;place-self:center;border-radius:6px}
+footer{padding-block:8px 32px;color:var(--muted);font-size:12px}
+@media (prefers-reduced-motion: no-preference){.tab,.btn{transition:background .15s,color .15s}}
+</style>
+
+<header class="top"><div class="wrap">
+  <div class="mark" aria-hidden="true">M</div>
+  <h1 class="logo">マークファクトリー<small>車屋さんの帳場</small></h1>
+</div></header>
+
+<nav class="tabs" aria-label="機能"><div class="wrap" role="tablist" id="tabs">
+  <button class="tab" role="tab" data-tab="cars">車・整備記録</button>
+  <button class="tab" role="tab" data-tab="book">予約</button>
+  <button class="tab" role="tab" data-tab="est">見積もり</button>
+  <button class="tab" role="tab" data-tab="inv">請求・領収</button>
+  <button class="tab" role="tab" data-tab="sales">売上</button>
+  <button class="tab" role="tab" data-tab="stock">在庫</button>
+  <button class="tab" role="tab" data-tab="contact">お客さん連絡</button>
+  <button class="tab" role="tab" data-tab="order">部品の発注</button>
+  <button class="tab" role="tab" data-tab="qr">QR読み取り</button>
+  <button class="tab" role="tab" data-tab="law">法律の手引き</button>
+</div></nav>
+
+<main class="wrap">
+
+<!-- 1 車・整備記録 -->
+<section class="pane" id="p-cars" hidden>
+  <div><h2>車・整備記録</h2><p class="lead">お客さんの車を登録して、作業のたびに記録を残します。車検の残り日数は丸いステッカーで見えます。</p></div>
+  <details class="box" id="carFormBox"><summary id="carFormTitle">車を登録する</summary>
+    <form id="carForm" class="grid">
+      <input type="hidden" id="car_id">
+      <label class="f">お客さんの名前<input id="car_name" required placeholder="例: 山田 太郎"></label>
+      <label class="f">電話<input id="car_tel" inputmode="tel" placeholder="例: 090-1234-5678"></label>
+      <label class="f">ナンバー<input id="car_plate" placeholder="例: 品川 500 さ 12-34"></label>
+      <label class="f">車種・型式<input id="car_model" placeholder="例: プリウス (ZVW30)"></label>
+      <label class="f">年式<input id="car_year" inputmode="numeric" placeholder="例: 2015"></label>
+      <label class="f">走行距離(km)<input id="car_km" inputmode="numeric" placeholder="例: 82000"></label>
+      <label class="f">車検の満了日<input id="car_shaken" type="date"></label>
+      <label class="f">次の点検日<input id="car_check" type="date"></label>
+      <label class="f" style="grid-column:1/-1">メモ<input id="car_memo" placeholder="例: 代車希望、タイヤ溝少なめ"></label>
+      <div class="row" style="grid-column:1/-1"><button class="btn main" type="submit">保存する</button><button class="btn" type="button" data-act="carFormReset">入力を消す</button></div>
+    </form>
+  </details>
+
+  <details class="box" id="recFormBox" hidden><summary id="recFormTitle">整備記録を書く</summary>
+    <form id="recForm" class="grid">
+      <input type="hidden" id="rec_car"><input type="hidden" id="rec_id">
+      <label class="f">作業日<input id="rec_date" type="date" required></label>
+      <label class="f">走行距離(km)<input id="rec_km" inputmode="numeric"></label>
+      <label class="f">工賃(円・税抜)<input id="rec_labor" inputmode="numeric" placeholder="0"></label>
+      <label class="f">次の点検日<input id="rec_next" type="date"></label>
+      <label class="f" style="grid-column:1/-1">作業の中身<textarea id="rec_work" required placeholder="例: エンジンオイル交換、フィルター交換、タイヤ空気圧調整"></textarea></label>
+      <div style="grid-column:1/-1;display:grid;gap:8px">
+        <span class="f" style="font-size:12px;font-weight:700;color:var(--muted)">使った部品</span>
+        <div id="recParts" class="list"></div>
+        <div class="row"><button class="btn small" type="button" data-act="recAddPart">＋ 部品を足す</button>
+        <label class="row note"><input type="checkbox" id="rec_deduct" checked style="width:auto"> 保存の時に在庫から引く</label></div>
+      </div>
+      <div class="row" style="grid-column:1/-1"><button class="btn main" type="submit">記録を保存</button><button class="btn" type="button" data-act="recCancel">やめる</button></div>
+    </form>
+  </details>
+
+  <div class="row"><input id="carSearch" type="search" placeholder="名前・ナンバー・車種でさがす" style="flex:1 1 220px"></div>
+  <div class="list" id="carList"></div>
+</section>
+
+<!-- 予約 -->
+<section class="pane" id="p-book" hidden>
+  <div><h2>作業予約</h2><p class="lead">入庫の予定と代車の貸し出しを日ごとに見ます。日付を押すと、その日の予定と代車の空きが下に出ます。</p></div>
+  <div class="box">
+    <div class="row" style="justify-content:space-between"><button class="btn small" data-act="calMove" data-d="-1">← 前の月</button><strong id="calTitle" style="font-size:16px"></strong><button class="btn small" data-act="calMove" data-d="1">次の月 →</button></div>
+    <div class="cal" id="cal"></div>
+    <div class="legend"><span><i class="pip bk"></i>予約</span><span><i class="pip lp"></i>代車貸し出し</span><span><i class="pip sk"></i>車検の満了日</span><span><i class="pip ck"></i>点検日</span></div>
+  </div>
+  <div class="box">
+    <div class="row" style="justify-content:space-between"><h3 id="dayTitle"></h3><button class="btn small main" data-act="bkNew">＋ この日に予約</button></div>
+    <div id="dayList" class="list"></div>
+    <div id="dayLoan" class="note"></div>
+  </div>
+  <details class="box" id="bkFormBox"><summary id="bkFormTitle">予約を入れる</summary>
+    <form id="bkForm" class="grid">
+      <input type="hidden" id="bk_id">
+      <label class="f">車(お客さん)<select id="bk_car" required></select></label>
+      <label class="f">入庫日<input id="bk_date" type="date" required></label>
+      <label class="f">時刻<input id="bk_time" type="time"></label>
+      <label class="f">仕上がり予定日<input id="bk_end" type="date"></label>
+      <label class="f">代車<select id="bk_loan"></select></label>
+      <label class="f">状態<select id="bk_st"><option>予約</option><option>入庫中</option><option>完了</option></select></label>
+      <label class="f" style="grid-column:1/-1">作業<input id="bk_work" required placeholder="例: 車検、オイル交換"></label>
+      <div class="row" style="grid-column:1/-1"><button class="btn main" type="submit">保存する</button><button class="btn" type="button" data-act="bkReset">入力を消す</button></div>
+    </form>
+  </details>
+  <details class="box"><summary>代車の台帳</summary>
+    <div id="loanList" class="list"></div>
+    <div class="row"><input id="loan_new" placeholder="例: 代車3 ワゴンR (品川 580 あ 00-01)" style="flex:1 1 220px"><button class="btn" data-act="loanAdd">足す</button></div>
+  </details>
+</section>
+
+<!-- 2 見積もり -->
+<section class="pane" id="p-est" hidden>
+  <div><h2>見積もり</h2><p class="lead">部品と工賃は税抜で入れます。消費税10%は自動(1円未満切り捨て)。車検の法定費用(重量税・自賠責・印紙)は消費税がかからないので「法定費用」で入れてください。</p></div>
+  <div class="box">
+    <div class="grid">
+      <input type="hidden" id="est_id">
+      <label class="f">車(お客さん)<select id="est_car"></select></label>
+      <label class="f">件名<input id="est_title" placeholder="例: 12か月点検とブレーキパッド交換"></label>
+      <label class="f">在庫から部品を入れる<select id="est_pick"></select></label>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th style="width:120px">種類</th><th>品名</th><th class="num" style="width:70px">数</th><th class="num" style="width:110px">単価(円)</th><th class="num" style="width:100px">金額</th><th style="width:40px"></th></tr></thead>
+      <tbody id="estRows"></tbody>
+    </table></div>
+    <div class="row"><button class="btn small" data-act="estAdd" data-kind="部品">＋ 部品</button><button class="btn small" data-act="estAdd" data-kind="工賃">＋ 工賃</button><button class="btn small" data-act="estAdd" data-kind="法定費用">＋ 法定費用</button></div>
+    <div class="total" id="estTotal"></div>
+    <div class="row">
+      <button class="btn main" data-act="estSave">見積もりを保存</button>
+      <button class="btn" data-act="estCopy">文面をコピー</button>
+      <button class="btn dark" data-act="estToRec">作業記録にする</button>
+      <button class="btn dark" data-act="estToInv">請求書にする</button>
+      <button class="btn" data-act="estNew">新しく作る</button>
+    </div>
+    <p class="note">「作業記録にする」を押すと、その車の整備記録になり、在庫から入れた部品の数が在庫から引かれます。「請求書にする」を押すと、この明細で請求書ができます(在庫は動きません)。</p>
+  </div>
+  <h3>保存した見積もり</h3>
+  <div class="list" id="estList"></div>
+</section>
+
+<!-- 請求・領収 -->
+<section class="pane" id="p-inv" hidden>
+  <div><h2>請求書・領収書</h2><p class="lead">見積もりの画面の「請求書にする」で作ります。入金したら「入金済みにする」で領収書が出せます。書類は文面をコピーして送るか、画面を写して送ってください。</p></div>
+  <details class="box" id="shopBox"><summary>店の情報(書類に載ります)</summary>
+    <div class="grid">
+      <label class="f">店の名前<input id="inv_shop"></label>
+      <label class="f">店の電話<input id="inv_tel" inputmode="tel"></label>
+      <label class="f" style="grid-column:1/-1">住所<input id="inv_addr" placeholder="例: 東京都品川区○○1-2-3"></label>
+      <label class="f">登録番号(インボイス)<input id="inv_reg" placeholder="例: T1234567890123"></label>
+      <label class="f">支払期限(請求日から何日)<input id="inv_days" inputmode="numeric" placeholder="14"></label>
+      <label class="f" style="grid-column:1/-1">振込先<input id="inv_bank" placeholder="例: ○○銀行 △△支店 普通 1234567 カ)マークファクトリー"></label>
+    </div>
+    <p class="note" id="regNote"></p>
+  </details>
+  <div class="row"><label class="f" style="flex:0 1 220px">表示<select id="invFilter"><option value="unpaid">未入金だけ</option><option value="paid">入金済みだけ</option><option value="all">全部</option></select></label></div>
+  <div id="invSum" class="note"></div>
+  <div class="list" id="invList"></div>
+  <details class="box" id="monBox"><summary>月まとめの請求(月末締めのお客さん向け)</summary>
+    <div class="grid"><label class="f">月<input id="mon_m" type="month"></label><label class="f">お客さん<select id="mon_c"></select></label></div>
+    <div id="monOut" style="display:grid;gap:8px"></div>
+  </details>
+</section>
+
+<!-- 売上 -->
+<section class="pane" id="p-sales" hidden>
+  <div><h2>売上の集計</h2><p class="lead">請求書から集計します。部品の粗利は、在庫から入れた部品の(売値−仕入値)×数です。法定費用はお客さんからの預かり(立替)なので売上とは分けています。</p></div>
+  <div class="box">
+    <div class="grid"><label class="f">月<input id="sl_m" type="month"></label><label class="f">数え方<select id="sl_basis"><option value="date">請求した日で数える</option><option value="paid">入金した日で数える</option></select></label></div>
+    <div class="tiles" id="slTiles"></div>
+    <p class="note" id="slNote"></p>
+  </div>
+  <div class="box chart"><h3>12か月の売上(税抜)</h3><div class="legend"><span><i style="background:var(--steel)"></i>工賃</span><span><i style="background:var(--accent)"></i>部品</span></div><div id="slChart"></div></div>
+  <div class="box"><h3 id="slCustT">お客さん別</h3><div id="slCust" class="list"></div></div>
+</section>
+
+<!-- 3 在庫 -->
+<section class="pane" id="p-stock" hidden>
+  <div><h2>在庫</h2><p class="lead">「最低数」を下回ると黄色になり、発注の画面に自動で出ます。品番にはQRコードの中身をそのまま入れると、QR読み取りで呼び出せます。</p></div>
+  <details class="box" id="partFormBox"><summary id="partFormTitle">部品を登録する</summary>
+    <form id="partForm" class="grid">
+      <input type="hidden" id="pt_id">
+      <label class="f">品番(QRの中身)<input id="pt_code" required placeholder="例: OF-TOY-01"></label>
+      <label class="f">品名<input id="pt_name" required placeholder="例: オイルフィルター"></label>
+      <label class="f">メーカー<input id="pt_maker"></label>
+      <label class="f">在庫数<input id="pt_qty" inputmode="numeric" value="0"></label>
+      <label class="f">最低数<input id="pt_min" inputmode="numeric" value="1"></label>
+      <label class="f">仕入値(円)<input id="pt_cost" inputmode="numeric"></label>
+      <label class="f">売値(円・税抜)<input id="pt_sell" inputmode="numeric"></label>
+      <label class="f">仕入先<input id="pt_sup" placeholder="例: ○○部品商会"></label>
+      <label class="f">置き場所<input id="pt_loc" placeholder="例: 棚A-2"></label>
+      <div class="row" style="grid-column:1/-1"><button class="btn main" type="submit">保存する</button><button class="btn" type="button" data-act="partFormReset">入力を消す</button></div>
+    </form>
+  </details>
+  <div class="row"><input id="partSearch" type="search" placeholder="品名・品番・仕入先でさがす" style="flex:1 1 200px"><label class="row note"><input type="checkbox" id="onlyLow" style="width:auto"> 足りない物だけ</label></div>
+  <div id="stockSum" class="note"></div>
+  <div class="list" id="partList"></div>
+</section>
+
+<!-- 4 お客さん連絡 -->
+<section class="pane" id="p-contact" hidden>
+  <div><h2>お客さん連絡</h2><p class="lead">車検や点検が近い車を拾って、案内の文面を作ります。文面はコピーしてショートメールやLINEに貼ってください。</p></div>
+  <div class="box">
+    <div class="grid">
+      <label class="f">何の案内<select id="ct_kind"><option value="shaken">車検</option><option value="check">点検</option></select></label>
+      <label class="f">何日先まで<select id="ct_days"><option>30</option><option selected>60</option><option>90</option></select></label>
+      <label class="f">店の名前<input id="set_shop" placeholder="例: マークファクトリー"></label>
+      <label class="f">店の電話<input id="set_tel" inputmode="tel"></label>
+    </div>
+    <label class="f">文面のひな形({名前} {車種} {ナンバー} {日付} {残り} {店名} {店電話} が入れ替わります)<textarea id="ct_tpl"></textarea></label>
+    <div class="row"><button class="btn small" data-act="tplReset">ひな形を元に戻す</button></div>
+  </div>
+  <div class="list" id="ctList"></div>
+</section>
+
+<!-- 5 発注 -->
+<section class="pane" id="p-order" hidden>
+  <div><h2>部品の発注</h2><p class="lead">在庫が最低数以下の部品を仕入先ごとにまとめます。数を直して「発注書を作る」を押すと、文面ができて控えが残ります。届いたら「入荷した」で在庫に足します。</p></div>
+  <div id="needList" class="list"></div>
+  <h3>発注の控え</h3>
+  <div id="orderList" class="list"></div>
+</section>
+
+<!-- 6 QR -->
+<section class="pane" id="p-qr" hidden>
+  <div><h2>QR読み取り</h2><p class="lead">部品の箱や棚のQRコード・バーコードを撮ると、在庫の部品を呼び出して入庫・出庫できます。</p></div>
+  <div class="box">
+    <div class="row">
+      <label for="snap" class="btn main big">📷 カメラで撮る</label>
+      <label for="pick" class="btn big">🖼 写真を選ぶ</label>
+    </div>
+    <input id="snap" type="file" accept="image/*" capture="environment" hidden>
+    <input id="pick" type="file" accept="image/*" hidden>
+    <p class="note">カメラが開かず写真の選択になる時は、携帯のカメラでQRを撮ってから「写真を選ぶ」で選んでください。ブラウザ(Chromeなど)でこのページを開くと「カメラで撮る」でカメラが立ち上がります。</p>
+    <div class="row"><input id="qr_manual" placeholder="品番を手で入れる" style="flex:1 1 200px"><button class="btn" data-act="qrManual">呼び出す</button></div>
+  </div>
+  <img id="qrPrev" class="preview" alt="読み取った写真" hidden>
+  <div id="qrOut"></div>
+</section>
+
+<!-- 7 法律 -->
+<section class="pane" id="p-law" hidden>
+  <div><h2>法律の手引き</h2><p class="lead">車屋さんの仕事に関わる決まりの要点です。2026年11月14日に国土交通省・警察庁・自治体の公式ページで確かめた内容です。法律は改正されるので、大事な判断の前は下のリンク先で最新を確かめてください。</p></div>
+  <div class="law" id="lawList"></div>
+  <div class="box" id="aiLawBox">
+    <h3>AIに聞く</h3>
+    <p class="note">AIはこの手引きと法律の知識から答えます。インターネットで最新を調べてはいないので、答えは目安にして、運輸支局・警察署・e-Gov法令検索で確かめてください。</p>
+    <textarea id="lawQ" placeholder="例: バンパーを交換するだけでも特定整備の認証は要る？"></textarea>
+    <div class="row"><button class="btn main" id="lawAsk">聞く</button><button class="btn" id="lawStop" hidden>止める</button></div>
+    <div class="ai-out" id="lawA" hidden></div>
+  </div>
+</section>
+
+<footer class="wrap" style="display:grid;gap:12px">
+  <details class="box"><summary>設定・データの控え</summary>
+    <p class="note">記録はこの端末のブラウザの中だけに残ります(ほかの人や別の携帯には届きません)。機種変更や念のための控えには、下の「控えをコピー」で文字にしてメモ帳などに貼っておき、戻す時は貼り付けて「控えから戻す」を押します。</p>
+    <div class="row"><button class="btn" data-act="backupCopy">控えをコピー</button><button class="btn" data-act="backupLoad">控えから戻す</button><button class="btn danger" data-act="clearSample">見本の記録を消す</button></div>
+    <label class="row note"><input type="checkbox" id="bk_photos" style="width:auto"> 控えに車の写真も入れる(文字がとても長くなります)</label>
+    <textarea id="backupBox" placeholder="ここに控えの文字を貼り付け"></textarea>
+  </details>
+  <div>マークファクトリー ・ 記録はこの端末の中に保存</div>
+</footer>
+
+<div class="toast" id="toast" hidden></div>
+<div class="viewer" id="phViewer" hidden><div class="vbar"><span id="phVText"></span><button class="btn small" data-act="phClose">閉じる</button></div><img id="phVImg" alt="車の写真"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+(function(){
+"use strict";
+var KEY="markfactory.v1";
+var $=function(id){return document.getElementById(id)};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function num(v){var n=parseInt(String(v==null?"":v).replace(/[^\d\-]/g,""),10);return isNaN(n)?0:n}
+function yen(n){return Math.round(n).toLocaleString("ja-JP")+"円"}
+function iso(d){var z=new Date(d.getTime()-d.getTimezoneOffset()*60000);return z.toISOString().slice(0,10)}
+function today(){return iso(new Date())}
+function addDays(n){var d=new Date();d.setDate(d.getDate()+n);return iso(d)}
+function plusDays(s,n){var d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);return iso(d)}
+function monthDay(m,day){var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+m);var last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));return iso(d)}
+var WD="日月火水木金土";
+function wday(s){return WD[new Date(s+"T00:00:00").getDay()]}
+function daysUntil(s){if(!s)return null;var t=new Date();t.setHours(0,0,0,0);var d=new Date(s+"T00:00:00");return Math.round((d-t)/864e5)}
+function jdate(s){if(!s)return "";var p=s.split("-");return p[0]+"年"+(+p[1])+"月"+(+p[2])+"日"}
+var toastT;
+function toast(m){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2200)}
+function copy(text){
+  var done=function(){toast("コピーしました")};
+  try{navigator.clipboard.writeText(text).then(done,function(){fallback(text)})}catch(e){fallback(text)}
+}
+function fallback(text){var b=$("backupBox");var keep=b.value;b.value=text;b.closest("details").open=true;b.focus();b.select();try{document.execCommand("copy");toast("コピーしました")}catch(e){toast("下の欄の文字を長押しでコピーしてください")}setTimeout(function(){if(b.value===text&&keep)b.value=keep},15000)}
+
+/* ---------- データ ---------- */
+var S;
+function sample(){
+  return {
+    cars:[
+      {id:"c1",sample:1,name:"山田 太郎",tel:"090-1234-5678",plate:"品川 500 さ 12-34",model:"トヨタ プリウス (ZVW30)",year:"2015",km:"82300",shaken:addDays(40),check:addDays(40),memo:"代車希望"},
+      {id:"c2",sample:1,name:"佐藤 花子",tel:"080-2222-3333",plate:"品川 580 か 56-78",model:"ホンダ N-BOX (JF3)",year:"2019",km:"41000",shaken:addDays(75),check:addDays(12),memo:""},
+      {id:"c3",sample:1,name:"鈴木建設",tel:"03-1111-2222",plate:"品川 400 す 90-12",model:"トヨタ ハイエース (GDH201V)",year:"2020",km:"126500",shaken:addDays(18),check:addDays(18),memo:"会社の車。請求は月末締め"}
+    ],
+    recs:[
+      {id:"r1",sample:1,car:"c1",date:addDays(-30),km:"81900",work:"エンジンオイル交換、オイルフィルター交換",parts:[{part:"p1",name:"エンジンオイル 0W-20 (1L)",qty:4},{part:"p2",name:"オイルフィルター トヨタ用",qty:1}],labor:1650,next:addDays(40)}
+    ],
+    parts:[
+      {id:"p1",sample:1,code:"OIL-0W20-1L",name:"エンジンオイル 0W-20 (1L)",maker:"見本",qty:24,min:12,cost:600,sell:1100,sup:"見本部品商会",loc:"棚A-1"},
+      {id:"p2",sample:1,code:"OF-TOY-01",name:"オイルフィルター トヨタ用",maker:"見本",qty:3,min:5,cost:700,sell:1300,sup:"見本部品商会",loc:"棚A-2"},
+      {id:"p3",sample:1,code:"BP-PRIUS-F",name:"ブレーキパッド フロント",maker:"見本",qty:2,min:1,cost:5200,sell:8800,sup:"見本ブレーキ店",loc:"棚B-1"},
+      {id:"p4",sample:1,code:"WB-600",name:"ワイパーゴム 600mm",maker:"見本",qty:2,min:4,cost:450,sell:900,sup:"見本部品商会",loc:"棚C-3"},
+      {id:"p5",sample:1,code:"LLC-2L",name:"クーラント(LLC) 2L",maker:"見本",qty:6,min:3,cost:900,sell:1800,sup:"見本部品商会",loc:"棚C-1"},
+      {id:"p6",sample:1,code:"BAT-60B24L",name:"バッテリー 60B24L",maker:"見本",qty:1,min:2,cost:9800,sell:16500,sup:"見本電装",loc:"床D"}
+    ],
+    ests:[
+      {id:"e1",sample:1,car:"c3",title:"車検前点検とワイパー交換",date:today(),lines:[{kind:"工賃",name:"24か月点検",qty:1,price:18000},{kind:"部品",part:"p4",name:"ワイパーゴム 600mm",qty:2,price:900},{kind:"工賃",name:"ワイパー交換",qty:1,price:500},{kind:"法定費用",name:"自賠責保険料(見本の金額)",qty:1,price:0}]}
+    ],
+    orders:[],
+    invs:sampleInvs(),books:sampleBooks(),loans:sampleLoans(),
+    set:{shop:"マークファクトリー",tel:"",tpl:""}
+  };
+}
+function sampleInvs(){
+  var a=monthDay(-2,8),b=monthDay(-2,20),c=monthDay(-1,12),d=today();
+  function no(x,n){return "MF-"+x.slice(0,7).replace("-","")+"-"+("00"+n).slice(-3)}
+  return [
+    {id:"i1",sample:1,no:no(a,1),car:"c2",title:"バッテリー交換",date:a,due:plusDays(a,14),paid:plusDays(a,1),method:"カード",lines:[{kind:"部品",part:"p6",name:"バッテリー 60B24L",qty:1,price:16500,cost:9800},{kind:"工賃",name:"バッテリー交換",qty:1,price:1100}]},
+    {id:"i2",sample:1,no:no(b,2),car:"c3",title:"タイヤ4本交換",date:b,due:plusDays(b,14),paid:plusDays(b,9),method:"振込",lines:[{kind:"部品",name:"タイヤ 195/80R15(取り寄せ)",qty:4,price:12000},{kind:"工賃",name:"タイヤ組み替え・バランス 4本",qty:1,price:8800}]},
+    {id:"i3",sample:1,no:no(c,1),car:"c1",title:"オイル交換",date:c,due:plusDays(c,14),paid:c,method:"現金",lines:[{kind:"部品",part:"p1",name:"エンジンオイル 0W-20 (1L)",qty:4,price:1100,cost:600},{kind:"部品",part:"p2",name:"オイルフィルター トヨタ用",qty:1,price:1300,cost:700},{kind:"工賃",name:"オイル・フィルター交換",qty:1,price:1650}]},
+    {id:"i4",sample:1,no:no(d,1),car:"c3",title:"車検前点検とワイパー交換",date:d,due:plusDays(d,14),paid:"",method:"",lines:[{kind:"工賃",name:"24か月点検",qty:1,price:18000},{kind:"部品",part:"p4",name:"ワイパーゴム 600mm",qty:2,price:900,cost:450},{kind:"工賃",name:"ワイパー交換",qty:1,price:500},{kind:"法定費用",name:"自動車重量税(見本の金額)",qty:1,price:16400}]}
+  ];
+}
+function sampleBooks(){return [
+  {id:"b1",sample:1,car:"c1",date:today(),time:"10:00",end:today(),loan:"",st:"入庫中",work:"オイル交換・タイヤ点検"},
+  {id:"b2",sample:1,car:"c3",date:addDays(2),time:"09:00",end:addDays(4),loan:"L1",st:"予約",work:"車検"},
+  {id:"b3",sample:1,car:"c2",date:addDays(6),time:"14:00",end:addDays(6),loan:"",st:"予約",work:"12か月点検"}
+]}
+function sampleLoans(){return [{id:"L1",sample:1,name:"代車1 ワゴンR(見本)"},{id:"L2",sample:1,name:"代車2 フィット(見本)"}]}
+var LISTS=["cars","recs","parts","ests","orders","invs","books","loans"];
+var TPL="{名前} 様\nいつもありがとうございます。{店名}です。\nお車({車種} {ナンバー})の{種類}が {日付} です(あと{残り}日)。\nご都合のよい日をお知らせください。代車のご希望もどうぞ。\n{店名} {店電話}";
+function load(){
+  try{var t=localStorage.getItem(KEY);if(t){S=JSON.parse(t)}}catch(e){S=null}
+  if(!S||!S.cars){S=sample()}
+  S.set=S.set||{};if(!S.set.tpl)S.set.tpl=TPL;
+  var hasSample=Array.isArray(S.cars)&&S.cars.some(function(c){return c.sample});
+  if(!Array.isArray(S.invs))S.invs=hasSample?sampleInvs():[];
+  if(!Array.isArray(S.books))S.books=hasSample?sampleBooks():[];
+  if(!Array.isArray(S.loans))S.loans=hasSample?sampleLoans():[];
+  LISTS.forEach(function(k){if(!Array.isArray(S[k]))S[k]=[]});
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function car(id){return S.cars.filter(function(c){return c.id===id})[0]}
+function part(id){return S.parts.filter(function(p){return p.id===id})[0]}
+function isLow(p){return num(p.qty)<=num(p.min)}
+function sampleChip(o){return o&&o.sample?' <span class="chip mute">見本</span>':""}
+
+/* ---------- タブ ---------- */
+var TABS=["cars","book","est","inv","sales","stock","contact","order","qr","law"];
+function show(t){
+  if(TABS.indexOf(t)<0)t="cars";
+  TABS.forEach(function(k){$("p-"+k).hidden=k!==t});
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(b){b.setAttribute("aria-selected",b.dataset.tab===t?"true":"false")});
+  try{localStorage.setItem(KEY+".tab",t)}catch(e){}
+  render();
+}
+$("tabs").addEventListener("click",function(e){var b=e.target.closest(".tab");if(b)show(b.dataset.tab)});
+
+/* ---------- 描画 ---------- */
+function render(){
+  renderCars();renderBook();renderEst();renderInv();renderSales();renderStock();renderContact();renderOrder();renderBadges();
+}
+function renderBadges(){
+  var low=S.parts.filter(isLow).length;
+  var due=S.cars.filter(function(c){var d=daysUntil(c.shaken);return d!=null&&d<=30}).length;
+  setDot("order",low);setDot("contact",due);
+  setDot("inv",S.invs.filter(function(x){return !x.paid}).length);
+  var t=today();setDot("book",S.books.filter(function(b){return b.st!=="完了"&&b.date<=t&&(b.end||b.date)>=t}).length);
+}
+function setDot(tab,n){var b=document.querySelector('.tab[data-tab="'+tab+'"]');var d=b.querySelector(".dot");if(n>0){if(!d){d=document.createElement("span");d.className="dot";b.appendChild(d)}d.textContent=n}else if(d){d.remove()}}
+
+function sticker(dateStr,label){
+  if(!dateStr)return '<span class="sticker"><b>－</b><span><strong>'+label+'</strong>未登録</span></span>';
+  var d=daysUntil(dateStr),m=+dateStr.split("-")[1];
+  var cls=d<0?"over":(d<=30?"soon":"");
+  var txt=d<0?(-d)+"日 過ぎ":"あと"+d+"日";
+  return '<span class="sticker '+cls+'"><b>'+m+'</b><span><strong>'+label+' '+txt+'</strong>'+jdate(dateStr)+'</span></span>';
+}
+
+/* 1 車・記録 */
+var openHist={};var delArm=null;
+function renderCars(){
+  var q=($("carSearch").value||"").trim();
+  var list=S.cars.slice().sort(function(a,b){return (a.shaken||"9999")<(b.shaken||"9999")?-1:1});
+  if(q)list=list.filter(function(c){return (c.name+c.plate+c.model+c.tel).indexOf(q)>=0});
+  if(!list.length){$("carList").innerHTML='<div class="empty">'+(q?"見つかりません":"まだ車がありません。上の「車を登録する」から入れてください。")+'</div>';return}
+  $("carList").innerHTML=list.map(function(c){
+    var recs=S.recs.filter(function(r){return r.car===c.id}).sort(function(a,b){return a.date<b.date?1:-1});
+    var h=openHist[c.id]?'<div class="hist">'+(recs.length?recs.map(function(r){
+      var ps=(r.parts||[]).map(function(p){return esc(p.name)+"×"+p.qty}).join("、");
+      return '<div><strong>'+jdate(r.date)+'</strong>'+(r.km?' ・ '+esc(r.km)+'km':'')+'<br>'+esc(r.work)+(ps?'<br><span class="meta">部品: '+ps+'</span>':'')+(r.labor?'<br><span class="meta">工賃 '+yen(r.labor)+'</span>':'')+(r.next?'<br><span class="meta">次の点検 '+jdate(r.next)+'</span>':'')+
+      '<div class="row" style="margin-top:4px"><button class="btn small" data-act="recEdit" data-id="'+r.id+'">直す</button><button class="btn small danger" data-act="recDel" data-id="'+r.id+'">'+(delArm==="r"+r.id?"もう一度で削除":"削除")+'</button></div></div>'}).join(""):'<div class="meta">まだ記録がありません</div>')+'</div>':"";
+    return '<article class="item"><div class="ihead"><div style="display:grid;gap:4px;min-width:0">'+
+      '<div class="row"><span class="plate">'+esc(c.plate||"ナンバー未登録")+'</span>'+sampleChip(c)+'</div>'+
+      '<strong>'+esc(c.name)+' 様</strong><span class="meta">'+esc(c.model)+(c.year?' ・ '+esc(c.year)+'年式':'')+(c.km?' ・ '+esc(c.km)+'km':'')+'</span>'+
+      (c.tel?'<span class="meta">電話 <span class="mono">'+esc(c.tel)+'</span></span>':'')+(c.memo?'<span class="meta">メモ: '+esc(c.memo)+'</span>':'')+
+      '</div><div style="display:grid;gap:6px">'+sticker(c.shaken,"車検")+sticker(c.check,"点検")+'</div></div>'+
+      '<div class="row"><button class="btn small main" data-act="recNew" data-id="'+c.id+'">記録を書く</button><button class="btn small" data-act="hist" data-id="'+c.id+'">履歴 '+recs.length+'件</button><button class="btn small" data-act="phOpen" data-id="'+c.id+'">写真'+(phState==="ok"?' '+phOf(c.id).length+'枚':'')+'</button><button class="btn small" data-act="carEdit" data-id="'+c.id+'">直す</button><button class="btn small danger" data-act="carDel" data-id="'+c.id+'">'+(delArm==="c"+c.id?"もう一度で削除":"削除")+'</button></div>'+phBlock(c)+h+'</article>';
+  }).join("");
+}
+$("carSearch").addEventListener("input",renderCars);
+var carF=["id","name","tel","plate","model","year","km","shaken","check","memo"];
+$("carForm").addEventListener("submit",function(e){
+  e.preventDefault();var o={};carF.forEach(function(k){o[k]=$("car_"+k).value.trim()});
+  if(o.id){var c=car(o.id);carF.forEach(function(k){c[k]=o[k]});delete c.sample}else{o.id=uid();S.cars.push(o)}
+  save();resetCarForm();$("carFormBox").open=false;render();toast("冒険の書に記録しました");
+});
+function resetCarForm(){carF.forEach(function(k){$("car_"+k).value=""});$("carFormTitle").textContent="車を登録する"}
+
+function partOptions(sel){return '<option value="">― 選ぶ ―</option>'+S.parts.map(function(p){return '<option value="'+p.id+'"'+(p.id===sel?" selected":"")+'>'+esc(p.name)+'(在庫'+num(p.qty)+')</option>'}).join("")}
+function recPartRow(p){var d=document.createElement("div");d.className="row";d.innerHTML='<select class="rp_part" style="flex:1 1 180px">'+partOptions(p&&p.part)+'</select><input class="rp_name" placeholder="在庫にない部品の名前" value="'+esc(p&&!p.part?p.name:"")+'" style="flex:1 1 160px"><input class="rp_qty" inputmode="numeric" value="'+(p?p.qty:1)+'" style="width:70px;flex:none"><button type="button" class="btn small" data-act="rmRow">×</button>';$("recParts").appendChild(d)}
+function openRec(carId,rec){
+  $("recFormBox").hidden=false;$("recFormBox").open=true;$("rec_car").value=carId;$("rec_id").value=rec?rec.id:"";
+  var c=car(carId);$("recFormTitle").textContent=(rec?"記録を直す: ":"整備記録を書く: ")+(c?c.name+" 様 "+(c.plate||""):"");
+  $("rec_date").value=rec?rec.date:today();$("rec_km").value=rec?rec.km||"":(c&&c.km)||"";$("rec_labor").value=rec?rec.labor||"":"";$("rec_next").value=rec?rec.next||"":"";$("rec_work").value=rec?rec.work:"";
+  $("recParts").innerHTML="";(rec&&rec.parts||[]).forEach(recPartRow);
+  $("rec_deduct").checked=!rec;
+  $("recFormBox").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("recForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var parts=[];Array.prototype.forEach.call($("recParts").children,function(r){var pid=r.querySelector(".rp_part").value,nm=r.querySelector(".rp_name").value.trim(),q=num(r.querySelector(".rp_qty").value)||0;var p=part(pid);if((p||nm)&&q>0)parts.push({part:p?p.id:"",name:p?p.name:nm,qty:q})});
+  var o={car:$("rec_car").value,date:$("rec_date").value,km:$("rec_km").value.trim(),labor:num($("rec_labor").value),next:$("rec_next").value,work:$("rec_work").value.trim(),parts:parts};
+  var id=$("rec_id").value;
+  if(id){var r=S.recs.filter(function(x){return x.id===id})[0];Object.keys(o).forEach(function(k){r[k]=o[k]});delete r.sample}else{o.id=uid();S.recs.push(o)}
+  if($("rec_deduct").checked)parts.forEach(function(x){var p=part(x.part);if(p)p.qty=num(p.qty)-x.qty});
+  var c=car(o.car);if(c){if(o.km)c.km=o.km;if(o.next)c.check=o.next}
+  save();openHist[o.car]=true;$("recFormBox").hidden=true;render();toast("記録しました。ベホイミ級に整いました");
+});
+
+/* 2 見積もり */
+var E={id:"",car:"",title:"",lines:[]};
+function estNew(){E={id:"",car:"",title:"",lines:[{kind:"工賃",name:"",qty:1,price:0}]}}
+function estCalc(lines){var tax=0,base=0,legal=0;lines.forEach(function(l){var a=num(l.qty)*num(l.price);if(l.kind==="法定費用")legal+=a;else base+=a});tax=Math.floor(base*0.1);return {base:base,tax:tax,legal:legal,total:base+tax+legal}}
+function renderEst(){
+  $("est_car").innerHTML='<option value="">― 車を選ぶ(なしでも可)―</option>'+S.cars.map(function(c){return '<option value="'+c.id+'"'+(c.id===E.car?" selected":"")+'>'+esc(c.name)+' 様 '+esc(c.plate||"")+'</option>'}).join("");
+  $("est_title").value=E.title;$("est_id").value=E.id;
+  $("est_pick").innerHTML='<option value="">― 部品を選ぶと行が増えます ―</option>'+S.parts.map(function(p){return '<option value="'+p.id+'">'+esc(p.name)+' '+yen(num(p.sell))+'</option>'}).join("");
+  $("estRows").innerHTML=E.lines.map(function(l,i){
+    return '<tr data-i="'+i+'"><td><select data-f="kind">'+["部品","工賃","法定費用"].map(function(k){return '<option'+(k===l.kind?" selected":"")+'>'+k+'</option>'}).join("")+'</select></td>'+
+    '<td><input data-f="name" value="'+esc(l.name)+'" placeholder="品名・作業名"></td><td><input data-f="qty" inputmode="numeric" value="'+esc(l.qty)+'" style="text-align:right"></td><td><input data-f="price" inputmode="numeric" value="'+esc(l.price)+'" style="text-align:right"></td><td class="num">'+yen(num(l.qty)*num(l.price))+'</td><td><button class="btn small" data-act="estDel" data-i="'+i+'" aria-label="この行を消す">×</button></td></tr>'}).join("");
+  var t=estCalc(E.lines);
+  $("estTotal").innerHTML='<div>部品・工賃(税抜) '+yen(t.base)+'</div><div>消費税10% '+yen(t.tax)+'</div><div>法定費用(非課税) '+yen(t.legal)+'</div><div class="g">合計 '+yen(t.total)+'</div>';
+  var el=S.ests.slice().sort(function(a,b){return a.date<b.date?1:-1});
+  $("estList").innerHTML=el.length?el.map(function(x){var c=car(x.car);return '<div class="item"><div class="ihead"><div><strong>'+esc(x.title||"(件名なし)")+'</strong>'+sampleChip(x)+'<div class="meta">'+jdate(x.date)+(c?' ・ '+esc(c.name)+' 様':'')+'</div></div><strong style="font-variant-numeric:tabular-nums">'+yen(estCalc(x.lines).total)+'</strong></div><div class="row"><button class="btn small" data-act="estLoad" data-id="'+x.id+'">開く</button><button class="btn small danger" data-act="estRm" data-id="'+x.id+'">'+(delArm==="e"+x.id?"もう一度で削除":"削除")+'</button></div></div>'}).join(""):'<div class="empty">保存した見積もりはまだありません</div>';
+}
+$("estRows").addEventListener("input",function(e){var tr=e.target.closest("tr"),f=e.target.dataset.f;if(!tr||!f)return;var l=E.lines[+tr.dataset.i];l[f]=e.target.value;if(f!=="name"){var t=estCalc(E.lines);tr.children[4].textContent=yen(num(l.qty)*num(l.price));$("estTotal").innerHTML='<div>部品・工賃(税抜) '+yen(t.base)+'</div><div>消費税10% '+yen(t.tax)+'</div><div>法定費用(非課税) '+yen(t.legal)+'</div><div class="g">合計 '+yen(t.total)+'</div>'}});
+$("estRows").addEventListener("change",function(e){if(e.target.dataset.f==="kind"){E.lines[+e.target.closest("tr").dataset.i].kind=e.target.value;renderEst()}});
+$("est_car").addEventListener("change",function(){E.car=this.value});
+$("est_title").addEventListener("input",function(){E.title=this.value});
+$("est_pick").addEventListener("change",function(){var p=part(this.value);if(p){E.lines.push({kind:"部品",part:p.id,name:p.name,qty:1,price:num(p.sell)});renderEst()}});
+function estText(x){
+  var c=car(x.car),t=estCalc(x.lines),s=S.set;
+  var L=["【御見積書】",jdate(x.date||today())];
+  if(c)L.push(c.name+" 様"+(c.plate?"("+c.plate+")":""));
+  if(x.title)L.push("件名: "+x.title);
+  L.push("");
+  x.lines.forEach(function(l){if(!l.name&&!num(l.price))return;L.push("・["+l.kind+"] "+(l.name||"")+" "+num(l.qty)+" × "+yen(num(l.price))+" = "+yen(num(l.qty)*num(l.price)))});
+  L.push("","部品・工賃(税抜) "+yen(t.base),"消費税10% "+yen(t.tax),"法定費用(非課税) "+yen(t.legal),"合計 "+yen(t.total),"",(s.shop||"")+(s.tel?" "+s.tel:""));
+  return L.join("\n");
+}
+
+/* 3 在庫 */
+var partF=["id","code","name","maker","qty","min","cost","sell","sup","loc"];
+function renderStock(){
+  var q=($("partSearch").value||"").trim(),only=$("onlyLow").checked;
+  var list=S.parts.slice().sort(function(a,b){return (isLow(b)-isLow(a))||(a.name<b.name?-1:1)});
+  if(q)list=list.filter(function(p){return (p.name+p.code+p.sup+p.maker+p.loc).indexOf(q)>=0});
+  if(only)list=list.filter(isLow);
+  var val=S.parts.reduce(function(s,p){return s+num(p.qty)*num(p.cost)},0);
+  $("stockSum").textContent="登録 "+S.parts.length+"品 ・ 足りない "+S.parts.filter(isLow).length+"品 ・ 在庫の仕入値合計 "+yen(val);
+  $("partList").innerHTML=list.length?list.map(partCard).join(""):'<div class="empty">'+(q||only?"当てはまる部品はありません":"まだ部品がありません。上の「部品を登録する」から入れてください。")+'</div>';
+}
+function partCard(p){
+  return '<div class="item'+(isLow(p)?" low":"")+'"><div class="ihead"><div style="display:grid;gap:2px;min-width:0"><strong>'+esc(p.name)+sampleChip(p)+(isLow(p)?' <span class="chip warn">足りない</span>':'')+'</strong><span class="mono">'+esc(p.code)+'</span><span class="meta">'+[p.maker,p.sup&&"仕入先 "+p.sup,p.loc&&"置き場 "+p.loc].filter(Boolean).map(esc).join(" ・ ")+'</span><span class="meta">仕入 '+yen(num(p.cost))+' ・ 売値 '+yen(num(p.sell))+' ・ 最低 '+num(p.min)+'</span></div>'+
+  '<div class="qty"><button data-act="qty" data-id="'+p.id+'" data-d="-1" aria-label="1つ減らす">－</button><b>'+num(p.qty)+'</b><button data-act="qty" data-id="'+p.id+'" data-d="1" aria-label="1つ増やす">＋</button></div></div>'+
+  '<div class="row"><button class="btn small" data-act="partEdit" data-id="'+p.id+'">直す</button><button class="btn small danger" data-act="partDel" data-id="'+p.id+'">'+(delArm==="p"+p.id?"もう一度で削除":"削除")+'</button></div></div>';
+}
+$("partSearch").addEventListener("input",renderStock);$("onlyLow").addEventListener("change",renderStock);
+$("partForm").addEventListener("submit",function(e){
+  e.preventDefault();var o={};partF.forEach(function(k){o[k]=$("pt_"+k).value.trim()});["qty","min","cost","sell"].forEach(function(k){o[k]=num(o[k])});
+  var dup=S.parts.filter(function(p){return p.code===o.code&&p.id!==o.id})[0];if(dup){toast("この品番はもう登録されています: "+dup.name);return}
+  if(o.id){var p=part(o.id);partF.forEach(function(k){p[k]=o[k]});delete p.sample}else{o.id=uid();S.parts.push(o)}
+  save();resetPartForm();$("partFormBox").open=false;render();toast("部品を登録しました");
+});
+function resetPartForm(){partF.forEach(function(k){$("pt_"+k).value=""});$("pt_qty").value="0";$("pt_min").value="1";$("partFormTitle").textContent="部品を登録する"}
+function editPart(p,fromQr){show("stock");partF.forEach(function(k){$("pt_"+k).value=p[k]==null?"":p[k]});$("partFormTitle").textContent=fromQr?"新しい部品を登録する":"部品を直す";$("partFormBox").open=true;$("partFormBox").scrollIntoView({behavior:"smooth"})}
+
+/* 4 連絡 */
+function renderContact(){
+  var s=S.set;$("set_shop").value=s.shop||"";$("set_tel").value=s.tel||"";if(document.activeElement!==$("ct_tpl"))$("ct_tpl").value=s.tpl;
+  var kind=$("ct_kind").value,days=+$("ct_days").value,label=kind==="shaken"?"車検の満了日":"点検の予定日";
+  var list=S.cars.map(function(c){return {c:c,d:daysUntil(c[kind])}}).filter(function(x){return x.d!=null&&x.d<=days}).sort(function(a,b){return a.d-b.d});
+  $("ctList").innerHTML=list.length?list.map(function(x){var c=x.c;var msg=s.tpl.replace(/\{名前\}/g,c.name).replace(/\{車種\}/g,c.model||"").replace(/\{ナンバー\}/g,c.plate||"").replace(/\{日付\}/g,jdate(c[kind])).replace(/\{残り\}/g,Math.max(x.d,0)).replace(/\{店名\}/g,s.shop||"").replace(/\{店電話\}/g,s.tel||"").replace(/\{種類\}/g,label);
+    return '<div class="item"><div class="ihead"><div style="display:grid;gap:4px"><div class="row"><span class="plate">'+esc(c.plate||"ナンバー未登録")+'</span>'+sampleChip(c)+'</div><strong>'+esc(c.name)+' 様</strong>'+(c.tel?'<span class="meta">電話 <span class="mono">'+esc(c.tel)+'</span></span>':'<span class="meta">電話 未登録</span>')+'</div>'+sticker(c[kind],kind==="shaken"?"車検":"点検")+'</div><div class="msg">'+esc(msg)+'</div><div class="row"><button class="btn small main" data-act="copyMsg">文面をコピー</button>'+(c.tel?'<a class="btn small" href="sms:'+esc(c.tel.replace(/[^\d+]/g,""))+'">ショートメールを開く</a><a class="btn small" href="tel:'+esc(c.tel.replace(/[^\d+]/g,""))+'">電話をかける</a>':'')+'</div></div>'}).join(""):'<div class="empty">'+days+'日先までに'+(kind==="shaken"?"車検":"点検")+'の車はありません</div>';
+}
+["ct_kind","ct_days"].forEach(function(id){$(id).addEventListener("change",renderContact)});
+$("set_shop").addEventListener("input",function(){S.set.shop=this.value;save();renderContactSoon()});
+$("set_tel").addEventListener("input",function(){S.set.tel=this.value;save();renderContactSoon()});
+$("ct_tpl").addEventListener("input",function(){S.set.tpl=this.value;save();renderContactSoon()});
+var ctT;function renderContactSoon(){clearTimeout(ctT);ctT=setTimeout(renderContact,300)}
+
+/* 5 発注 */
+var orderQty={};
+function renderOrder(){
+  var low=S.parts.filter(isLow),groups={};
+  low.forEach(function(p){var k=p.sup||"仕入先 未登録";(groups[k]=groups[k]||[]).push(p)});
+  var keys=Object.keys(groups);
+  $("needList").innerHTML=keys.length?keys.map(function(k){return '<div class="item low"><div class="ihead"><strong>'+esc(k)+'</strong><span class="chip warn">'+groups[k].length+'品</span></div><div class="list">'+groups[k].map(function(p){var q=orderQty[p.id]!=null?orderQty[p.id]:Math.max(num(p.min)*2-num(p.qty),1);orderQty[p.id]=q;return '<div class="row" style="justify-content:space-between"><div style="min-width:0;flex:1 1 180px"><strong>'+esc(p.name)+'</strong>'+sampleChip(p)+'<div class="meta"><span class="mono">'+esc(p.code)+'</span> ・ いま'+num(p.qty)+' / 最低'+num(p.min)+'</div></div><label class="row note">発注数<input data-oq="'+p.id+'" inputmode="numeric" value="'+q+'" style="width:72px"></label></div>'}).join("")+'</div><div class="row"><button class="btn small main" data-act="makeOrder" data-sup="'+esc(k)+'">発注書を作る</button></div></div>'}).join(""):'<div class="empty">足りない部品はありません。在庫は満タン、MPも満タンです。</div>';
+  var od=S.orders.slice().sort(function(a,b){return a.date<b.date?1:-1});
+  $("orderList").innerHTML=od.length?od.map(function(o){return '<div class="item"><div class="ihead"><div><strong>'+esc(o.sup)+'</strong><div class="meta">'+jdate(o.date)+' 発注'+(o.got?' ・ '+jdate(o.got)+' 入荷':'')+'</div></div><span class="chip '+(o.got?"ok":"warn")+'">'+(o.got?"入荷済み":"発注済み")+'</span></div><div class="msg">'+esc(orderText(o))+'</div><div class="row"><button class="btn small" data-act="copyOrder" data-id="'+o.id+'">文面をコピー</button>'+(o.got?'':'<button class="btn small main" data-act="gotOrder" data-id="'+o.id+'">入荷した(在庫に足す)</button>')+'<button class="btn small danger" data-act="orderDel" data-id="'+o.id+'">'+(delArm==="o"+o.id?"もう一度で削除":"削除")+'</button></div></div>'}).join(""):'<div class="empty">発注の控えはまだありません</div>';
+}
+$("needList").addEventListener("input",function(e){var id=e.target.dataset.oq;if(id)orderQty[id]=num(e.target.value)});
+function orderText(o){var s=S.set;return [o.sup+" 御中","いつもお世話になっております。"+(s.shop||"")+"です。","下記の部品の発注をお願いします。",""].concat(o.lines.map(function(l){return "・"+l.name+"("+l.code+") "+l.qty+"個"})).concat(["","納期をお知らせください。",(s.shop||"")+(s.tel?" "+s.tel:"")]).join("\n")}
+
+/* 6 QR */
+var lastShot=null;
+function onPhoto(file){
+  if(!file)return;
+  $("qrOut").innerHTML='<div class="result">読み取り中…</div>';
+  toCanvas(file,2000).then(function(cv){
+    lastShot=cv;$("qrPrev").src=cv.toDataURL("image/jpeg",.8);$("qrPrev").hidden=false;
+    return decode(cv).then(function(code){showCode(code)});
+  }).catch(function(){$("qrOut").innerHTML='<div class="result">写真を開けませんでした。別の写真で試してください。</div>'});
+}
+$("snap").addEventListener("change",function(){onPhoto(this.files[0]);this.value=""});
+$("pick").addEventListener("change",function(){onPhoto(this.files[0]);this.value=""});
+function toCanvas(file,max){
+  function draw(src,w,h){var s=Math.min(1,max/Math.max(w,h)),cv=document.createElement("canvas");cv.width=Math.round(w*s);cv.height=Math.round(h*s);cv.getContext("2d").drawImage(src,0,0,cv.width,cv.height);return cv}
+  function viaImg(){return new Promise(function(ok,ng){var u=URL.createObjectURL(file),im=new Image();im.onload=function(){var c=draw(im,im.naturalWidth,im.naturalHeight);URL.revokeObjectURL(u);ok(c)};im.onerror=function(){URL.revokeObjectURL(u);ng()};im.src=u})}
+  if(window.createImageBitmap){return createImageBitmap(file,{imageOrientation:"from-image"}).then(function(b){return draw(b,b.width,b.height)},viaImg)}
+  return viaImg();
+}
+function scaled(cv,max){var s=Math.min(1,max/Math.max(cv.width,cv.height));if(s===1)return cv;var c=document.createElement("canvas");c.width=Math.round(cv.width*s);c.height=Math.round(cv.height*s);c.getContext("2d").drawImage(cv,0,0,c.width,c.height);return c}
+function decode(cv){
+  var tryJs=function(){
+    if(!window.jsQR)return null;
+    var sizes=[1000,700,1400,2000,500];
+    for(var i=0;i<sizes.length;i++){var c=scaled(cv,sizes[i]),d=c.getContext("2d").getImageData(0,0,c.width,c.height);var r=jsQR(d.data,c.width,c.height,{inversionAttempts:"attemptBoth"});if(r&&r.data)return r.data}
+    return null;
+  };
+  if("BarcodeDetector" in window){
+    try{var bd=new BarcodeDetector();return bd.detect(cv).then(function(a){return (a&&a[0]&&a[0].rawValue)||tryJs()},function(){return tryJs()})}catch(e){}
+  }
+  return Promise.resolve(tryJs());
+}
+function findPart(code){code=String(code||"").trim();var low=code.toLowerCase();return S.parts.filter(function(p){return String(p.code).trim().toLowerCase()===low})[0]}
+function showCode(code){
+  if(!code){
+    $("qrOut").innerHTML='<div class="result"><strong>QRコード・バーコードが見つかりませんでした</strong><div class="note">コードが写真の真ん中に大きく写るように、近づいて、ぶれないように撮り直してください。暗い時は明るい所で。</div>'+(AI.img?'<div class="row"><button class="btn main" data-act="aiLabel">AIでラベルの文字を読む</button></div><div class="note">箱のラベルの品番・品名を、写真の文字から読み取ります。</div>':'')+'</div>';return}
+  var p=findPart(code);
+  if(p){$("qrOut").innerHTML='<div class="result"><span class="chip ok">レミーラ! 読めました</span><div class="mono">'+esc(code)+'</div>'+partCard(p)+'<div class="row"><button class="btn small" data-act="qty" data-id="'+p.id+'" data-d="-1">出庫 1つ</button><button class="btn small" data-act="qty" data-id="'+p.id+'" data-d="1">入庫 1つ</button></div></div>'}
+  else{$("qrOut").innerHTML='<div class="result"><span class="chip warn">在庫に無い品番です</span><div class="mono">'+esc(code)+'</div><div class="row"><button class="btn main" data-act="newFromCode" data-code="'+esc(code)+'">この品番で部品を登録</button><button class="btn" data-act="copyText" data-text="'+esc(code)+'">中身をコピー</button></div></div>'}
+}
+
+/* AI(Claudeに聞く) */
+var AI={fn:null,img:false};
+function initAI(){
+  if(!window.claude||!window.claude.use){$("aiLawBox").hidden=true;return}
+  window.claude.use("sample").then(function(fn){
+    if(!fn){$("aiLawBox").hidden=true;return}
+    AI.fn=fn;
+    fn.limits().then(function(l){AI.img=!!(l&&l.images)},function(){});
+  },function(){$("aiLawBox").hidden=true});
+}
+function aiErr(e){var c=e&&e.code;if(c==="not_granted"||c==="sampling_disabled")return "AIの利用が許可されていないため使えません。";if(c==="rate_limited")return "使いすぎで少し休み中です。時間をおいてもう一度押してください。";if(c==="cancelled")return "止めました。";return "うまく答えが返りませんでした。もう一度押してください。"}
+function aiLabel(){
+  if(!AI.fn||!lastShot)return;
+  var out=document.createElement("div");out.className="result";out.textContent="AIが読み取り中…(数十秒かかることがあります)";$("qrOut").appendChild(out);
+  lastShot.toBlob(function(blob){
+    AI.fn.json("これは自動車部品の箱・袋・ラベルの写真です。写っている文字だけを読み、部品の品番・品名・メーカーを取り出してください。見えない所や読めない所は想像で埋めず、空の文字列にしてください。日本語で、JSONだけを返してください。形: {\"code\":\"品番\",\"name\":\"品名\",\"maker\":\"メーカー\",\"sure\":\"確定 か 推測 か 不明\",\"note\":\"読めなかった所と、撮り直す時の助言(日本語で短く)\"}",{images:[blob]}).then(function(r){
+      r=r||{};var p=r.code?findPart(r.code):null;
+      out.innerHTML='<strong>AIの読み取り結果</strong> <span class="chip '+(r.sure==="確定"?"ok":"warn")+'">'+esc(r.sure||"不明")+'</span><div>品番: <span class="mono">'+esc(r.code||"読めず")+'</span></div><div>品名: '+esc(r.name||"読めず")+'</div><div>メーカー: '+esc(r.maker||"読めず")+'</div>'+(r.note?'<div class="note">'+esc(r.note)+'</div>':'')+
+      (p?'<div class="row"><button class="btn main" data-act="qrGo" data-code="'+esc(p.code)+'">在庫の「'+esc(p.name)+'」を開く</button></div>':(r.code||r.name?'<div class="row"><button class="btn main" data-act="newFromAI" data-code="'+esc(r.code||"")+'" data-name="'+esc(r.name||"")+'" data-maker="'+esc(r.maker||"")+'">この内容で部品を登録</button></div>':''));
+    },function(e){out.textContent=aiErr(e)});
+  },"image/jpeg",.85);
+}
+var lawCtl=null;
+$("lawAsk").addEventListener("click",function(){
+  var q=$("lawQ").value.trim();if(!q||!AI.fn)return;
+  var a=$("lawA");a.hidden=false;a.textContent="考え中…";$("lawAsk").disabled=true;$("lawStop").hidden=false;lawCtl=new AbortController();
+  var guide=LAW.map(function(x){return "■"+x.t+"\n"+x.p.join("\n")}).join("\n\n");
+  var prompt="あなたは日本の自動車整備工場・中古車販売店の実務に詳しい相談役です。次の質問に、日本語だけで、やさしい言葉で短く答えてください。英語は使わないでください。\n決まり:\n・関係する法律の名前(条文番号が分かれば)を書く\n・自信のない所や、2026年以降に変わっているかもしれない所は「最新は確認が必要」とはっきり書き、確認先(運輸支局・警察署・e-Gov法令検索など)を添える\n・分からない事を作らない\n\n参考(この店の手引き。2026年11月14日に公式ページで確認した内容):\n"+guide+"\n\n質問: "+q;
+  AI.fn(prompt,{signal:lawCtl.signal,onText:function(u){a.textContent=u.text}}).then(function(r){a.textContent=r.text+(r.truncated?"\n(途中で切れました。質問を短くしてください)":"")},function(e){a.textContent=(e&&e.text?e.text+"\n\n":"")+aiErr(e)}).then(function(){$("lawAsk").disabled=false;$("lawStop").hidden=true});
+});
+$("lawStop").addEventListener("click",function(){if(lawCtl)lawCtl.abort()});
+
+/* 7 法律 */
+var LAW=[
+ {t:"車検(自動車検査証)の有効期間",p:["自家用の乗用車・軽乗用車: 新車の初回は3年、その後は2年ごと。","自家用の貨物車(車両総重量8トン未満): 初回2年、その後1年ごと。軽貨物は2年ごと。","事業用(タクシー・バス・トラック)やレンタカーは期間が別に決まっています。車検証の有効期間で確かめます。","車検は満了日の2か月前から受けても、次の満了日は元の満了日から数えます(2025年4月から1か月前→2か月前に広がりました)。"],s:"道路運送車両法 第61条ほか",u:"https://www.mlit.go.jp/jidosha/"},
+ {t:"定期点検(12か月点検・24か月点検)",p:["使用者は、決められた時期に点検整備をする義務があります。","自家用の乗用車は1年ごと(12か月点検)と2年ごと(24か月点検。車検の時に合わせて行うことが多い)。","貨物車や事業用の車は、3か月ごと・6か月ごとなど短い間隔の点検もあります。車の種類で決まります。","OBD(車の自己診断機能)の診断結果の確認が点検の項目に入っています(2021年10月から)。"],s:"道路運送車両法 第48条、自動車点検基準",u:"https://www.mlit.go.jp/jidosha/"},
+ {t:"特定整備の認証(分解整備・電子制御装置整備)",p:["お客さんの車の「特定整備」を仕事として請け負うには、地方運輸局長の認証が要ります。認証なしで請け負うと罰則があります。","分解整備: 原動機・動力伝達装置・走行装置・操縦装置・制動装置・緩衝装置・連結装置を取り外して行う整備や改造。","電子制御装置整備(2020年4月から): 自動ブレーキやレーンキープに使う前方のカメラ・レーダーの取り外しや機能調整(取り外さない光軸調整やECUへの書き込みも含む)。","カメラ・レーダーが付いたバンパー・グリル・フロントガラスの脱着も電子制御装置整備に入ります(あとでカメラ等の調整が要るため)。","整備をしたら特定整備記録簿を作り、保存します。"],s:"道路運送車両法 第78条ほか(国土交通省 特定整備制度の資料)",u:"https://www.mlit.go.jp/jidosha/content/001332203.pdf"},
+ {t:"OBD検査(車検での電子装置の検査)",p:["車検の時に、専用の機械で車の故障コード(特定DTC)を読み、自動ブレーキなどの電子装置の故障がないか確かめる検査です。","対象: 国産車は2021年10月以降、輸入車は2022年10月以降に型式指定を受けた新型の車など。車検証の備考欄に「OBD検査対象」と書いてある車。","大型特殊自動車・被牽引自動車・二輪自動車は対象外。","検査は国産車が2024年10月から、輸入車が2025年10月から始まっています。","対象かどうかは国土交通省の「特定DTC照会アプリ」でも確かめられます。"],s:"道路運送車両法、国土交通省 OBD検査の案内",u:"https://www.mlit.go.jp/jidosha/jidosha_OBD_company.html"},
+ {t:"中古車の買い取り・販売",p:["中古車を仕入れて売るには古物商の許可が要ります(営業所のある所の警察署が窓口、許可を出すのは都道府県公安委員会)。","買い取る時は相手の本人確認をし、取引の記録を帳簿などに残して3年間保存します。自動車は金額が小さくても本人確認を省けません。","店頭や広告の中古車の値段は「支払総額」(車両の値段+登録などの諸費用)で表示します(2023年10月から)。","売った車の名義変更(移転登録)は、譲渡から15日以内に申請します。"],s:"古物営業法、自動車公正競争規約(景品表示法)、道路運送車両法 第13条",u:"https://www.npa.go.jp/"},
+ {t:"不正改造の禁止・使用済自動車",p:["保安基準に合わなくなる改造は、誰がしても禁止です(お客さんに頼まれても同じ)。","廃車にする車(使用済自動車)をお客さんから引き取るには、自動車リサイクル法の「引取業」の登録が要ります。"],s:"道路運送車両法 第99条の2、自動車リサイクル法",u:"https://www.mlit.go.jp/jidosha/"},
+ {t:"交通の決まり ― 最近の改正(お客さんへの案内に)",p:["2024年11月から: 自転車の「ながらスマホ」と酒気帯び運転に罰則。","2026年4月1日から: 自転車の違反に「青切符」(反則金)が使われるようになりました(16歳以上)。","2026年4月1日から: 車が自転車の右側を通る時、十分な間隔がなければ、間隔に応じた安全な速度で通らなければなりません。","2026年9月1日から: 中央線や車両通行帯がない一般道路(生活道路)の法定速度が時速60kmから30kmに下がりました。標識で速度が決まっている道路はその速度。"],s:"道路交通法(警察庁・各県警・自治体の案内)",u:"https://www.npa.go.jp/"}
+];
+function renderLaw(){
+  $("lawList").innerHTML=LAW.map(function(x,i){return '<details'+(i===0?" open":"")+'><summary>'+esc(x.t)+'</summary><ul>'+x.p.map(function(p){return '<li>'+esc(p)+'</li>'}).join("")+'</ul><div class="src">根拠: '+esc(x.s)+' ・ <a href="'+x.u+'" target="_blank" rel="noopener">確認先を開く</a></div></details>'}).join("")+
+  '<div class="note">法律の原文: <a href="https://laws.e-gov.go.jp/" target="_blank" rel="noopener">e-Gov法令検索</a> ・ <a href="https://www.mlit.go.jp/jidosha/" target="_blank" rel="noopener">国土交通省 自動車</a> ・ <a href="https://www.npa.go.jp/" target="_blank" rel="noopener">警察庁</a></div>';
+}
+
+/* 予約(カレンダー・代車) */
+var calY,calM,calSel;
+(function(){var d=new Date();calY=d.getFullYear();calM=d.getMonth();calSel=today()})();
+function loan(id){return S.loans.filter(function(l){return l.id===id})[0]}
+function bkEnd(b){return b.end&&b.end>=b.date?b.end:b.date}
+function bkOn(b,d){return b.date<=d&&bkEnd(b)>=d}
+function loanUser(lid,d,skip){return S.books.filter(function(b){return b.loan===lid&&b.st!=="完了"&&b.id!==skip&&bkOn(b,d)})[0]}
+function carLabel(c){return c?c.name+" 様"+(c.plate?" "+c.plate:""):"(車が消されています)"}
+function renderBook(){
+  $("calTitle").textContent=calY+"年"+(calM+1)+"月";
+  var first=new Date(calY,calM,1),start=new Date(calY,calM,1-first.getDay()),t=today(),h="";
+  for(var i=0;i<7;i++)h+='<div class="dow">'+WD[i]+'</div>';
+  for(var k=0;k<42;k++){
+    var dd=new Date(start.getFullYear(),start.getMonth(),start.getDate()+k),s=iso(dd);
+    if(k===35&&dd.getMonth()!==calM)break;
+    var pips="";
+    S.books.forEach(function(b){if(b.date===s)pips+='<i class="pip bk"></i>';else if(b.loan&&b.st!=="完了"&&bkOn(b,s))pips+='<i class="pip lp"></i>'});
+    S.cars.forEach(function(c){if(c.shaken===s)pips+='<i class="pip sk"></i>';if(c.check===s)pips+='<i class="pip ck"></i>'});
+    var cls="d"+(dd.getMonth()!==calM?" out":"")+(s===t?" today":"")+(s===calSel?" sel":"")+(dd.getDay()===0?" sun":"")+(dd.getDay()===6?" sat":"");
+    h+='<button class="'+cls+'" data-act="calDay" data-d="'+s+'" aria-label="'+jdate(s)+'"><span class="n">'+dd.getDate()+'</span><span class="pips">'+pips+'</span></button>';
+  }
+  $("cal").innerHTML=h;
+  $("dayTitle").textContent=jdate(calSel)+"("+wday(calSel)+")";
+  var items=S.books.filter(function(b){return bkOn(b,calSel)}).sort(function(a,b){return (a.time||"99")<(b.time||"99")?-1:1});
+  var ev=[];S.cars.forEach(function(c){if(c.shaken===calSel)ev.push('<div class="item"><div class="row"><span class="chip bad">車検の満了日</span><strong>'+esc(carLabel(c))+'</strong></div></div>');if(c.check===calSel)ev.push('<div class="item"><div class="row"><span class="chip warn">点検日</span><strong>'+esc(carLabel(c))+'</strong></div></div>')});
+  $("dayList").innerHTML=(items.map(function(b){var c=car(b.car),l=loan(b.loan);var stc=b.st==="完了"?"ok":(b.st==="入庫中"?"warn":"mute");
+    return '<div class="item"><div class="ihead"><div style="display:grid;gap:2px;min-width:0"><div class="row"><span class="chip '+stc+'">'+esc(b.st)+'</span>'+sampleChip(b)+(b.time?'<strong class="mono">'+esc(b.time)+'</strong>':'')+'</div><strong>'+esc(carLabel(c))+'</strong><span>'+esc(b.work)+'</span><span class="meta">'+jdate(b.date)+(bkEnd(b)!==b.date?' 〜 '+jdate(bkEnd(b))+' 仕上がり':'')+(l?' ・ 代車 '+esc(l.name):'')+'</span></div></div>'+
+    '<div class="row">'+(b.st!=="完了"?'<button class="btn small main" data-act="bkNext" data-id="'+b.id+'">'+(b.st==="予約"?"入庫した":"仕上がった")+'</button>':'')+(c?'<button class="btn small" data-act="bkRec" data-id="'+b.id+'">記録を書く</button>':'')+'<button class="btn small" data-act="bkEdit" data-id="'+b.id+'">直す</button><button class="btn small danger" data-act="bkDel" data-id="'+b.id+'">'+(delArm==="b"+b.id?"もう一度で削除":"削除")+'</button></div></div>'}).join("")+ev.join(""))||'<div class="empty">この日の予定はありません</div>';
+  $("dayLoan").innerHTML=S.loans.length?"代車: "+S.loans.map(function(l){var u=loanUser(l.id,calSel);return esc(l.name)+(u?' <span class="chip warn">貸出中 '+esc((car(u.car)||{}).name||"")+' 様</span>':' <span class="chip ok">空き</span>')}).join(" ・ "):"代車の台帳はまだ空です(下の「代車の台帳」から足せます)";
+  var sel=$("bk_car").value;$("bk_car").innerHTML='<option value="">― 車を選ぶ ―</option>'+S.cars.map(function(c){return '<option value="'+c.id+'"'+(c.id===sel?" selected":"")+'>'+esc(carLabel(c))+'</option>'}).join("");
+  var ls=$("bk_loan").value;$("bk_loan").innerHTML='<option value="">なし</option>'+S.loans.map(function(l){return '<option value="'+l.id+'"'+(l.id===ls?" selected":"")+'>'+esc(l.name)+'</option>'}).join("");
+  $("loanList").innerHTML=S.loans.length?S.loans.map(function(l){var busy=S.books.filter(function(b){return b.loan===l.id&&b.st!=="完了"}).length;return '<div class="row" style="justify-content:space-between"><span>'+esc(l.name)+sampleChip(l)+(busy?' <span class="meta">予約 '+busy+'件</span>':'')+'</span><button class="btn small danger" data-act="loanDel" data-id="'+l.id+'">'+(delArm==="l"+l.id?"もう一度で削除":"削除")+'</button></div>'}).join(""):'<div class="meta">代車はまだありません</div>';
+}
+function bkReset(){["id","time","end","work"].forEach(function(k){$("bk_"+k).value=""});$("bk_car").value="";$("bk_loan").value="";$("bk_st").value="予約";$("bk_date").value=calSel;$("bkFormTitle").textContent="予約を入れる"}
+$("bkForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  var o={id:$("bk_id").value,car:$("bk_car").value,date:$("bk_date").value,time:$("bk_time").value,end:$("bk_end").value,loan:$("bk_loan").value,st:$("bk_st").value,work:$("bk_work").value.trim()};
+  if(!o.car){toast("車を選んでください");return}
+  if(o.end&&o.end<o.date){toast("仕上がり予定日が入庫日より前です");return}
+  if(o.loan&&o.st!=="完了"){for(var d=o.date;d<=(o.end||o.date);d=plusDays(d,1)){var u=loanUser(o.loan,d,o.id);if(u){toast("代車「"+loan(o.loan).name+"」は "+jdate(d)+" に "+((car(u.car)||{}).name||"")+" 様へ貸し出し中です");return}}}
+  if(o.id){var b=S.books.filter(function(x){return x.id===o.id})[0];Object.keys(o).forEach(function(k){b[k]=o[k]});delete b.sample}else{o.id=uid();S.books.push(o)}
+  calSel=o.date;var d0=new Date(o.date+"T00:00:00");calY=d0.getFullYear();calM=d0.getMonth();
+  save();bkReset();$("bkFormBox").open=false;render();toast("予約を入れました。ルーラで迎えに行きます");
+});
+
+/* 請求書・領収書 */
+var invShow={},payOpen={};
+function inv(id){return S.invs.filter(function(x){return x.id===id})[0]}
+function invNo(d){var p="MF-"+d.slice(0,7).replace("-","")+"-",n=0;S.invs.forEach(function(x){if(x.no&&x.no.indexOf(p)===0)n=Math.max(n,num(x.no.slice(p.length)))});return p+("00"+(n+1)).slice(-3)}
+function inshi(x){
+  var t=estCalc(x.lines),base=t.base+t.legal;
+  if(x.method==="カード")return {need:0,msg:"カード払いと書いてある領収書は印紙が要りません。"};
+  if(base<50000)return {need:0,msg:"税抜の受取金額が5万円未満なので印紙は要りません。"};
+  var v=base<=1000000?200:base<=2000000?400:base<=3000000?600:base<=5000000?1000:0;
+  return {need:v,msg:v?"税抜の受取金額 "+yen(base)+" → 収入印紙 "+v+"円を貼って消印します。":"金額が大きいので印紙の額は税務署で確かめてください。"};
+}
+function lineRows(x){return x.lines.map(function(l){var a=num(l.qty)*num(l.price);return '<tr><td>'+esc(l.name||"")+(l.kind==="法定費用"?' ※':'')+'</td><td class="num">'+num(l.qty)+'</td><td class="num">'+yen(num(l.price))+'</td><td class="num">'+yen(a)+'</td></tr>'}).join("")}
+function shopBlock(){var s=S.set;return '<div class="from"><strong>'+esc(s.shop||"")+'</strong>'+(s.addr?'<br>'+esc(s.addr):'')+(s.tel?'<br>TEL '+esc(s.tel):'')+(s.reg?'<br>登録番号 '+esc(s.reg):'')+'</div>'}
+function invPaper(x){
+  var c=car(x.car),t=estCalc(x.lines),s=S.set;
+  return '<div class="paper"><h4>請求書</h4><div class="two"><div style="display:grid;gap:4px;min-width:0"><span class="who">'+esc(c?c.name:"")+' 様</span><span class="small">'+esc(c?(c.model||"")+" "+(c.plate||""):"")+'</span></div><div class="from">No. '+esc(x.no)+'<br>請求日 '+jdate(x.date)+'</div></div>'+
+  '<div>件名: '+esc(x.title||"自動車整備")+'</div><div>ご請求金額 <span class="amt">'+yen(t.total)+'</span>(税込)</div>'+
+  '<div class="dtbl"><table><thead><tr><th>品名・作業</th><th class="num">数</th><th class="num">単価</th><th class="num">金額</th></tr></thead><tbody>'+lineRows(x)+'</tbody></table></div>'+
+  '<div class="total"><div>10%対象(税抜) '+yen(t.base)+'</div><div>消費税(10%) '+yen(t.tax)+'</div><div>非課税(※法定費用・立替) '+yen(t.legal)+'</div><div class="g">合計 '+yen(t.total)+'</div></div>'+
+  '<div class="small">お支払い期限 '+jdate(x.due)+(s.bank?'<br>お振込先 '+esc(s.bank):'')+'</div>'+shopBlock()+'</div>';
+}
+function rcptPaper(x){
+  var c=car(x.car),t=estCalc(x.lines),k=inshi(x);
+  return '<div class="paper"><h4>領収書</h4><div class="two"><span class="who">'+esc(c?c.name:"")+' 様</span><div class="from">No. R'+esc(x.no.replace(/^MF/,""))+'<br>'+jdate(x.paid)+'</div></div>'+
+  '<div style="text-align:center">金額 <span class="amt">￥'+t.total.toLocaleString("ja-JP")+'－</span></div>'+
+  '<div>但し '+esc(x.title||"自動車整備代")+' として<br>上記正に領収いたしました。(お支払い: '+esc(x.method||"")+')</div>'+
+  '<div class="two" style="align-items:flex-end"><div class="small">内訳<br>10%対象 '+yen(t.base+t.tax)+'(うち消費税 '+yen(t.tax)+')<br>非課税(法定費用) '+yen(t.legal)+'</div>'+(k.need?'<div class="inshi">収入印紙<br>'+k.need+'円</div>':'')+'</div>'+shopBlock()+'</div><p class="note">印紙の目安: '+esc(k.msg)+' 迷う時は税務署で確かめてください。</p>';
+}
+function invText(x,kind){
+  var c=car(x.car),t=estCalc(x.lines),s=S.set,L;
+  if(kind==="rcpt"){var k=inshi(x);L=["【領収書】 No. R"+x.no.replace(/^MF/,""),jdate(x.paid),(c?c.name:"")+" 様","","金額 "+yen(t.total)+"(税込)","但し "+(x.title||"自動車整備代")+" として","上記正に領収いたしました。(お支払い: "+(x.method||"")+")","","内訳: 10%対象 "+yen(t.base+t.tax)+"(うち消費税 "+yen(t.tax)+") / 非課税(法定費用) "+yen(t.legal)];if(k.need)L.push("収入印紙 "+k.need+"円 貼付")}
+  else{L=["【請求書】 No. "+x.no,"請求日 "+jdate(x.date),(c?c.name+" 様"+(c.plate?"("+c.plate+")":""):""),"件名: "+(x.title||"自動車整備"),"","ご請求金額 "+yen(t.total)+"(税込)",""];
+    x.lines.forEach(function(l){L.push("・"+(l.name||"")+(l.kind==="法定費用"?" ※":"")+" "+num(l.qty)+" × "+yen(num(l.price))+" = "+yen(num(l.qty)*num(l.price)))});
+    L.push("","10%対象(税抜) "+yen(t.base),"消費税(10%) "+yen(t.tax),"非課税(※法定費用・立替) "+yen(t.legal),"合計 "+yen(t.total),"","お支払い期限 "+jdate(x.due));if(s.bank)L.push("お振込先 "+s.bank)}
+  L.push("",(s.shop||"")+(s.tel?" TEL "+s.tel:""));if(s.addr)L.push(s.addr);if(s.reg)L.push("登録番号 "+s.reg);
+  return L.join("\n");
+}
+function renderInv(){
+  var s=S.set;[["inv_shop","shop"],["inv_tel","tel"],["inv_addr","addr"],["inv_reg","reg"],["inv_bank","bank"],["inv_days","days"]].forEach(function(p){if(document.activeElement!==$(p[0]))$(p[0]).value=s[p[1]]||""});
+  $("regNote").textContent=/^T\d{13}$/.test(s.reg||"")?"登録番号あり: 適格請求書(インボイス)の形で出します。":"登録番号は「T」と数字13けた。番号が無いと適格請求書になりません(免税の店ならそのままで出せます)。";
+  var f=$("invFilter").value,t=today();
+  var list=S.invs.filter(function(x){return f==="all"||(f==="paid"?!!x.paid:!x.paid)}).sort(function(a,b){return a.date<b.date?1:(a.date>b.date?-1:(a.no<b.no?1:-1))});
+  var unpaid=S.invs.filter(function(x){return !x.paid});
+  $("invSum").textContent="未入金 "+unpaid.length+"件 ・ "+yen(unpaid.reduce(function(a,x){return a+estCalc(x.lines).total},0))+(unpaid.some(function(x){return x.due&&x.due<t})?" ・ 期限過ぎあり":"");
+  $("invList").innerHTML=list.length?list.map(function(x){var c=car(x.car),tt=estCalc(x.lines),late=!x.paid&&x.due&&x.due<t;
+    var chip=x.paid?'<span class="chip ok">入金済み '+jdate(x.paid)+' '+esc(x.method||"")+'</span>':(late?'<span class="chip bad">期限過ぎ</span>':'<span class="chip warn">未入金 期限'+jdate(x.due).replace(/^\d+年/,"")+'</span>');
+    var pay=payOpen[x.id]?'<div class="row"><input type="date" id="pay_d_'+x.id+'" value="'+t+'" style="flex:1 1 150px"><select id="pay_m_'+x.id+'" style="flex:1 1 110px"><option>現金</option><option>振込</option><option>カード</option><option>その他</option></select><button class="btn small main" data-act="payOk" data-id="'+x.id+'">入金を記録</button></div>':'';
+    var doc=invShow[x.id]==="inv"?invPaper(x):(invShow[x.id]==="rcpt"&&x.paid?rcptPaper(x):"");
+    return '<div class="item"><div class="ihead"><div style="display:grid;gap:2px;min-width:0"><span class="mono">'+esc(x.no)+'</span><strong>'+esc(x.title||"(件名なし)")+sampleChip(x)+'</strong><span class="meta">'+jdate(x.date)+' ・ '+esc(carLabel(c))+'</span>'+chip+'</div><strong style="font-size:18px;font-variant-numeric:tabular-nums">'+yen(tt.total)+'</strong></div>'+
+    '<div class="row"><button class="btn small" data-act="invShow" data-k="inv" data-id="'+x.id+'">'+(invShow[x.id]==="inv"?"請求書を閉じる":"請求書を見る")+'</button>'+(x.paid?'<button class="btn small" data-act="invShow" data-k="rcpt" data-id="'+x.id+'">'+(invShow[x.id]==="rcpt"?"領収書を閉じる":"領収書を見る")+'</button><button class="btn small" data-act="payUndo" data-id="'+x.id+'">入金を取り消す</button>':'<button class="btn small main" data-act="payOpen" data-id="'+x.id+'">入金済みにする</button>')+
+    (doc?'<button class="btn small" data-act="invCopy" data-id="'+x.id+'">文面をコピー</button>':'')+'<button class="btn small danger" data-act="invDel" data-id="'+x.id+'">'+(delArm==="i"+x.id?"もう一度で削除":"削除")+'</button></div>'+pay+doc+'</div>'}).join(""):'<div class="empty">'+(f==="unpaid"?"未入金の請求書はありません。ゴールドは全部受け取り済みです。":"当てはまる請求書はありません")+'</div>';
+  renderMonth();
+}
+function renderMonth(){
+  if(!$("mon_m").value)$("mon_m").value=today().slice(0,7);
+  var m=$("mon_m").value,names={};S.invs.forEach(function(x){var c=car(x.car);if(c&&x.date.slice(0,7)===m)names[c.name]=1});
+  var keep=$("mon_c").value,ks=Object.keys(names);
+  $("mon_c").innerHTML=ks.length?ks.map(function(n){return '<option'+(n===keep?" selected":"")+'>'+esc(n)+'</option>'}).join(""):'<option value="">この月の請求はありません</option>';
+  var who=$("mon_c").value;if(!who){$("monOut").innerHTML="";return}
+  var xs=S.invs.filter(function(x){var c=car(x.car);return c&&c.name===who&&x.date.slice(0,7)===m}).sort(function(a,b){return a.date<b.date?-1:1});
+  var due=xs.filter(function(x){return !x.paid}),sum=due.reduce(function(a,x){return a+estCalc(x.lines).total},0),tx=due.reduce(function(a,x){return a+estCalc(x.lines).tax},0);
+  $("monOut").innerHTML='<div class="paper"><h4>請求書</h4><div class="two"><span class="who">'+esc(who)+' 様</span><div class="from">'+m.replace("-","年")+'月分<br>'+jdate(today())+'</div></div><div>今回ご請求額 <span class="amt">'+yen(sum)+'</span>(税込・うち消費税 '+yen(tx)+')</div><div class="dtbl"><table><thead><tr><th>日付</th><th>No.・件名</th><th class="num">金額</th><th>状態</th></tr></thead><tbody>'+xs.map(function(x){return '<tr><td>'+jdate(x.date).replace(/^\d+年/,"")+'</td><td>'+esc(x.no)+'<br>'+esc(x.title||"")+'</td><td class="num">'+yen(estCalc(x.lines).total)+'</td><td>'+(x.paid?"入金済み":"未入金")+'</td></tr>'}).join("")+'</tbody></table></div>'+(S.set.bank?'<div class="small">お振込先 '+esc(S.set.bank)+'</div>':'')+shopBlock()+'</div><div class="row"><button class="btn small" data-act="monCopy">文面をコピー</button></div>';
+}
+function monText(){
+  var m=$("mon_m").value,who=$("mon_c").value,s=S.set;
+  var xs=S.invs.filter(function(x){var c=car(x.car);return c&&c.name===who&&x.date.slice(0,7)===m&&!x.paid}).sort(function(a,b){return a.date<b.date?-1:1});
+  var sum=xs.reduce(function(a,x){return a+estCalc(x.lines).total},0);
+  return ["【請求書】"+m.replace("-","年")+"月分",who+" 様",""].concat(xs.map(function(x){return "・"+jdate(x.date)+" "+x.no+" "+(x.title||"")+" "+yen(estCalc(x.lines).total)})).concat(["","今回ご請求額 "+yen(sum)+"(税込)",s.bank?"お振込先 "+s.bank:"","",(s.shop||"")+(s.tel?" TEL "+s.tel:""),s.reg?"登録番号 "+s.reg:""]).join("\n");
+}
+[["inv_shop","shop"],["inv_tel","tel"],["inv_addr","addr"],["inv_reg","reg"],["inv_bank","bank"],["inv_days","days"]].forEach(function(p){$(p[0]).addEventListener("input",function(){S.set[p[1]]=this.value.trim();save();clearTimeout(ctT);ctT=setTimeout(function(){renderInv();renderContact()},300)})});
+$("invFilter").addEventListener("change",renderInv);$("mon_m").addEventListener("change",renderMonth);$("mon_c").addEventListener("change",renderMonth);
+
+/* 売上 */
+function salesOf(m,basis){
+  var r={n:0,labor:0,parts:0,tax:0,legal:0,profit:0,unk:0,byC:{}};
+  S.invs.forEach(function(x){var d=basis==="paid"?x.paid:x.date;if(!d||d.slice(0,7)!==m)return;r.n++;var c=car(x.car),nm=c?c.name:"(消された車)",b=0;
+    x.lines.forEach(function(l){var a=num(l.qty)*num(l.price);if(l.kind==="工賃"){r.labor+=a;b+=a}else if(l.kind==="部品"){r.parts+=a;b+=a;if(l.part&&l.cost!=null&&l.cost!=="")r.profit+=a-num(l.qty)*num(l.cost);else if(a)r.unk++}else r.legal+=a});
+    r.tax+=estCalc(x.lines).tax;r.byC[nm]=(r.byC[nm]||0)+b});
+  return r;
+}
+function addMonth(m,n){var d=new Date(+m.slice(0,4),+m.slice(5,7)-1+n,1);return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)}
+function niceMax(v){if(v<=0)return 10000;var p=Math.pow(10,Math.floor(Math.log10(v))),f=v/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p}
+function man(v){return v>=10000?(v/10000).toLocaleString("ja-JP",{maximumFractionDigits:1})+"万":v.toLocaleString("ja-JP")}
+function renderSales(){
+  if(!$("sl_m").value)$("sl_m").value=today().slice(0,7);
+  var m=$("sl_m").value,bs=$("sl_basis").value,r=salesOf(m,bs),unp=S.invs.filter(function(x){return !x.paid}).reduce(function(a,x){return a+estCalc(x.lines).total},0);
+  var T=[["hi","売上(税抜)",yen(r.labor+r.parts)],["","工賃",yen(r.labor)],["","部品",yen(r.parts)],["","部品の粗利",yen(r.profit)],["","消費税(預かり)",yen(r.tax)],["","法定費用(立替)",yen(r.legal)],["","請求の件数",r.n+"件"],["","未入金(全部の月)",yen(unp)]];
+  $("slTiles").innerHTML=T.map(function(t){return '<div class="tile '+t[0]+'"><span>'+t[1]+'</span><b>'+t[2]+'</b></div>'}).join("");
+  $("slNote").textContent=(r.unk?"在庫に無い部品("+r.unk+"行)は仕入値が分からないので粗利に入っていません。":"")+(bs==="paid"?" 入金した日で数えているので、未入金の請求は入りません。":"");
+  var ms=[];for(var i=11;i>=0;i--)ms.push(addMonth(m,-i));
+  var rs=ms.map(function(x){return salesOf(x,bs)}),mx=niceMax(Math.max.apply(null,rs.map(function(x){return x.labor+x.parts})));
+  var W=640,H=250,L=52,R=8,Tp=14,B=30,cw=(W-L-R)/12,bw=Math.min(30,cw*.62),y=function(v){return Tp+(H-Tp-B)*(1-v/mx)},g="";
+  for(var k=0;k<=4;k++){var v=mx*k/4,yy=y(v).toFixed(1);g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"/><text x="'+(L-6)+'" y="'+(+yy+4)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+man(v)+'</text>'}
+  rs.forEach(function(x,i){var cx=L+cw*i+cw/2,x0=cx-bw/2,yl=y(x.labor),yp=y(x.labor+x.parts),op=ms[i]===m?1:.55;
+    g+='<g opacity="'+op+'"><title>'+ms[i].replace("-","年")+'月 工賃 '+yen(x.labor)+' / 部品 '+yen(x.parts)+'</title><rect x="'+x0.toFixed(1)+'" y="'+yl.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(y(0)-yl).toFixed(1)+'" fill="var(--steel)"/><rect x="'+x0.toFixed(1)+'" y="'+yp.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(yl-yp).toFixed(1)+'" fill="var(--accent)"/></g>';
+    g+='<text x="'+cx.toFixed(1)+'" y="'+(H-10)+'" text-anchor="middle" font-size="11" fill="'+(ms[i]===m?"var(--ink)":"var(--muted)")+'" font-weight="'+(ms[i]===m?800:400)+'">'+(+ms[i].slice(5))+'月</text>';
+    if(ms[i]===m&&x.labor+x.parts>0)g+='<text x="'+cx.toFixed(1)+'" y="'+(yp-4).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="800" fill="var(--ink)">'+man(x.labor+x.parts)+'</text>'});
+  $("slChart").innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="12か月の売上">'+g+'</svg>';
+  $("slCustT").textContent=m.replace("-","年")+"月のお客さん別(税抜)";
+  var cs=Object.keys(r.byC).sort(function(a,b){return r.byC[b]-r.byC[a]}),top=cs.length?r.byC[cs[0]]:1;
+  $("slCust").innerHTML=cs.length?cs.map(function(n){return '<div style="display:grid;gap:2px"><div class="row" style="justify-content:space-between"><span>'+esc(n)+' 様</span><strong style="font-variant-numeric:tabular-nums">'+yen(r.byC[n])+'</strong></div><div style="height:6px;border-radius:3px;background:var(--sunk)"><div style="height:6px;border-radius:3px;background:var(--steel);width:'+Math.max(2,Math.round(r.byC[n]/top*100))+'%"></div></div></div>'}).join(""):'<div class="empty">この月の売上はまだありません</div>';
+}
+$("sl_m").addEventListener("change",renderSales);$("sl_basis").addEventListener("change",renderSales);
+
+/* 車の写真(この端末のブラウザの中にしまう) */
+var PDB=null,PH=[],phState="loading",openPh={};
+function idbOpen(){return new Promise(function(ok,ng){try{var r=indexedDB.open("markfactory-photos",1);r.onupgradeneeded=function(){r.result.createObjectStore("p",{keyPath:"id"})};r.onsuccess=function(){ok(r.result)};r.onerror=function(){ng(r.error)}}catch(e){ng(e)}})}
+function idbDo(mode,fn){return new Promise(function(ok,ng){try{var t=PDB.transaction("p",mode),q=fn(t.objectStore("p"));t.oncomplete=function(){ok(q&&q.result)};t.onerror=t.onabort=function(){ng(t.error)}}catch(e){ng(e)}})}
+function phLoad(){
+  idbOpen().then(function(db){PDB=db;return idbDo("readonly",function(s){return s.getAll()})}).then(function(a){
+    PH=(a||[]).map(function(x){x.url=URL.createObjectURL(x.blob);return x});phState="ok";renderCars();
+  },function(){phState="ng";renderCars()});
+}
+function phOf(cid){return PH.filter(function(p){return p.car===cid}).sort(function(a,b){return a.date<b.date?1:-1})}
+function phAdd(cid,files,tag){
+  if(phState!=="ok"){toast("この端末では写真をしまえません");return}
+  var fs=Array.prototype.slice.call(files||[]),n=0;
+  fs.reduce(function(pr,f){return pr.then(function(){return toCanvas(f,1280).then(function(cv){return new Promise(function(ok){cv.toBlob(ok,"image/jpeg",.8)})}).then(function(blob){
+    var o={id:uid(),car:cid,date:today(),tag:tag,blob:blob};return idbDo("readwrite",function(s){return s.put(o)}).then(function(){o.url=URL.createObjectURL(blob);PH.push(o);n++})}).catch(function(){})})},Promise.resolve())
+  .then(function(){renderCars();toast(n?"写真を "+n+"枚 しまいました":"写真をしまえませんでした。端末の空きを確かめてください")});
+}
+function phDel(id){var p=PH.filter(function(x){return x.id===id})[0];if(!p)return;idbDo("readwrite",function(s){return s.delete(id)}).then(function(){URL.revokeObjectURL(p.url);PH=PH.filter(function(x){return x.id!==id});renderCars();toast("写真を消しました")},function(){toast("消せませんでした")})}
+function phDelCar(cid){phOf(cid).forEach(function(p){if(PDB)idbDo("readwrite",function(s){return s.delete(p.id)}).then(function(){URL.revokeObjectURL(p.url)},function(){})});PH=PH.filter(function(x){return x.car!==cid})}
+function phBlock(c){
+  if(!openPh[c.id])return "";
+  if(phState!=="ok")return '<div class="result">'+(phState==="loading"?"写真を読み込み中…":"この端末のブラウザでは写真をしまえません(保存が止められています)。")+'</div>';
+  var ps=phOf(c.id);
+  return '<div class="result"><div class="row"><select id="phTag_'+c.id+'" style="flex:1 1 130px"><option>入庫時</option><option>作業前</option><option>作業後</option><option>傷・へこみ</option><option>メーター</option><option>その他</option></select><label class="btn small main" for="phSnap_'+c.id+'">📷 撮る</label><label class="btn small" for="phPick_'+c.id+'">🖼 選ぶ</label></div>'+
+  '<input type="file" id="phSnap_'+c.id+'" data-phcar="'+c.id+'" accept="image/*" capture="environment" hidden><input type="file" id="phPick_'+c.id+'" data-phcar="'+c.id+'" accept="image/*" multiple hidden>'+
+  (ps.length?'<div class="photos">'+ps.map(function(p){return '<div class="ph"><button class="img" data-act="phView" data-id="'+p.id+'" aria-label="大きく見る"><img src="'+p.url+'" alt="'+esc(p.tag)+'"></button><span class="meta"><strong>'+esc(p.tag)+'</strong> '+jdate(p.date).replace(/^\d+年/,"")+'</span><button class="btn small danger" data-act="phDel" data-id="'+p.id+'">'+(delArm==="f"+p.id?"もう一度で消す":"消す")+'</button></div>'}).join("")+'</div>':'<div class="meta">まだ写真はありません。入庫の時に4方向と傷を撮っておくと、あとで「元からあった傷」の話で困りません。</div>')+
+  '<div class="note">写真はこの端末のブラウザの中だけにしまいます。</div></div>';
+}
+document.addEventListener("change",function(e){var cid=e.target.dataset&&e.target.dataset.phcar;if(cid){var tg=$("phTag_"+cid);phAdd(cid,e.target.files,tg?tg.value:"その他");e.target.value=""}});
+function blobToData(b){return new Promise(function(ok){var r=new FileReader();r.onload=function(){ok(r.result)};r.onerror=function(){ok("")};r.readAsDataURL(b)})}
+function dataToBlob(d){var p=d.split(","),bin=atob(p[1]),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:(p[0].match(/:(.*?);/)||[])[1]||"image/jpeg"})}
+
+/* ---------- ボタン ---------- */
+var armT;
+function arm(key){if(delArm===key)return true;delArm=key;clearTimeout(armT);armT=setTimeout(function(){delArm=null;render()},4000);render();return false}
+document.addEventListener("click",function(e){
+  var b=e.target.closest("[data-act]");if(!b)return;var a=b.dataset.act,id=b.dataset.id;
+  if(a==="carFormReset")resetCarForm();
+  else if(a==="carEdit"){var c=car(id);carF.forEach(function(k){$("car_"+k).value=c[k]||""});$("carFormTitle").textContent="車を直す: "+c.name+" 様";$("carFormBox").open=true;$("carFormBox").scrollIntoView({behavior:"smooth"})}
+  else if(a==="carDel"){if(arm("c"+id)){S.cars=S.cars.filter(function(c){return c.id!==id});S.recs=S.recs.filter(function(r){return r.car!==id});S.books=S.books.filter(function(b){return b.car!==id});phDelCar(id);delArm=null;save();render();toast("削除しました")}}
+  else if(a==="hist"){openHist[id]=!openHist[id];renderCars()}
+  else if(a==="recNew")openRec(id,null);
+  else if(a==="recEdit"){var r=S.recs.filter(function(x){return x.id===id})[0];openRec(r.car,r)}
+  else if(a==="recDel"){if(arm("r"+id)){S.recs=S.recs.filter(function(r){return r.id!==id});delArm=null;save();render();toast("削除しました")}}
+  else if(a==="recAddPart")recPartRow(null);
+  else if(a==="rmRow")b.parentNode.remove();
+  else if(a==="recCancel")$("recFormBox").hidden=true;
+  else if(a==="estAdd"){E.lines.push({kind:b.dataset.kind,name:"",qty:1,price:0});renderEst()}
+  else if(a==="estDel"){E.lines.splice(+b.dataset.i,1);renderEst()}
+  else if(a==="estNew"){estNew();renderEst()}
+  else if(a==="estSave"){var o={id:E.id||uid(),car:E.car,title:E.title,date:today(),lines:E.lines.map(function(l){return Object.assign({},l)})};S.ests=S.ests.filter(function(x){return x.id!==o.id});S.ests.push(o);E.id=o.id;save();renderEst();toast("見積もりを保存しました")}
+  else if(a==="estCopy")copy(estText({car:E.car,title:E.title,date:today(),lines:E.lines}));
+  else if(a==="estToRec"){
+    if(!E.car){toast("先に「車(お客さん)」を選んでください");return}
+    var ps=[],labor=0;E.lines.forEach(function(l){if(l.kind==="部品"&&(l.name||l.part))ps.push({part:l.part||"",name:l.name,qty:num(l.qty)});if(l.kind==="工賃")labor+=num(l.qty)*num(l.price)});
+    var rec={id:uid(),car:E.car,date:today(),km:(car(E.car)||{}).km||"",work:(E.title||"見積もりの作業")+"\n"+E.lines.filter(function(l){return l.kind!=="法定費用"&&l.name}).map(function(l){return l.name}).join("、"),parts:ps,labor:labor,next:""};
+    S.recs.push(rec);ps.forEach(function(x){var p=part(x.part);if(p)p.qty=num(p.qty)-x.qty});openHist[E.car]=true;save();show("cars");toast("作業記録にしました。在庫も引きました");
+  }
+  else if(a==="estLoad"){var x=S.ests.filter(function(z){return z.id===id})[0];E={id:x.id,car:x.car,title:x.title,lines:x.lines.map(function(l){return Object.assign({},l)})};renderEst();window.scrollTo({top:0,behavior:"smooth"})}
+  else if(a==="estRm"){if(arm("e"+id)){S.ests=S.ests.filter(function(x){return x.id!==id});delArm=null;save();render()}}
+  else if(a==="qty"){var p=part(id);p.qty=Math.max(0,num(p.qty)+(+b.dataset.d));save();render();if(!$("p-qr").hidden){showCode(p.code)}toast(p.name+" 在庫 "+p.qty)}
+  else if(a==="partFormReset")resetPartForm();
+  else if(a==="partEdit")editPart(part(id),false);
+  else if(a==="partDel"){if(arm("p"+id)){S.parts=S.parts.filter(function(p){return p.id!==id});delArm=null;save();render();toast("削除しました")}}
+  else if(a==="copyMsg")copy(b.closest(".item").querySelector(".msg").textContent);
+  else if(a==="tplReset"){S.set.tpl=TPL;save();$("ct_tpl").value=TPL;renderContact()}
+  else if(a==="makeOrder"){
+    var sup=b.dataset.sup;var lines=S.parts.filter(function(p){return isLow(p)&&(p.sup||"仕入先 未登録")===sup}).map(function(p){return {part:p.id,name:p.name,code:p.code,qty:num(orderQty[p.id])}}).filter(function(l){return l.qty>0});
+    if(!lines.length){toast("発注数が0です");return}
+    var o={id:uid(),sup:sup,date:today(),lines:lines,got:""};S.orders.push(o);save();renderOrder();copy(orderText(o));
+  }
+  else if(a==="copyOrder"){var o2=S.orders.filter(function(o){return o.id===id})[0];copy(orderText(o2))}
+  else if(a==="gotOrder"){var o3=S.orders.filter(function(o){return o.id===id})[0];o3.lines.forEach(function(l){var p=part(l.part);if(p)p.qty=num(p.qty)+l.qty});o3.got=today();o3.lines.forEach(function(l){delete orderQty[l.part]});save();render();toast("入荷分を在庫に足しました")}
+  else if(a==="orderDel"){if(arm("o"+id)){S.orders=S.orders.filter(function(o){return o.id!==id});delArm=null;save();render()}}
+  else if(a==="phOpen"){openPh[id]=!openPh[id];renderCars()}
+  else if(a==="phDel"){if(arm("f"+id)){delArm=null;phDel(id)}}
+  else if(a==="phView"){var pv=PH.filter(function(x){return x.id===id})[0];if(pv){$("phVImg").src=pv.url;$("phVText").textContent=pv.tag+" ・ "+jdate(pv.date)+" ・ "+carLabel(car(pv.car));$("phViewer").hidden=false}}
+  else if(a==="phClose")$("phViewer").hidden=true;
+  else if(a==="calMove"){calM+=+b.dataset.d;if(calM<0){calM=11;calY--}if(calM>11){calM=0;calY++}renderBook()}
+  else if(a==="calDay"){calSel=b.dataset.d;var dc=new Date(calSel+"T00:00:00");if(dc.getMonth()!==calM){calY=dc.getFullYear();calM=dc.getMonth()}if(!$("bk_id").value)$("bk_date").value=calSel;renderBook()}
+  else if(a==="bkNew"){bkReset();$("bkFormBox").open=true;$("bkFormBox").scrollIntoView({behavior:"smooth",block:"start"})}
+  else if(a==="bkReset")bkReset();
+  else if(a==="bkEdit"){var bb=S.books.filter(function(x){return x.id===id})[0];["id","car","date","time","end","loan","st","work"].forEach(function(k){$("bk_"+k).value=bb[k]||""});$("bkFormTitle").textContent="予約を直す: "+carLabel(car(bb.car));$("bkFormBox").open=true;$("bkFormBox").scrollIntoView({behavior:"smooth",block:"start"})}
+  else if(a==="bkNext"){var bn=S.books.filter(function(x){return x.id===id})[0];bn.st=bn.st==="予約"?"入庫中":"完了";delete bn.sample;save();render();toast(bn.st==="完了"?"仕上がりました。代車も戻りました":"入庫しました")}
+  else if(a==="bkRec"){var br=S.books.filter(function(x){return x.id===id})[0];show("cars");openRec(br.car,null);$("rec_work").value=br.work||""}
+  else if(a==="bkDel"){if(arm("b"+id)){S.books=S.books.filter(function(x){return x.id!==id});delArm=null;save();render();toast("予約を消しました")}}
+  else if(a==="loanAdd"){var ln=$("loan_new").value.trim();if(!ln){toast("代車の名前を入れてください");return}S.loans.push({id:uid(),name:ln});$("loan_new").value="";save();render();toast("代車を足しました")}
+  else if(a==="loanDel"){if(S.books.some(function(x){return x.loan===id&&x.st!=="完了"})){toast("この代車は予約に入っています。先に予約の代車を外してください");return}if(arm("l"+id)){S.loans=S.loans.filter(function(x){return x.id!==id});delArm=null;save();render()}}
+  else if(a==="estToInv"){
+    if(!E.car){toast("先に「車(お客さん)」を選んでください");return}
+    var il=E.lines.filter(function(l){return l.name||num(l.price)}).map(function(l){var o=Object.assign({},l),p=l.part?part(l.part):null;if(p)o.cost=num(p.cost);return o});
+    if(!il.length){toast("明細が空です");return}
+    var td=today(),nd=num(S.set.days)||14,x={id:uid(),no:invNo(td),car:E.car,title:E.title,date:td,due:plusDays(td,nd),lines:il,paid:"",method:"",est:E.id};
+    S.invs.push(x);invShow[x.id]="inv";$("invFilter").value="unpaid";save();show("inv");toast("請求書を作りました。No. "+x.no);
+  }
+  else if(a==="invShow"){var k=b.dataset.k;invShow[id]=invShow[id]===k?"":k;renderInv()}
+  else if(a==="invCopy"){var xi=inv(id);copy(invText(xi,invShow[id]==="rcpt"?"rcpt":"inv"))}
+  else if(a==="payOpen"){payOpen[id]=!payOpen[id];renderInv()}
+  else if(a==="payOk"){var xp=inv(id),pd=$("pay_d_"+id).value;if(!pd){toast("入金日を入れてください");return}xp.paid=pd;xp.method=$("pay_m_"+id).value;delete xp.sample;payOpen[id]=false;invShow[id]="rcpt";save();render();toast(yen(estCalc(xp.lines).total)+" のゴールドを受け取った！")}
+  else if(a==="payUndo"){var xu=inv(id);xu.paid="";xu.method="";if(invShow[id]==="rcpt")invShow[id]="";save();render();toast("入金を取り消しました")}
+  else if(a==="invDel"){if(arm("i"+id)){S.invs=S.invs.filter(function(x){return x.id!==id});delArm=null;save();render();toast("請求書を消しました")}}
+  else if(a==="monCopy")copy(monText());
+  else if(a==="qrManual"){var v=$("qr_manual").value.trim();if(v)showCode(v)}
+  else if(a==="qrGo")showCode(b.dataset.code);
+  else if(a==="newFromCode"){resetPartForm();editPart({code:b.dataset.code,qty:1,min:1},true)}
+  else if(a==="newFromAI"){resetPartForm();editPart({code:b.dataset.code,name:b.dataset.name,maker:b.dataset.maker,qty:1,min:1},true)}
+  else if(a==="copyText")copy(b.dataset.text);
+  else if(a==="aiLabel")aiLabel();
+  else if(a==="backupCopy"){
+    if($("bk_photos").checked&&PH.length){toast("写真を文字にしています…");Promise.all(PH.map(function(p){return blobToData(p.blob).then(function(d){return {id:p.id,car:p.car,date:p.date,tag:p.tag,data:d}})})).then(function(ps){copy(JSON.stringify(Object.assign({},S,{photos:ps})))})}
+    else copy(JSON.stringify(S));
+  }
+  else if(a==="backupLoad"){try{var d=JSON.parse($("backupBox").value);if(!d||!Array.isArray(d.cars))throw 0;var ps=d.photos;delete d.photos;S=d;load2();save();
+      if(Array.isArray(ps)&&ps.length&&phState==="ok"){var have={};PH.forEach(function(p){have[p.id]=1});ps.filter(function(p){return p.data&&!have[p.id]}).reduce(function(pr,p){return pr.then(function(){var o={id:p.id,car:p.car,date:p.date,tag:p.tag,blob:dataToBlob(p.data)};return idbDo("readwrite",function(st){return st.put(o)}).then(function(){o.url=URL.createObjectURL(o.blob);PH.push(o)})})},Promise.resolve()).then(function(){renderCars()},function(){toast("写真の一部を戻せませんでした")})}
+      render();toast("控えから戻しました")}catch(err){toast("控えの文字が読めません。全部そのまま貼ってください")}}
+  else if(a==="clearSample"){var gone=S.cars.filter(function(c){return c.sample}).map(function(c){return c.id});LISTS.forEach(function(k){S[k]=S[k].filter(function(x){return !x.sample})});gone.forEach(phDelCar);save();render();toast("見本を消しました")}
+});
+function load2(){S.set=S.set||{};if(!S.set.tpl)S.set.tpl=TPL;LISTS.forEach(function(k){if(!Array.isArray(S[k]))S[k]=[]})}
+
+/* ---------- 起動 ---------- */
+load();estNew();
+if(S.ests[0]&&S.ests[0].sample){var x0=S.ests[0];E={id:x0.id,car:x0.car,title:x0.title,lines:x0.lines.map(function(l){return Object.assign({},l)})}}
+renderLaw();bkReset();phLoad();
+document.addEventListener("keydown",function(e){if(e.key==="Escape")$("phViewer").hidden=true});
+var t0="cars";try{t0=localStorage.getItem(KEY+".tab")||"cars"}catch(e){}
+show(t0);
+initAI();
+})();
+</script>
