@@ -14,7 +14,8 @@
 - 15画は「福寿円満運・大吉」(たくちんの決め)
 - カメラ: アプリの中(AQUOS wish)は開かない。外の Pages で撮る/写真を選ぶ
 - 名前: 開き直し・裏から3秒以上で戻す・読み直しで空になる(手元で照らし済み)
-- まだ: Pages に版15の直し(3秒)が入っていない。uranai-kantei にこのチャットから入る許可が要る / 実機の確認 / 占成人の基準数の決まり(式が分からず手で入れる形)
+- Pages も版15と同じ中身(uranai-kantei main c377edb、公開ページと照合済み 11-14)。このチャットから uranai-kantei に入れる(/home/user/uranai-kantei)
+- まだ: 実機の確認 / 占成人の基準数の決まり(式が分からず手で入れる形)
 - 試験の1枚 https://claude.ai/artifact/MK2XMnpisv5dLsA1W5XiaZ (写真ファイルを選べるか)。結果待ち
 
 ## 置いた物(Drive フォルダ 1izpPoOGTy6yW2eeNR8-0RKUcXN5vYKHV)
