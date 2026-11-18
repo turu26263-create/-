@@ -1,0 +1,205 @@
+<title>ルーラFAX送付状</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Zen+Kaku+Gothic+New:wght@700&display=swap">
+<style>
+/* 左=入力、右=A4の送付状をそのまま見せる。スマホでは縦に並ぶ */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#1d2530; --mute:#5d6b7a; --line:#cfd6de;
+  --accent:#1f5fa8; --accent-ink:#ffffff; --paper:#ffffff; --paper-ink:#111111;
+  --f-body:"Noto Sans JP","Hiragino Sans","Yu Gothic",Meiryo,sans-serif;
+  --f-head:"Zen Kaku Gothic New","Noto Sans JP","Hiragino Sans",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a21; --panel:#1d252f; --ink:#e6ebf0; --mute:#9aa8b6; --line:#334150;
+  --accent:#6fa8e8; --accent-ink:#0d1620; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a21; --panel:#1d252f; --ink:#e6ebf0; --mute:#9aa8b6; --line:#334150;
+  --accent:#6fa8e8; --accent-ink:#0d1620; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px}
+h1{font-family:var(--f-head);font-size:22px;margin:0;text-wrap:balance}
+.sub{color:var(--mute);margin:4px 0 0}
+.wrap{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px;max-width:1200px;margin:16px auto 0}
+@media (max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.form{align-self:start;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+legend{font-weight:700;font-size:12px;letter-spacing:.08em;color:var(--accent);margin-bottom:4px}
+label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute)}
+input,textarea,select{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;width:100%}
+textarea{min-height:110px;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px}
+.checks label{flex-direction:row;align-items:center;gap:6px;font-size:14px;color:var(--ink)}
+.checks input{width:auto}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-weight:700;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:10px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+.note{font-size:12px;color:var(--mute);margin:0}
+.view{min-width:0;display:flex;flex-direction:column;gap:10px}
+.scaler{overflow:hidden;border-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
+/* A4 = 210x297mm。794x1123px で組んで、幅に合わせて縮める */
+#sheet{width:794px;height:1123px;background:var(--paper);color:var(--paper-ink);padding:64px 70px;
+  font-family:var(--f-body);transform-origin:top left;display:flex;flex-direction:column;gap:22px}
+#sheet .date{text-align:right;font-size:15px}
+#sheet .big{font-family:var(--f-head);font-size:44px;letter-spacing:.35em;text-align:center;border-top:4px solid #111;border-bottom:1px solid #111;padding:12px 0 10px;margin:0}
+#sheet .ends{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+#sheet .to .name{font-size:22px;font-weight:700;border-bottom:1px solid #111;padding-bottom:4px}
+#sheet .ends p{margin:4px 0;font-size:15px;line-height:1.6}
+#sheet .from{font-size:15px}
+#sheet table{width:100%;border-collapse:collapse;font-size:16px}
+#sheet th,#sheet td{border:1px solid #111;padding:10px 12px;text-align:left;vertical-align:top}
+#sheet th{width:130px;background:#f0f0f0;font-weight:700}
+#sheet .flags{display:flex;gap:22px;flex-wrap:wrap;font-size:16px}
+#sheet .flags span::before{content:"□ ";}
+#sheet .flags span.on::before{content:"■ ";}
+#sheet .msg{flex:1;border:1px solid #111;padding:14px 16px;font-size:16px;line-height:1.8;white-space:pre-wrap;overflow:hidden}
+#sheet .msg b{display:block;font-size:13px;letter-spacing:.1em;margin-bottom:6px}
+#sheet .foot{font-size:12px;text-align:center;line-height:1.6}
+#imgOut{display:none;flex-direction:column;gap:6px}
+#imgOut img{max-width:100%;border:1px solid var(--line);background:#fff}
+@media print{
+  @page{size:A4;margin:0}
+  body{padding:0;background:#fff}
+  header,.form,.note,#imgOut,.view>.note{display:none!important}
+  .wrap{display:block;margin:0}
+  .scaler{box-shadow:none;width:auto!important;height:auto!important}
+  #sheet{transform:none!important;width:210mm;height:297mm}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <h1>ルーラFAX送付状</h1>
+  <p class="sub">書いたら右の紙にすぐ反映。ルーラで相手先までひとっ飛び(紙はFAX機で送ってね)。</p>
+</header>
+
+<div class="wrap">
+  <form class="form" id="f" autocomplete="off">
+    <fieldset>
+      <legend>送り先</legend>
+      <label>会社名<input id="toCo" value="株式会社 見本水産"></label>
+      <label>部署・氏名(様は自動)<input id="toName" value="仕入部 山田 太郎"></label>
+      <div class="row2">
+        <label>FAX番号<input id="toFax" inputmode="tel" value="000-000-0000"></label>
+        <label>電話番号<input id="toTel" inputmode="tel" value=""></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>送り主(この端末に覚えます)</legend>
+      <label>会社名・屋号<input id="frCo" value="見本 太郎 商店"></label>
+      <label>担当者<input id="frName" value=""></label>
+      <label>住所<input id="frAddr" value=""></label>
+      <div class="row2">
+        <label>電話<input id="frTel" inputmode="tel" value=""></label>
+        <label>FAX<input id="frFax" inputmode="tel" value=""></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>中身</legend>
+      <div class="row2">
+        <label>日付<input id="date" type="date"></label>
+        <label>枚数(この紙を含む)<input id="pages" type="number" min="1" value="2"></label>
+      </div>
+      <label>件名<input id="subj" value="お見積書送付の件"></label>
+      <div class="checks" id="flags">
+        <label><input type="checkbox" value="至急">至急</label>
+        <label><input type="checkbox" value="ご確認ください" checked>ご確認ください</label>
+        <label><input type="checkbox" value="ご返信ください">ご返信ください</label>
+        <label><input type="checkbox" value="ご回覧ください">ご回覧ください</label>
+      </div>
+      <label>通信欄<textarea id="msg">いつもお世話になっております。
+お見積書を送付いたします。ご確認のほど、よろしくお願いいたします。</textarea></label>
+    </fieldset>
+    <div class="btns">
+      <button type="button" id="bImg">画像にする</button>
+      <button type="button" id="bPrint" class="ghost">印刷</button>
+      <button type="button" id="bClear" class="ghost">送り先を空に</button>
+    </div>
+    <p class="note">「印刷」はブラウザで直接開いた時だけ動きます。アプリの中では「画像にする」→ 長押し・右クリックで保存してから印刷してください。</p>
+  </form>
+
+  <div class="view">
+    <div class="scaler" id="scaler">
+      <div id="sheet">
+        <div class="date" id="sDate"></div>
+        <h2 class="big">FAX送付状</h2>
+        <div class="ends">
+          <div class="to">
+            <p id="sToCo"></p>
+            <div class="name" id="sToName"></div>
+            <p id="sToNums"></p>
+          </div>
+          <div class="from">
+            <p><b id="sFrCo"></b></p>
+            <p id="sFrName"></p>
+            <p id="sFrAddr"></p>
+            <p id="sFrNums"></p>
+          </div>
+        </div>
+        <table>
+          <tr><th>件名</th><td id="sSubj"></td></tr>
+          <tr><th>送信枚数</th><td id="sPages"></td></tr>
+        </table>
+        <div class="flags" id="sFlags"></div>
+        <div class="msg"><b>通信欄</b><span id="sMsg"></span></div>
+        <div class="foot">万一、不鮮明な箇所や枚数不足がございましたら、お手数ですが上記までご連絡ください。</div>
+      </div>
+    </div>
+    <div id="imgOut"><p class="note">長押し(パソコンは右クリック)で保存できます。</p><img id="img" alt="FAX送付状の画像"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const KEEP=["frCo","frName","frAddr","frTel","frFax"];
+try{const s=JSON.parse(localStorage.getItem("faxFrom")||"null");if(s)KEEP.forEach(k=>{if(s[k]!=null)$(k).value=s[k]})}catch(e){}
+if(!$("date").value){const d=new Date();$("date").value=new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+
+function wa(iso){ // 2026-11-18 → 2026年11月18日(水)
+  if(!iso)return "";const [y,m,d]=iso.split("-").map(Number);const w="日月火水木金土"[new Date(y,m-1,d).getDay()];
+  return `${y}年${m}月${d}日(${w})`;
+}
+function nums(fax,tel){return [fax&&"FAX: "+fax,tel&&"TEL: "+tel].filter(Boolean).join("　")}
+function draw(){
+  const v=k=>$(k).value.trim();
+  $("sDate").textContent=wa($("date").value);
+  $("sToCo").textContent=v("toCo");
+  $("sToName").textContent=v("toName")?v("toName")+" 様":(v("toCo")?"御中":"");
+  $("sToNums").textContent=nums(v("toFax"),v("toTel"));
+  $("sFrCo").textContent=v("frCo");
+  $("sFrName").textContent=v("frName")?"担当: "+v("frName"):"";
+  $("sFrAddr").textContent=v("frAddr");
+  $("sFrNums").textContent=nums(v("frFax"),v("frTel"));
+  $("sSubj").textContent=v("subj");
+  $("sPages").textContent=(v("pages")||"1")+" 枚(本紙を含む)";
+  $("sFlags").innerHTML="";
+  document.querySelectorAll("#flags input").forEach(c=>{const s=document.createElement("span");s.textContent=c.value;if(c.checked)s.className="on";$("sFlags").append(s)});
+  $("sMsg").textContent=$("msg").value;
+  try{const o={};KEEP.forEach(k=>o[k]=$(k).value);localStorage.setItem("faxFrom",JSON.stringify(o))}catch(e){}
+}
+function fit(){
+  const w=$("scaler").parentElement.clientWidth, s=Math.min(1,w/794);
+  $("sheet").style.transform=`scale(${s})`;$("scaler").style.width=794*s+"px";$("scaler").style.height=1123*s+"px";
+}
+$("f").addEventListener("input",draw);$("f").addEventListener("change",draw);
+$("f").addEventListener("submit",e=>e.preventDefault());
+addEventListener("resize",fit);
+$("bPrint").onclick=()=>window.print();
+$("bClear").onclick=()=>{["toCo","toName","toFax","toTel"].forEach(k=>$(k).value="");draw()};
+$("bImg").onclick=async()=>{
+  const b=$("bImg");b.disabled=true;b.textContent="作っています…";
+  try{
+    await document.fonts.ready;
+    const sh=$("sheet"),t=sh.style.transform;sh.style.transform="none";
+    const c=await html2canvas(sh,{scale:2,backgroundColor:"#ffffff"});
+    sh.style.transform=t;
+    $("img").src=c.toDataURL("image/png");$("imgOut").style.display="flex";$("imgOut").scrollIntoView({behavior:"smooth"});
+    b.textContent="画像にする";
+  }catch(e){b.textContent="画像にできませんでした。もう一度押してください"}
+  b.disabled=false;
+};
+draw();fit();
+</script>
