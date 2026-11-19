@@ -1,0 +1,26 @@
+4a5
+> <script src="kakiko_data/engine.js"></script>
+155c156,158
+< window.KAKIKO_YEAR=(Y,O)=>{YEAR_DATA[Y]={'240':[],'60':[],'5':[]};buildYear(Y,O);if(Y==='2025'){for(const tf of ['240','60'])for(const v of (DATA[tf]||[])){const w=YEAR_DATA[Y][tf].find(x=>x.month===v.month);if(w)w.cands=v.cands||[];}}(yearWait[Y]||[]).forEach(f=>f());delete yearWait[Y];};
+---
+> window.KAKIKO_YEAR=(Y,O)=>{YEAR_DATA[Y]={'240':[],'60':[],'5':[]};buildYear(Y,O);if(Y==='2025'){for(const tf of ['240','60'])for(const v of (DATA[tf]||[])){const w=YEAR_DATA[Y][tf].find(x=>x.month===v.month);if(w)w.cands=v.cands||[];}}addEngine(Y);(yearWait[Y]||[]).forEach(f=>f());delete yearWait[Y];};
+> // 11-19 たくちん「かきこチャート固定のにして」:エンジンの玉(全部品)を、入った月の候補に足す
+> function addEngine(Y){const E=window.ENGINE_CANDS||[];const p2=x=>String(x).padStart(2,'0');for(const tf of ['240','60','5'])for(const v of (YEAR_DATA[Y][tf]||[])){const ym=Y+'-'+p2(v.month);const add=E.filter(c=>c.et.slice(0,7)===ym);if(add.length)v.cands=(v.cands||[]).concat(add);}}
+293c296
+<     const buy = c.side === 'buy', i0 = idx(c.et), i1 = idx(c.xt);
+---
+>     const buy = c.side === 'buy', i0 = idx(c.et), i1 = idx(c.xt), in0 = c.et >= bars[0].t, in1 = c.xt <= bars[n - 1].t;   // 11-19 見えている足の外の入り・降りは印を描かない
+296,298c299,303
+<     g += `<text x="${x(i0)}" y="${buy ? y(bars[i0].l) + 22 : y(bars[i0].h) - 6}" font-size="24" font-weight="900" text-anchor="middle" fill="${mc}" stroke="${me}" stroke-width="1.2">${buy ? '⬆' : '⬇'}</text>`;
+<     g += `<text x="${x(i1)}" y="${y(c.xp) + 5}" font-size="17" text-anchor="middle" fill="${mc}" stroke="${me}" stroke-width="1.2">${buy ? '▼' : '▲'}</text>`;
+<     g += `<text x="${x(i1) + 8}" y="${y(c.xp) + (buy ? -10 : 20)}" font-size="12" font-weight="700" fill="${me}" ${st}>${c.pips > 0 ? '+' : ''}${c.pips}</text>`;
+---
+>     const tip = c.bu ? `<title>${c.bu}(${c.kyo}) 入り ${c.et} ${c.ep} → 降り ${c.xt} ${c.xp} ${c.why} ${c.pips}p</title>` : '';
+>     if (in0) g += `<text x="${x(i0)}" y="${buy ? y(bars[i0].l) + 22 : y(bars[i0].h) - 6}" font-size="24" font-weight="900" text-anchor="middle" fill="${mc}" stroke="${me}" stroke-width="1.2">${tip}${buy ? '⬆' : '⬇'}</text>`;
+>     if (in0 && c.bu) g += `<text x="${x(i0)}" y="${buy ? y(bars[i0].l) + 36 : y(bars[i0].h) - 26}" font-size="10" font-weight="700" text-anchor="middle" fill="${me}" ${st}>${c.bu.replace('買い','').replace('売り','')}</text>`;
+>     if (in1) g += `<text x="${x(i1)}" y="${y(c.xp) + 5}" font-size="17" text-anchor="middle" fill="${mc}" stroke="${me}" stroke-width="1.2">${tip}${buy ? '▼' : '▲'}</text>`;
+>     if (in1) g += `<text x="${x(i1) + 8}" y="${y(c.xp) + (buy ? -10 : 20)}" font-size="12" font-weight="700" fill="${me}" ${st}>${c.pips > 0 ? '+' : ''}${c.pips}</text>`;
+343c348
+<   document.getElementById('msum').textContent = `代理軍師の決まり＋遅行スパン（買い緑・売りピンク）：${cs.length}回・合計 ${cs.reduce((a, c) => a + c.pips, 0).toFixed(1)}ピップ`;
+---
+>   document.getElementById('msum').textContent = `案とエンジンの玉（買い緑・売りピンク）：${cs.length}回・合計 ${cs.reduce((a, c) => a + c.pips, 0).toFixed(1)}ピップ`;
