@@ -71,6 +71,16 @@ tr.row:focus-visible td{outline:2px solid var(--entry)}
     <button class="chip" id="tg-bb" aria-pressed="true">±2σ</button>
   </section>
   <section class="ctrl" id="years" aria-label="年へ飛ぶ"><span class="lbl">年</span></section>
+  <section class="ctrl" aria-label="手の印">
+    <span class="lbl">手の印</span>
+    <button class="chip te" data-k="buyIn" aria-pressed="false">⬆ 買い</button>
+    <button class="chip te" data-k="sellIn" aria-pressed="false">⬇ 売り</button>
+    <button class="chip te" data-k="buyOut" aria-pressed="false">● 買いの降り</button>
+    <button class="chip te" data-k="sellOut" aria-pressed="false">● 売りの降り</button>
+    <button class="chip te" data-k="del" aria-pressed="false">✕ 消す</button>
+    <button class="chip" id="tg-eng" aria-pressed="true">エンジンの印</button>
+    <span class="lbl" id="testat" style="margin-left:6px"></span>
+  </section>
   <section class="chartbox">
     <div id="ohlc"></div>
     <div id="chart"></div>
@@ -130,8 +140,13 @@ const l21 = chart.addLineSeries({color:css('--e21'),lineWidth:2,priceLineVisible
 const bu = chart.addLineSeries({color:css('--band'),lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
 const bd = chart.addLineSeries({color:css('--band'),lineWidth:1,lineStyle:2,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});
 let TF=86400, BARS=[];
+// 11-19 たくちん「ペンで書かない ⬆で」:手の印。ボタンを選んでチャートの足を押すと、その足に印。もう一度同じ印を押すか ✕消す で消える
+const TE = {buyIn:{pos:'belowBar',shape:'arrowUp',color:'#f5a400',text:'手'},sellIn:{pos:'aboveBar',shape:'arrowDown',color:'#9b3fd6',text:'手'},
+            buyOut:{pos:'aboveBar',shape:'circle',color:'#f5a400',text:'降'},sellOut:{pos:'belowBar',shape:'circle',color:'#9b3fd6',text:'降'}};
+let teMarks = [], teTool = null, ENG = true, teCol = null;
 function markers(sec){ const m=[];
-  for(const t of D.trades){ const up=(t.d||1)>0; m.push({time:Math.floor(t.en/sec)*sec,position:up?'belowBar':'aboveBar',color:css(up?'--entry':'--sell'),shape:up?'arrowUp':'arrowDown',text:(up?'買':'売')+t.i});
+  for(const k of teMarks){ const c=TE[k.k]; if(!c) continue; m.push({time:Math.floor(k.t/sec)*sec,position:c.pos,color:c.color,shape:c.shape,text:c.text,size:2}); }
+  if(ENG) for(const t of D.trades){ const up=(t.d||1)>0; m.push({time:Math.floor(t.en/sec)*sec,position:up?'belowBar':'aboveBar',color:css(up?'--entry':'--sell'),shape:up?'arrowUp':'arrowDown',text:(up?'買':'売')+t.i});
     m.push({time:Math.floor(t.ex/sec)*sec,position:up?'aboveBar':'belowBar',color:css(WHY[t.w]||'--hold'),shape:up?'arrowDown':'arrowUp',text:''}); }
   return m.sort((a,b)=>a.time-b.time); }
 function setTF(sec){ const vr = chart.timeScale().getVisibleRange(); TF=sec; BARS=agg(sec);
@@ -170,6 +185,32 @@ function recolor(){ chart.applyOptions({layout:{background:{type:'solid',color:c
   l9.applyOptions({color:css('--e9')}); l21.applyOptions({color:css('--e21')}); bu.applyOptions({color:css('--band')}); bd.applyOptions({color:css('--band')}); cs.setMarkers(markers(TF)); }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',recolor);
 new MutationObserver(recolor).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+// 手の印:ボタン・押した足・保存(db。無い時はこのブラウザだけ)
+const tst=document.getElementById('testat'); const say=t=>{tst.textContent=t;};
+document.querySelectorAll('.te').forEach(b=>b.addEventListener('click',()=>{ teTool = teTool===b.dataset.k ? null : b.dataset.k;
+  document.querySelectorAll('.te').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.k===teTool))); el.style.cursor=teTool?'crosshair':''; }));
+document.getElementById('tg-eng').addEventListener('click',e=>{ ENG=!ENG; e.currentTarget.setAttribute('aria-pressed',String(ENG)); cs.setMarkers(markers(TF)); });
+const draw=()=>cs.setMarkers(markers(TF));
+function loadLocal(){ try{ teMarks=JSON.parse(localStorage.getItem('kakiko_te')||'[]'); }catch(e){ teMarks=[]; } draw(); }
+function saveLocal(){ try{ localStorage.setItem('kakiko_te',JSON.stringify(teMarks)); }catch(e){} }
+chart.subscribeClick(async p=>{ if(!teTool||p.time==null) return; const t=+p.time, lo=t, hi=t+TF;
+  const here=teMarks.filter(k=>k.t>=lo&&k.t<hi&&(teTool==='del'||k.k===teTool));
+  if(here.length){ for(const k of here){ teMarks=teMarks.filter(x=>x.id!==k.id); if(teCol){ try{ await teCol.doc(k.id).delete(); }catch(e){ say('消せんかった('+e.code+')'); } } } saveLocal(); draw(); say(`消した(${fmtT(t)})`); return; }
+  if(teTool==='del') return;
+  const price=cs.coordinateToPrice(p.point.y); const id='te'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const k={id,k:teTool,t,tf:TF,p:price==null?null:Math.round(price*1000)/1000,at:Date.now()};
+  teMarks=[...teMarks,k]; draw(); saveLocal();
+  if(teCol){ try{ const {id:_,...body}=k; await teCol.doc(id).set(body); say(`保存した ${TE[k.k].text} ${fmtT(t)}`); }catch(e){ say('保存できんかった('+e.code+')'); } } else say(`このブラウザに残した ${fmtT(t)}`);
+});
+loadLocal(); say('印の保存先につないでいます…');
+(async()=>{ const db = window.claude ? await window.claude.use('db') : null;
+  if(!db){ say('印はこのブラウザに残します'); return; }
+  teCol=db.collection('te'); const tm=setTimeout(()=>say('保存先がまだ答えません(印はこのブラウザにも残ります)'),10000);
+  teCol.onSnapshot(snap=>{ if(!snap.metadata.fromCache) clearTimeout(tm);
+    teMarks=snap.docs.map(d=>({id:d.id,...d.data()})); draw(); say(`手の印 ${teMarks.length}個(保存され、クロードも読めます)`); },
+    e=>{ clearTimeout(tm); say('保存先に届きません('+e.code+')。印はこのブラウザに残します'); teCol=null; loadLocal(); });
+})();
 
 setTF(86400); show(Date.UTC(2025,7,1)/1000,Date.UTC(2026,1,15)/1000);
 </script>
