@@ -17,7 +17,7 @@
 
 //--- 決まった形(研究台と同じ値。変える時はたくちんの「ご」)
 input double Lots          = 0.01;   // クジラ・ドテン・鯛・押し目の1玉のロット(決め打ち)
-input int    MaxPos        = 5;      // クジラの同じ向きの玉の上限(5発)。無限リーチの照らし:6以上は同じ台地(11-19・ご待ち)
+input int    MaxPos        = 99;     // クジラの同じ向きの玉の上限。11-19 固定の無限リーチ(上限なし=99)に合わせた
 input bool   UseCounter     = true;   // カウンター反撃(7段回収)。false で Lots・ShLots の決め打ち
 input bool   UseShuuRev    = true;   // 11-19 最適化:クジラは週足が逆向きの時は別の枠(MagicBuyW/SellW)で MaxPosRev 発まで
 input int    MaxPosRev     = 99;     // 週足逆の枠の上限(99=上限なし)

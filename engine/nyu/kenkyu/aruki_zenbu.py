@@ -111,7 +111,7 @@ Wk['up'] = Wk.c.ewm(span=9, adjust=False).mean() > Wk.c.ewm(span=21, adjust=Fals
 wix = np.searchsorted(Wk.k.values, K1, side='right') - 1; WUP = np.where(wix >= 0, Wk.up.values[np.clip(wix, 0, None)], False).astype(bool)
 def kuj(d):
     E = kujira_E(d, d > 0); same = WUP if d > 0 else ~WUP
-    a = aruku(d, E & same, *x219_D(d), 5, None, TP4(d), 550, 0); b = aruku(d, E & ~same, *x219_D(d), 99, None, TP4(d), 550, 0)
+    a = aruku(d, E & same, *x219_D(d), 99, None, TP4(d), 550, 0); b = aruku(d, E & ~same, *x219_D(d), 99, None, TP4(d), 550, 0)
     return pd.concat([a, b], ignore_index=True).sort_values(['ent', 'ext']).reset_index(drop=True)
 KUJ = {d: kuj(d) for d in (1, -1)}
 
