@@ -1,5 +1,5 @@
 # かきこチャート(クジラの刺身)を作る:決まった形をエンジンで回して、入り降りをチャートのページに入れる(11-06 たくちん「かきこ チャート ぶん回しエンジンで回したのをチャートでここに出して」)
-# 使い方: python3 kakiko_make.py <MT4 1時間足の置き場> <書き出し先.html>   公開版 https://claude.ai/artifact/FPRUFZsCfHjKWaXpZfoBAt
+# 使い方: python3 kakiko_make.py <MT4 1時間足の置き場> <書き出し先.html>   公開版 https://claude.ai/artifact/3Xp367cAgeuUXQ4AExy3Q8(11-19 作り直し)
 import sys, json, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0, __file__.rsplit('/', 1)[0])
 from nyu import *; from tai_parts import *
 here = __file__.rsplit('/', 1)[0]; cfg = json.load(open(here + '/settei_kimari.json')); f = cfg['形']; k = cfg['口座']
@@ -18,7 +18,7 @@ if f.get('oshime'):   # 11-10 ブレンド:かがみ無限の日足巡航・押�
 if f.get('shiawase'):   # 11-11 しあわせセット(レンジの箱)。1単位=0.01ロット
     sz = {k_: v for k_, v in f['shiawase'].items() if k_ not in ('説明', 'dirs', 'shuu_muki')}
     for dz in f['shiawase'].get('dirs', [1, -1]):
-        ss, _ = run_shiawase(srv, dz, yasumi=f.get('yasumi', False), shuu_muki=dz in f['shiawase'].get('shuu_muki', []), **sz); ss['d'] = dz; t = pd.concat([t, ss], ignore_index=True)
+        ss, _ = run_shiawase(srv, dz, yasumi=f.get('yasumi', False), shuu_muki=dz in f['shiawase'].get('shuu_muki', []), **sz); ss['d'] = dz; t = pd.concat([t, ss[ss.ent >= t.ent.min()]], ignore_index=True)   # 11-19 決まった形の数え方(nanpin_lot と同じ:ほかの部品が動き出す前のしあわせは数えない)
 T, s = lot_sizing(t, b, 1, k['資金'], margin_cap=k['証拠金の上限'], leverage=k['レバレッジ'], fixed_lot=k['決め打ちのロット'], stopout=k['強制決済の維持率'])
 H = srv.bars('1h'); sec = H.index.values.astype('datetime64[s]').astype('int64')       # 時刻は秒(サーバー時刻をそのまま)
 bars = [[int(a), int(round(o * 1000)), int(round(h * 1000)), int(round(l * 1000)), int(round(c * 1000))] for a, o, h, l, c in zip(sec, H.o, H.h, H.l, H.c)]
