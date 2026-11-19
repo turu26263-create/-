@@ -1,0 +1,72 @@
+//+------------------------------------------------------------------+
+//| NanpinHangeki.mqh  ナンピン反撃(7段回収)ロット部品  2026-11-19     |
+//| 元帳:宝物ターンテーブル/12_エントリー手法の皿/ナンピン反撃_元帳.md   |
+//| MT4・MT5 どちらでも #include して使う                             |
+//|                                                                  |
+//| 決まり(固定):                                                    |
+//|  ロット 0.01→0.03→0.06→0.15→0.3→0.6→1.2                          |
+//|  1玉が負けて降りたら次は1段上。1.2で止める(戻さない)               |
+//|  勝って降りたら0.01に戻す                                        |
+//|  段は全部の玉で1本(同じマジック・同じ通貨の決済を降りた順にたどる) |
+//| 使い方: double lot = NH_Lot(MagicNumber);  → 注文のロットに入れる  |
+//+------------------------------------------------------------------+
+#ifndef NANPIN_HANGEKI_MQH
+#define NANPIN_HANGEKI_MQH
+
+double NH_DAN[7] = {0.01, 0.03, 0.06, 0.15, 0.30, 0.60, 1.20};
+
+// 降りた順の損益から、いまの段(0〜6)を出す
+int NH_Dan(int magic)
+{
+   int lv = 0;
+#ifdef __MQL5__
+   if(!HistorySelect(0, TimeCurrent())) return 0;
+   int n = HistoryDealsTotal();               // 時刻の古い順
+   for(int i = 0; i < n; i++)
+   {
+      ulong tk = HistoryDealGetTicket(i);
+      if(tk == 0) continue;
+      if(HistoryDealGetString(tk, DEAL_SYMBOL) != _Symbol) continue;
+      if((int)HistoryDealGetInteger(tk, DEAL_MAGIC) != magic) continue;
+      long ent = HistoryDealGetInteger(tk, DEAL_ENTRY);
+      if(ent != DEAL_ENTRY_OUT && ent != DEAL_ENTRY_INOUT && ent != DEAL_ENTRY_OUT_BY) continue;
+      double p = HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP)
+               + HistoryDealGetDouble(tk, DEAL_COMMISSION);
+      lv = (p > 0) ? 0 : MathMin(lv + 1, 6);
+   }
+#else
+   int n = OrdersHistoryTotal();
+   datetime ct[]; double pf[]; int m = 0;
+   ArrayResize(ct, n); ArrayResize(pf, n);
+   for(int i = 0; i < n; i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_HISTORY)) continue;
+      if(OrderSymbol() != _Symbol || OrderMagicNumber() != magic) continue;
+      if(OrderType() != OP_BUY && OrderType() != OP_SELL) continue;
+      ct[m] = OrderCloseTime(); pf[m] = OrderProfit() + OrderSwap() + OrderCommission(); m++;
+   }
+   // 降りた時刻の順に並べる(履歴の並びは順番どおりとは限らない)
+   for(int a = 1; a < m; a++)
+   {
+      datetime kt = ct[a]; double kp = pf[a]; int b = a - 1;
+      while(b >= 0 && ct[b] > kt) { ct[b + 1] = ct[b]; pf[b + 1] = pf[b]; b--; }
+      ct[b + 1] = kt; pf[b + 1] = kp;
+   }
+   for(int j = 0; j < m; j++) lv = (pf[j] > 0) ? 0 : MathMin(lv + 1, 6);
+#endif
+   return lv;
+}
+
+// 業者のロットの刻み・上下限に合わせた、次に入る玉のロット
+double NH_Lot(int magic)
+{
+   double lot  = NH_DAN[NH_Dan(magic)];
+   double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+   double mn   = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+   double mx   = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+   if(step > 0) lot = MathFloor(lot / step + 1e-9) * step;
+   lot = MathMax(mn, MathMin(mx, lot));
+   return NormalizeDouble(lot, 2);
+}
+
+#endif
