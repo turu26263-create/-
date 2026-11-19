@@ -258,8 +258,9 @@ void ManageMain(int d, int magic, datetime T, datetime TS1)
       double sl = OrderStopLoss(), tp = 0;
       if(eb >= 1)
       {
-         if(d > 0) { double mx = iHigh(NULL, PERIOD_H1, iHighest(NULL, PERIOD_H1, MODE_HIGH, eb, 1)); double ns = mx - TsPips * PIP; if(sl == 0 || ns > sl) sl = ns; }
-         else      { double mn = iLow(NULL, PERIOD_H1, iLowest(NULL, PERIOD_H1, MODE_LOW, eb, 1));  double ns = mn + TsPips * PIP + spr; if(sl == 0 || ns < sl) sl = ns; }
+         // 研究台(simulate)は TS を「伸びが0以上(買いは高値が入り値以上・売りは安値が入り値−スプレッド以下)」になってから置く。合わせる
+         if(d > 0) { double mx = iHigh(NULL, PERIOD_H1, iHighest(NULL, PERIOD_H1, MODE_HIGH, eb, 1)); double ns = mx - TsPips * PIP; if(mx >= op && (sl == 0 || ns > sl)) sl = ns; }
+         else      { double mn = iLow(NULL, PERIOD_H1, iLowest(NULL, PERIOD_H1, MODE_LOW, eb, 1));  double ns = mn + TsPips * PIP + spr; if(mn <= op - spr && (sl == 0 || ns < sl)) sl = ns; }
       }
       if(tpl > 0)
       {
@@ -288,7 +289,7 @@ void ManageDoten(datetime TS1)
       {
          double mx = iHigh(NULL, PERIOD_H1, iHighest(NULL, PERIOD_H1, MODE_HIGH, eb, 1));
          double sl = OrderStopLoss(), ns = mx - TsPips * PIP;
-         if(sl == 0 || ns > sl) Modify(tks[i], ns, 0);
+         if(mx >= OrderOpenPrice() && (sl == 0 || ns > sl)) Modify(tks[i], ns, 0);   // 研究台と同じく、伸びが0以上になってから TS
       }
    }
 }
@@ -311,7 +312,7 @@ void ManageTai(datetime T, datetime TS1)
       {
          double mx = iHigh(NULL, PERIOD_H1, iHighest(NULL, PERIOD_H1, MODE_HIGH, eb, 1));
          double sl = OrderStopLoss(), ns = mx - TsPips * PIP;
-         if(sl == 0 || ns > sl) Modify(tks[i], ns, 0);
+         if(mx >= OrderOpenPrice() && (sl == 0 || ns > sl)) Modify(tks[i], ns, 0);   // 研究台と同じく、伸びが0以上になってから TS
       }
    }
 }
