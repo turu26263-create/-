@@ -15,7 +15,9 @@
     "allow": [
       "Artifact",
       "ArtifactData",
-      "ArtifactComments"
+      "ArtifactComments",
+      "mcp__Google_Drive__update_file",
+      "mcp__Google_Drive__create_file"
     ]
   }
 }
