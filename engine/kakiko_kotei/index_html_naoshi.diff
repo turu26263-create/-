@@ -1,20 +1,49 @@
 4a5
 > <script src="kakiko_data/engine.js"></script>
-150c151
+77a79
+>       <button class="btn" id="half" type="button" aria-pressed="false">半年</button>
+150c152
 < buildYear('2017',OHLC2017);
 ---
 > buildYear('2017',OHLC2017);addEngine('2017');   // 11-19 2017年は本体の中で作るので、ここでもエンジンの玉を足す
-155c156,158
+153c155
+< const monthsOf=y=>YEAR_DATA[y]?(YEAR_DATA[y]['240']||[]).map(v=>v.month):FILE_YEARS[y]?Array.from({length:FILE_YEARS[y]},(_,i)=>i+1):[];
+---
+> const monthsOf=y=>YEAR_DATA[y]?(YEAR_DATA[y]['240']||[]).filter(v=>v.month<100).map(v=>v.month):FILE_YEARS[y]?Array.from({length:FILE_YEARS[y]},(_,i)=>i+1):[];
+155c157,167
 < window.KAKIKO_YEAR=(Y,O)=>{YEAR_DATA[Y]={'240':[],'60':[],'5':[]};buildYear(Y,O);if(Y==='2025'){for(const tf of ['240','60'])for(const v of (DATA[tf]||[])){const w=YEAR_DATA[Y][tf].find(x=>x.month===v.month);if(w)w.cands=v.cands||[];}}(yearWait[Y]||[]).forEach(f=>f());delete yearWait[Y];};
 ---
 > window.KAKIKO_YEAR=(Y,O)=>{YEAR_DATA[Y]={'240':[],'60':[],'5':[]};buildYear(Y,O);if(Y==='2025'){for(const tf of ['240','60'])for(const v of (DATA[tf]||[])){const w=YEAR_DATA[Y][tf].find(x=>x.month===v.month);if(w)w.cands=v.cands||[];}}addEngine(Y);(yearWait[Y]||[]).forEach(f=>f());delete yearWait[Y];};
 > // 11-19 たくちん「かきこチャート固定のにして」:エンジンの玉(全部品)を、入った月の候補に足す
 > function addEngine(Y){const E=window.ENGINE_CANDS||[];const p2=x=>String(x).padStart(2,'0');for(const tf of ['240','60','5'])for(const v of (YEAR_DATA[Y][tf]||[])){const ym=Y+'-'+p2(v.month);const add=E.filter(c=>c.et.slice(0,7)===ym);if(add.length)v.cands=(v.cands||[]).concat(add);}}
-293c296
+> // 11-19 たくちん「半年」:今の月から6か月を1枚につなぐ。仮の月=100+はじめの月(この画面で書いた印は半年の画面に残る)
+> function halfView(){ const base=month>100?month-100:month, Y=year, Y2=String(+Y+1); const need=base+5>12&&(FILE_YEARS[Y2]||YEAR_DATA[Y2]);
+>   const go=()=>{ for(const tf_ of ['240','60','5']){ const parts=[]; for(let k=0;k<6;k++){ let m=base+k, yy=Y; if(m>12){m-=12;yy=Y2;} const v=((YEAR_DATA[yy]||{})[tf_]||[]).find(x=>x.month===m); if(v) parts.push(v); }
+>       const arr=YEAR_DATA[Y][tf_]; const i=arr.findIndex(x=>x.month===100+base); if(i>=0) arr.splice(i,1);
+>       if(parts.length) arr.push({month:100+base,half:true,bars:parts.flatMap(v=>v.bars),cands:parts.flatMap(v=>v.cands||[]),spanSignals:parts.flatMap(v=>v.spanSignals||[])}); }
+>     month=100+base; tf='240'; viewKey=''; render(); const a=YEAR_DATA[year][tf].find(x=>x.month===month); if(a){vs=0;ve=a.bars.length;render();} };
+>   if(need){ loadYear(Y2,go); setTimeout(()=>{ if(month<=100) go(); },8000); } else go(); }   // 次の年が読めん時は、その年の分だけで出す
+> const MN=()=>month>100?(month-100)+'月から半年':month+'月';
+162c174
+< function neighborYM(dir){ let y=+year,m=month+dir; for(let n=0;n<40;n++){ if(m<1){y--;m=12;} if(m>12){y++;m=1;} if(y<2010||y>2026) return null; if(monthsOf(String(y)).includes(m)) return [String(y),m]; m+=dir; } return null; }
+---
+> function neighborYM(dir){ let y=+year,m=(month>100?month-100:month)+dir; for(let n=0;n<40;n++){ if(m<1){y--;m=12;} if(m>12){y++;m=1;} if(y<2010||y>2026) return null; if(monthsOf(String(y)).includes(m)) return [String(y),m]; m+=dir; } return null; }
+217a230
+> document.getElementById('half').addEventListener('click', () => halfView());
+243,244c256,257
+<   document.querySelector('h1').textContent = owner()==='下げ山の照らし' ? `かきこチャート　${year}年${month}月・下げ山の照らし（機械の入りと出口。大きな下げ三つに、たくちんが入る所の印を）` : owner()==='じゃんけん案' ? `かきこチャート　${year}年${month}月・後出しじゃんけん（グーで貯め→遅行スパン抜けでポン→鳴神で足す→また絡んだら降り）` : owner()==='矢印案' ? `かきこチャート　${year}年${month}月・この絵の売り（5/16入り、9まで戻した所で足して4段、5/27の21抜けで利確）` : year === '2017' ? `かきこチャート　2017年${month}月・${owner()==='921案'?'921案（4時間足で9が21に寄って遅行スパンがローソクに絡み、また抜けた所を5分足で合わせる）':'遅行矢印案（絡んどる所の矢印は消して、バンドを抜けてからの矢印で入る）'}` : year === '2015' ? (owner()==='921案'?`かきこチャート　2015年${month}月・921案（4時間足で9が21に寄って遅行スパンがローソクに絡み、また抜けた所を5分足で合わせる）`:owner()==='アホテラス'?`かきこチャート　2015年${month}月・4時間9寄り離れ（取れる所）`:`かきこチャート　2015年${month}月・はすけの入口と決済案`) : `かきこチャート　${year}年${month}月${owner()==='921案'?'・921案':''}`;
+<   document.getElementById('cur').textContent = `${year}年${month}月（${tf === '240' ? '4時間足' : tf === '60' ? '1時間足' : '5分足'}）`;
+---
+>   document.querySelector('h1').textContent = owner()==='下げ山の照らし' ? `かきこチャート　${year}年${MN()}・下げ山の照らし（機械の入りと出口。大きな下げ三つに、たくちんが入る所の印を）` : owner()==='じゃんけん案' ? `かきこチャート　${year}年${MN()}・後出しじゃんけん（グーで貯め→遅行スパン抜けでポン→鳴神で足す→また絡んだら降り）` : owner()==='矢印案' ? `かきこチャート　${year}年${MN()}・この絵の売り（5/16入り、9まで戻した所で足して4段、5/27の21抜けで利確）` : year === '2017' ? `かきこチャート　2017年${MN()}・${owner()==='921案'?'921案（4時間足で9が21に寄って遅行スパンがローソクに絡み、また抜けた所を5分足で合わせる）':'遅行矢印案（絡んどる所の矢印は消して、バンドを抜けてからの矢印で入る）'}` : year === '2015' ? (owner()==='921案'?`かきこチャート　2015年${MN()}・921案（4時間足で9が21に寄って遅行スパンがローソクに絡み、また抜けた所を5分足で合わせる）`:owner()==='アホテラス'?`かきこチャート　2015年${MN()}・4時間9寄り離れ（取れる所）`:`かきこチャート　2015年${MN()}・はすけの入口と決済案`) : `かきこチャート　${year}年${MN()}${owner()==='921案'?'・921案':''}`;
+>   document.getElementById('cur').textContent = `${year}年${MN()}（${tf === '240' ? '4時間足' : tf === '60' ? '1時間足' : '5分足'}）`;
+252a266,267
+>   if (month > 100 && !YEAR_DATA[year][tf].some(x => x.month === month)) month -= 100;
+>   document.getElementById('half').setAttribute('aria-pressed', month > 100);
+293c308
 <     const buy = c.side === 'buy', i0 = idx(c.et), i1 = idx(c.xt);
 ---
 >     const buy = c.side === 'buy', i0 = idx(c.et), i1 = idx(c.xt), in0 = c.et >= bars[0].t, in1 = c.xt <= bars[n - 1].t;   // 11-19 見えている足の外の入り・降りは印を描かない
-296,298c299,303
+296,298c311,315
 <     g += `<text x="${x(i0)}" y="${buy ? y(bars[i0].l) + 22 : y(bars[i0].h) - 6}" font-size="24" font-weight="900" text-anchor="middle" fill="${mc}" stroke="${me}" stroke-width="1.2">${buy ? '⬆' : '⬇'}</text>`;
 <     g += `<text x="${x(i1)}" y="${y(c.xp) + 5}" font-size="17" text-anchor="middle" fill="${mc}" stroke="${me}" stroke-width="1.2">${buy ? '▼' : '▲'}</text>`;
 <     g += `<text x="${x(i1) + 8}" y="${y(c.xp) + (buy ? -10 : 20)}" font-size="12" font-weight="700" fill="${me}" ${st}>${c.pips > 0 ? '+' : ''}${c.pips}</text>`;
@@ -24,7 +53,19 @@
 >     if (in0 && c.bu) g += `<text x="${x(i0)}" y="${buy ? y(bars[i0].l) + 36 : y(bars[i0].h) - 26}" font-size="10" font-weight="700" text-anchor="middle" fill="${me}" ${st}>${c.bu.replace('買い','').replace('売り','')}</text>`;
 >     if (in1) g += `<text x="${x(i1)}" y="${y(c.xp) + 5}" font-size="17" text-anchor="middle" fill="${mc}" stroke="${me}" stroke-width="1.2">${tip}${buy ? '▼' : '▲'}</text>`;
 >     if (in1) g += `<text x="${x(i1) + 8}" y="${y(c.xp) + (buy ? -10 : 20)}" font-size="12" font-weight="700" fill="${me}" ${st}>${c.pips > 0 ? '+' : ''}${c.pips}</text>`;
-343c348
+303c320
+<   const b4all=(YEAR_DATA[year]['240']||[]).slice().sort((a,b)=>a.month-b.month).flatMap(v=>v.bars);
+---
+>   const b4all=(YEAR_DATA[year]['240']||[]).filter(v=>v.month<100).slice().sort((a,b)=>a.month-b.month).flatMap(v=>v.bars);
+343c360
 <   document.getElementById('msum').textContent = `代理軍師の決まり＋遅行スパン（買い緑・売りピンク）：${cs.length}回・合計 ${cs.reduce((a, c) => a + c.pips, 0).toFixed(1)}ピップ`;
 ---
 >   document.getElementById('msum').textContent = `案とエンジンの玉（買い緑・売りピンク）：${cs.length}回・合計 ${cs.reduce((a, c) => a + c.pips, 0).toFixed(1)}ピップ`;
+371c388
+<   { const b4=(YEAR_DATA[year]['240']||[]).slice().sort((a,b)=>a.month-b.month).flatMap(m=>m.bars);
+---
+>   { const b4=(YEAR_DATA[year]['240']||[]).filter(v=>v.month<100).slice().sort((a,b)=>a.month-b.month).flatMap(m=>m.bars);
+437c454
+<     document.getElementById('list').innerHTML=yr+`<section aria-label="総合成績" style="margin-top:12px"><h2 style="font-size:20px;margin:8px 0">${year}年${month}月　総合成績</h2><p style="color:var(--sub);margin:6px 0">月全体・費用前の描画案${owner()==='アホテラス'?'（入口と利確をひげ先へずらした天井の数字）':''}</p><table class="list" style="width:100%;font-size:16px"><tbody>${rows.map((r,i)=>`<tr><th style="text-align:left;padding:9px">${r[0]}</th><td style="padding:9px;${i===0?'font-size:24px;font-weight:800;color:'+(net<0?'var(--sell)':'var(--buy)'):''}">${r[1]}</td></tr>`).join('')}</tbody></table></section>`;
+---
+>     document.getElementById('list').innerHTML=yr+`<section aria-label="総合成績" style="margin-top:12px"><h2 style="font-size:20px;margin:8px 0">${year}年${MN()}　総合成績</h2><p style="color:var(--sub);margin:6px 0">月全体・費用前の描画案${owner()==='アホテラス'?'（入口と利確をひげ先へずらした天井の数字）':''}</p><table class="list" style="width:100%;font-size:16px"><tbody>${rows.map((r,i)=>`<tr><th style="text-align:left;padding:9px">${r[0]}</th><td style="padding:9px;${i===0?'font-size:24px;font-weight:800;color:'+(net<0?'var(--sell)':'var(--buy)'):''}">${r[1]}</td></tr>`).join('')}</tbody></table></section>`;
