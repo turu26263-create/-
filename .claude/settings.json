@@ -10,5 +10,12 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Artifact",
+      "ArtifactData",
+      "ArtifactComments"
+    ]
   }
 }

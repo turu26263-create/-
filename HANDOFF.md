@@ -53,3 +53,4 @@
 - 11/19 たくちん「違う 簡単なやつ」→ 簡単なかきこチャート(クジラの刺身・日足/4時間/1時間・年ボタン・1玉ずつの表)を kakiko_make.py で作り直して新しく出した:https://claude.ai/artifact/3Xp367cAgeuUXQ4AExy3Q8(988玉・最後 501,154円・落ち込み12.3%=決まった形と一致。しあわせの数え方を nanpin_lot と同じにそろえた)。ペンは無い版。固定(8Wi9…)は元の版のまま
 - 11/19 たくちん「ペンで書かない ⬆で」→ 簡単なかきこチャート(https://claude.ai/artifact/3Xp367cAgeuUXQ4AExy3Q8 版2)に手の印を足した:⬆買い・⬇売り・●買いの降り・●売りの降り・✕消す・エンジンの印の出し消し。足を押すとその足に印、同じ印をもう一度押すと消える。保存は db の te 集まり({k,t,tf,p,at}、t=足の秒)→ クロードは ArtifactData list te で読める。手元で 置く・消す・開き直しても残る を確かめた。te は今0個(まだ印なし)。作る道具 engine/nyu/kakiko_template.html・kakiko_make.py
 - 11/19 たくちん「それ固定 ほかのかきこチャート廃棄 記憶」→ かきこチャートは 3Xp367cAgeuUXQ4AExy3Q8 だけに固定(CLAUDE.md の🔴)。古い固定(8Wi9…)は印112個を engine/kakiko_kotei/hikae_marks2/ に控えてから消した。Drive のかきこチャート html 15個はゴミ箱へ(戻せる)。jpg の画像と 印の json は残した
+- 11/19 たくちん「アートファクト 全部許可」→ .claude/settings.json の permissions.allow に Artifact・ArtifactData・ArtifactComments を足した(出し直し・消す・保存先の読み書きを聞かずにやる)
