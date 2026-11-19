@@ -54,3 +54,7 @@
 - 11/19 たくちん「ペンで書かない ⬆で」→ 簡単なかきこチャート(https://claude.ai/artifact/3Xp367cAgeuUXQ4AExy3Q8 版2)に手の印を足した:⬆買い・⬇売り・●買いの降り・●売りの降り・✕消す・エンジンの印の出し消し。足を押すとその足に印、同じ印をもう一度押すと消える。保存は db の te 集まり({k,t,tf,p,at}、t=足の秒)→ クロードは ArtifactData list te で読める。手元で 置く・消す・開き直しても残る を確かめた。te は今0個(まだ印なし)。作る道具 engine/nyu/kakiko_template.html・kakiko_make.py
 - 11/19 たくちん「それ固定 ほかのかきこチャート廃棄 記憶」→ かきこチャートは 3Xp367cAgeuUXQ4AExy3Q8 だけに固定(CLAUDE.md の🔴)。古い固定(8Wi9…)は印112個を engine/kakiko_kotei/hikae_marks2/ に控えてから消した。Drive のかきこチャート html 15個はゴミ箱へ(戻せる)。jpg の画像と 印の json は残した
 - 11/19 たくちん「アートファクト 全部許可」→ .claude/settings.json の permissions.allow に Artifact・ArtifactData・ArtifactComments を足した(出し直し・消す・保存先の読み書きを聞かずにやる)
+- 11/19 たくちん「ナンピン反撃いれて 無限リーチとナンピンのかけあわせで最適化検証 エンジンとリアル合わすように」:
+  - 最適化(kenkyu/saiteki_nanpin_mugen.py・結果 kekka_tai/nyu/最適化_ナンピン反撃x無限リーチ_20261119.txt):クジラの発数 6〜上限なしが台地(7段・資金100万で落ち込み45.7→37.6%・選22-24/確かめる年とも上)。ただ増える玉13(30未満)・段のかみ合わせの見かけあり→ご待ち。掛ける部品は全部のまま。強制決済はどの資金でも無し、落ち込み30%台に200万円
+  - EA ea/Kujira3_v3.mq4(=v2+日足921の並び+ナンピン反撃7段・UseNanpin/UseNarabi)と ea/NanpinHangeki.mqh(段は全部のマジックで1本・値の損益で勝ち負け・入る足より前に閉じた玉だけ=研究台と同じ数え方)。あわせ用 ea/Kujira3_v3_研究台の玉_MT4あわせ用.csv(988玉・+5,720,300円・nanpin7.py と一致)。Drive 4_武器の皿にも置いた。元帳も書き換え
+  - まだ:MT4 でのコンパイル・テスター・実測とのあわせ/資金をいくらにするか/発数を上限なしにするか(ご待ち)

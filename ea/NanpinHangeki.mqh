@@ -1,37 +1,57 @@
 //+------------------------------------------------------------------+
 //| NanpinHangeki.mqh  ナンピン反撃(7段回収)ロット部品  2026-11-19     |
-//| 元帳:宝物ターンテーブル/12_エントリー手法の皿/ナンピン反撃_元帳.md   |
+//| 元帳:12_エントリー手法の皿/ナンピン反撃_元帳.md                      |
 //| MT4・MT5 どちらでも #include して使う                             |
 //|                                                                  |
 //| 決まり(固定):                                                    |
 //|  ロット 0.01→0.03→0.06→0.15→0.3→0.6→1.2                          |
 //|  1玉が負けて降りたら次は1段上。1.2で止める(戻さない)               |
 //|  勝って降りたら0.01に戻す                                        |
-//|  段は全部の玉で1本(同じマジック・同じ通貨の決済を降りた順にたどる) |
-//| 使い方: double lot = NH_Lot(MagicNumber);  → 注文のロットに入れる  |
+//|  段は全部の玉で1本(NH_MAGICS に入れた全部のマジック・同じ通貨)     |
+//| 研究台(nanpin7.py)と同じ数え方にそろえた所(11-19):                 |
+//|  ・勝ち負けは値の損益(OrderProfit/DEAL_PROFIT)で見る。スワップ・    |
+//|    手数料は入れない(研究台は pips で見る)                          |
+//|  ・入る足の始まり(before)より前に閉じた玉だけ数える。同じ足で閉じた |
+//|    玉は次の入りから効く(研究台は同じ時刻なら入りを先に数える)       |
+//| 使い方: OnInit で NH_SetMagics(配列, 数) → 入る時に                 |
+//|         double lot = NH_Lot(足の始まりの時刻);                      |
 //+------------------------------------------------------------------+
 #ifndef NANPIN_HANGEKI_MQH
 #define NANPIN_HANGEKI_MQH
 
 double NH_DAN[7] = {0.01, 0.03, 0.06, 0.15, 0.30, 0.60, 1.20};
+int    NH_MAGICS[];
+int    NH_NMAG = 0;
 
-// 降りた順の損益から、いまの段(0〜6)を出す
-int NH_Dan(int magic)
+void NH_SetMagics(const int &m[], int n)
+{
+   NH_NMAG = n; ArrayResize(NH_MAGICS, n);
+   for(int i = 0; i < n; i++) NH_MAGICS[i] = m[i];
+}
+
+bool NH_Mine(long magic)
+{
+   for(int i = 0; i < NH_NMAG; i++) if(NH_MAGICS[i] == magic) return(true);
+   return(false);
+}
+
+// before より前に閉じた玉を、閉じた順にたどって段(0〜6)を出す
+int NH_Dan(datetime before)
 {
    int lv = 0;
 #ifdef __MQL5__
-   if(!HistorySelect(0, TimeCurrent())) return 0;
-   int n = HistoryDealsTotal();               // 時刻の古い順
+   if(!HistorySelect(0, before)) return 0;
+   int n = HistoryDealsTotal();
    for(int i = 0; i < n; i++)
    {
       ulong tk = HistoryDealGetTicket(i);
       if(tk == 0) continue;
       if(HistoryDealGetString(tk, DEAL_SYMBOL) != _Symbol) continue;
-      if((int)HistoryDealGetInteger(tk, DEAL_MAGIC) != magic) continue;
+      if(!NH_Mine(HistoryDealGetInteger(tk, DEAL_MAGIC))) continue;
       long ent = HistoryDealGetInteger(tk, DEAL_ENTRY);
       if(ent != DEAL_ENTRY_OUT && ent != DEAL_ENTRY_INOUT && ent != DEAL_ENTRY_OUT_BY) continue;
-      double p = HistoryDealGetDouble(tk, DEAL_PROFIT) + HistoryDealGetDouble(tk, DEAL_SWAP)
-               + HistoryDealGetDouble(tk, DEAL_COMMISSION);
+      if((datetime)HistoryDealGetInteger(tk, DEAL_TIME) >= before) continue;
+      double p = HistoryDealGetDouble(tk, DEAL_PROFIT);
       lv = (p > 0) ? 0 : MathMin(lv + 1, 6);
    }
 #else
@@ -41,12 +61,12 @@ int NH_Dan(int magic)
    for(int i = 0; i < n; i++)
    {
       if(!OrderSelect(i, SELECT_BY_POS, MODE_HISTORY)) continue;
-      if(OrderSymbol() != _Symbol || OrderMagicNumber() != magic) continue;
+      if(OrderSymbol() != _Symbol || !NH_Mine(OrderMagicNumber())) continue;
       if(OrderType() != OP_BUY && OrderType() != OP_SELL) continue;
-      ct[m] = OrderCloseTime(); pf[m] = OrderProfit() + OrderSwap() + OrderCommission(); m++;
+      if(OrderCloseTime() >= before) continue;
+      ct[m] = OrderCloseTime(); pf[m] = OrderProfit(); m++;
    }
-   // 降りた時刻の順に並べる(履歴の並びは順番どおりとは限らない)
-   for(int a = 1; a < m; a++)
+   for(int a = 1; a < m; a++)   // 閉じた時刻の順に並べる(履歴の並びは順番どおりとは限らない)
    {
       datetime kt = ct[a]; double kp = pf[a]; int b = a - 1;
       while(b >= 0 && ct[b] > kt) { ct[b + 1] = ct[b]; pf[b + 1] = pf[b]; b--; }
@@ -58,9 +78,9 @@ int NH_Dan(int magic)
 }
 
 // 業者のロットの刻み・上下限に合わせた、次に入る玉のロット
-double NH_Lot(int magic)
+double NH_Lot(datetime before)
 {
-   double lot  = NH_DAN[NH_Dan(magic)];
+   double lot  = NH_DAN[NH_Dan(before)];
    double step = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
    double mn   = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
    double mx   = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
