@@ -1,0 +1,265 @@
+# ニューぶん回しエンジンの部品:鯛の刺身とクジラ(決まりは engine_tai2・engine_kujira と同じ。数字は【置き換え】)
+import numpy as np, pandas as pd
+from nyu import Market, simulate
+
+def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0, big21_up=False, narabi=False):
+    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up, narabi)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
+    if key in mk._f: return mk._f[key]
+    E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9)
+    if big21_up:   # 大きい足の21が向きの方へ傾いている時だけ(下向きの21で買わない)
+        a = mk.on(small, big, ['ang']).ang.values; E = E & ((a > 0) if d > 0 else (a < 0))
+    if narabi:   # 11-10:大きい足の青(9)と赤(21)の並びが向きと同じ時だけ入る(買いは日足921の並び)。逆の並びで入ると、次の日足が閉じた時に「日足219」ですぐ降ろされる(前から続く合図)
+        u = mk.on(small, big, ['up921']).up921; E = E & ((u == True).values if d > 0 else (u == False).values)
+    mk._f[key] = E; return E
+
+def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=0):
+    """縄1 big の9上 / 縄2 mid の21上 / 縄3 small の921 / 縄3改 許しが出た時にもう921済み / 縄4 川の外+遅行21本前 / 縄4改 big の21上 / 縄5 竿先で入らない / 縄8 big の角度55度超で入らない"""
+    S = mk.feat(small); x = S
+    M = mk.on(mid, big, ['c', 'e9']).join(mk.feat(mid)[['c', 'e21', 'k']].rename(columns={'c': 'cm'}))
+    M['pb'] = (M.c > M.e9) & (M.cm > M.e21); M['ps'] = (M.c < M.e9) & (M.cm < M.e21)
+    a = M[['k', 'pb', 'ps']].sort_values('k')
+    perm = pd.merge_asof(pd.DataFrame({'kb': S.k.values}), a, left_on='kb', right_on='k', direction='backward')
+    perm.index = S.index
+    q = mk.on(small, big, ['c', 'e21', 'ang'])
+    up = x.e9 > x.e21; up1 = up.shift(1, fill_value=False)
+    if d > 0:
+        p = perm.pb.fillna(False).astype(bool); cross = up & ~up1; side = up
+        kawa = x.c > x.md + x.sd; chi = x.c > x.h21; qq = q.c > q.e21; ns = x.c <= x.md + sao * x.sd; ang = q.ang
+    else:
+        p = perm.ps.fillna(False).astype(bool); cross = ~up & up1; side = ~up
+        kawa = x.c < x.md - x.sd; chi = x.c < x.l21; qq = q.c < q.e21; ns = x.c >= x.md - sao * x.sd; ang = -q.ang
+    e921 = cross & p; kai = p & ~p.shift(1, fill_value=False) & side & ~cross
+    if kai_k9:   # 許しが出た瞬間の入りは、大きい足の終値が9の向こうに kai_k9 本続いてから(たくちん「9のってからロウソク3本目まで竿先」)
+        B = mk.feat(big); kc = 'k9b' if d > 0 else 'k9s'                  # 買いと売りで数え方を分ける(11-06 直したミス:同じ列名で買いの数えが売りに残っていた)
+        if kc not in B.columns:
+            s9 = (B.c > B.e9) if d > 0 else (B.c < B.e9); mk._f[big] = B.assign(**{kc: s9.groupby((~s9).cumsum()).cumsum()})
+        kk = mk.on(small, big, [kc])[kc].fillna(0).values; kai = kai & (kk >= kai_k9)
+        p_ok = p.copy()
+        # 許しが出た瞬間を4本目まで待った時は、4本目になった最初の足で入る(その時もまだ許しの中・9>21)
+        first = pd.Series(kk >= kai_k9, index=x.index) & ~pd.Series(kk >= kai_k9, index=x.index).shift(1, fill_value=False)
+        kai = kai | (first & p_ok & side & ~cross & (kk == kai_k9))
+    filt = (kawa & chi) if kawa_chi else True
+    ent = ((e921 & filt) | (kai & qq)) & ns
+    if n8: ent = ent & ~(ang > 55)
+    return ent.fillna(False).values
+
+def exit_ware(mk, small, tf, d):
+    """tf の9割れ(実体の真ん中と終値が9の向こう)。small の足に貼る"""
+    c = 'ware_b' if d > 0 else 'ware_s'; y = mk.on(small, tf, [c])
+    return y[c].fillna(False).astype(bool).values, y['k_' + tf].values
+
+def exit_219(mk, small, tf, d):
+    """tf の219(9が21の下。売りは921)"""
+    y = mk.on(small, tf, ['up921'])
+    v = y.up921.fillna(True if d > 0 else False).astype(bool)
+    return (~v if d > 0 else v).values, y['k_' + tf].values
+
+def exit_close9(mk, small, tf, d):
+    """tf の終値が9の向こう"""
+    F = mk.feat(tf)
+    if 'cb' not in F.columns: mk._f[tf] = F.assign(cb=F.c < F.e9, cs=F.c > F.e9)
+    c = 'cb' if d > 0 else 'cs'; y = mk.on(small, tf, [c])
+    return y[c].fillna(False).astype(bool).values, y['k_' + tf].values
+
+EXITS = {'9割れ': exit_ware, '219': exit_219, '終値9': exit_close9}
+
+# ---- 網(上げるだけ)と利確の高さ(入る足に貼る。どれも閉じた足の値)
+def sl_prevday(mk, small, d):
+    """前の日の安値(売りは高値)"""
+    y = mk.on(small, '1D', ['l', 'h']); return (y.l if d > 0 else y.h).values
+
+def sl_line(mk, small, tf, col='e21', buf=0.05, d=1):
+    """tf の線(e9/e21/e200/md)の buf 下(売りは上)"""
+    y = mk.on(small, tf, [col]); return (y[col] - buf * d).values
+
+def tp_sigma(mk, small, tf, k=3.5, d=1):
+    """tf の帯の ±kσ"""
+    y = mk.on(small, tf, ['md', 'sd']); return (y.md + k * y.sd * d).values
+
+def make_sl(mk, small, d, sl):
+    if sl is None: return None
+    if sl == 'prevday': return _mae1(sl_prevday(mk, small, d))
+    tf, col = sl[0], sl[1]; buf = sl[2] if len(sl) > 2 else 0.05     # 例 ('4h','e21') / ('4h','e21',0.20)
+    return _mae1(sl_line(mk, small, tf, col, buf, d))
+
+def _mae1(v):
+    """足の中で使う線(利確・網)は、その足が始まる前に分かっている値=1本前の足が閉じた時の値を使う(11-07 先読みを見つけて直した:
+    いま動いている1時間足が閉じる時に閉じる4時間足の線を、その1時間足の中で使っていた)"""
+    v = np.asarray(v, dtype=float); return np.r_[np.nan, v[:-1]]
+
+def make_tp(mk, small, d, tp):
+    if tp is None: return None
+    tf, k = tp; return _mae1(tp_sigma(mk, small, tf, k, d))
+
+YASUMI = [((4, 29), (5, 6))]   # 11-07 たくちん「サンタの休み、寝正月、イカの産卵時期ゴールデンウィーク」【置き換え】月日(はじめ, おわり)/11-10 たくちん「さんたと寝正月やめる」→ GW だけ
+
+def yasumi_mask(idx, ys=None):
+    """i の合図が約定する足(i+1)の日付が休みの間なら True。休みの間は新しく入らない(持っている玉はそのまま)"""
+    nx = pd.DatetimeIndex(np.r_[idx.values[1:], idx.values[-1:]]); md = nx.month * 100 + nx.day; m = np.zeros(len(idx), bool)
+    for (a1, a2), (b1, b2) in (ys or YASUMI): m |= (md >= a1 * 100 + a2) & (md <= b1 * 100 + b2)
+    return m
+
+def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False):
+    """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
+    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, narabi=narabi)
+    XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
+    if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
+    else: XA, KA = XC, KC
+    base = mk.feat(small)
+    if yasumi: E = np.asarray(E, bool) & ~yasumi_mask(base.index, yasumi if isinstance(yasumi, list) else None)
+    if avoid_in or avoid_out:                                   # 0時をずらす(11-06):約定の足の時刻が avoid にある時は、次の足まで待つ
+        fh = np.r_[base.index.hour.values[1:], -1]               # i の合図が約定する足(i+1)の時刻
+        if avoid_in:
+            E = np.asarray(E, bool).copy(); bad = np.isin(fh, avoid_in)
+            for i in np.where(E & bad)[0]:
+                E[i] = False; k = i + 1
+                while k < len(E) - 1 and np.isin(fh[k], avoid_in): k += 1
+                E[k] = True
+        if avoid_out:
+            bad = np.isin(fh, avoid_out); XC = np.asarray(XC, bool) & ~bad; XA = np.asarray(XA, bool) & ~bad   # 降りの合図は続く(219 など)ので、次の足で降りる
+    return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None), base
+
+# ---- 小魚(11-06)
+def kozakana_ue(mk, d=1, maxpos=5, spr=0.003, lock=0.0):
+    """上の小魚(クジラと同じ向き):4h終値が21の向き側の間に、1hの終値が4h21をまたいだ足/1hの921で入る(最大 maxpos 発)。4h終値が21の逆側で全部降り【置き換え】"""
+    S = mk.feat('1h'); q = mk.on('1h', '4h', ['c', 'e21'])
+    side = (q.c > q.e21) if d > 0 else (q.c < q.e21); side = side.fillna(False)
+    over = ((S.c > q.e21) & (S.c.shift() <= q.e21)) if d > 0 else ((S.c < q.e21) & (S.c.shift() >= q.e21))
+    up = S.e9 > S.e21; x9 = (up & ~up.shift(1, fill_value=False)) if d > 0 else (~up & up.shift(1, fill_value=False))
+    E = (side & (over | x9)).values; X = (~side).values; K = S.k.values   # 降りは 4h が閉じた時に確定するので、1h の閉じた時刻で見てよい
+    return simulate(S, d, E, X, K, None, None, None, maxpos, spr, True, None, lock), S
+
+def gyakume_99(mk, tf, d=-1, spr=0.003):
+    """逆目は99(11-06 たくちん「逆目は99でいったら?」):tf の9割れが出た最初の足で入り、逆の9割れ(9に戻った)で降りる【置き換え】"""
+    F = mk.feat(tf)
+    w_in = F.ware_b if d < 0 else F.ware_s; w_out = F.ware_s if d < 0 else F.ware_b
+    E = (w_in & ~w_in.shift(1, fill_value=False)).values
+    return simulate(F, d, E, w_out.values, F.k.values, None, None, None, 1, spr, False), F
+
+# ---- 引け先取り(11-06 たくちん「びけ先どりは?」)
+def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
+    yas = kw.get('yasumi', False)
+    """11-07 たくちん「うりの利確からのドテンで差し込み折り返しポイントやから、連鎖できたらなぁ」【置き換え】
+    決まった形の -d 向きの玉が利確(4h ±3.5σ)したら構えて、small の足で向きの方の9と21の交わり(買いなら921)が出た次の足で、d 向きにドテン1玉。
+    降り:small の足で 9 と 21 の並びが、入った後に向きと逆へ新しく交わった時(買いなら219が新しく出た時。前から続く並びでは降りない)+TS ts pips。
+    連鎖:ドテンの玉を降りた後は、決まった形の入りがそのまま続く(この部品はドテンの玉だけを返す)"""
+    main, base = run_tai(mk, '1D', '4h', small, -d, ('1D', '219'), ts=ts, **kw)   # 11-10 元の売りにも同じ TS を渡す(ts がここで止まって、元の売りが TS なしで作られていた。数字は変わらなかったが、つながりの切れ)
+    idx = base.index; E = np.zeros(len(idx), bool)
+    tp = main[main.why == '利確']
+    if len(tp): E[np.searchsorted(idx.values, pd.to_datetime(tp.ext).values)] = True   # 利確した足(その足の中で届いた)で構える
+    S = mk.feat(small); up = (S.e9 > S.e21).values; up1 = np.r_[up[0], up[:-1]]
+    # 後出しじゃんけん:構えた後、small の足で向きの方へ9と21が新しく交わった足(買いなら921)が閉じたら、次の足でドテン(利確の足ですぐドテンは × だったので外した)
+    cr = (~up1 & up) if d > 0 else (up1 & ~up); W = np.zeros(len(idx), bool); armed = False
+    for i in range(len(idx)):
+        if E[i]: armed = True
+        if armed and cr[i]: W[i] = True; armed = False
+    E = W & ~yasumi_mask(idx, yas if isinstance(yas, list) else None) if yas else W
+    X = (up1 & ~up) if d > 0 else (~up1 & up)                                     # 新しく出た219(売りは921)
+    K = S.k.values
+    if xtf:   # 11-07 降りを xtf の足の新しく出た219(売りは921)にする(1hでは折り返しの胴体を取る前に降ろされた)
+        F = mk.feat(xtf); u = F.e9 > F.e21; u1 = u.shift(1, fill_value=False); kc = 'x219' if d > 0 else 'x921'
+        if kc not in F.columns: mk._f[xtf] = F.assign(x219=u1 & ~u, x921=~u1 & u)
+        y = mk.on(small, xtf, [kc]); X = y[kc].fillna(False).astype(bool).values; K = y['k_' + xtf].values
+    t = simulate(base, d, E, X, K, None, None, None, 1, kw.get('spr', 0.003), True, None, 0.0, True, ts, 0.0)
+    return t, base
+
+def run_oshime_d(mk, d, small='1h', maxpos=5, spr=0.003, pk=10, wk=3, tpk=3.5, avoid=0, yasumi=True):
+    """11-10 たくちん「ブレンドして」:かがみ無限の「日足の巡航・押し目の無限リーチ」(かがみ無限_決まり帳_20261030 の 抜1・無1・出1)【置き換え】
+    抜1 日足の帯(±2σ)の幅が3本前より広い/前の山の後に9まで押した/終値が前の山(10本の高値)を超えた → 巡航。次の1時の足で1玉
+    無1 巡航の中で、日足の終値が9の向こうで確定した後、21まで押して向きの足(陽線)が確定したら1玉足す
+    出1 日足の ±3.5σ に触れたら全部利確/日足の219(売りは921)で全部降り/網は前の日足のひげ先(毎日寄せる、上げるだけ)
+    1玉=0.01ロットで数える(元のEAは押し目ごとに8単位)"""
+    D = mk.feat('1D'); H = mk.feat(small)
+    o, h, l, c, e9, e21 = D.o.values, D.h.values, D.l.values, D.c.values, D.e9.values, D.e21.values
+    w = (4 * D.sd).values; n = len(D); sig = np.zeros(n, bool)
+    up = e9 > e21 if d > 0 else e9 < e21
+    armed = False; incr = False; last_peak_i = -1
+    for i in range(pk + wk, n):
+        if not up[i]: incr = False; armed = False; continue
+        prev = h[i - pk:i].max() if d > 0 else l[i - pk:i].min()
+        pk_i = i - pk + (int(np.argmax(h[i - pk:i])) if d > 0 else int(np.argmin(l[i - pk:i])))
+        pulled = (l[pk_i:i] <= e9[pk_i:i]).any() if d > 0 else (h[pk_i:i] >= e9[pk_i:i]).any()
+        brk = (c[i] > prev) if d > 0 else (c[i] < prev)
+        if not incr and w[i] > w[i - wk] and pulled and brk: sig[i] = True; incr = True; armed = False; continue
+        if incr:
+            if (c[i] > e9[i]) if d > 0 else (c[i] < e9[i]): armed = True
+            touch = (l[i] <= e21[i]) if d > 0 else (h[i] >= e21[i])
+            yang = (c[i] > o[i]) if d > 0 else (c[i] < o[i])
+            if armed and touch and yang: sig[i] = True; armed = False
+    # 日足の合図 → その日足が閉じた後の1時間足(0時の足は1時へ)
+    base = H; k1 = D.k.values; E = np.zeros(len(base), bool)
+    for i in np.where(sig)[0]:
+        j = np.searchsorted(base.index.values, k1[i])                   # 日足が閉じた時刻に始まる1時間足
+        while j < len(base) and base.index[j].hour == avoid: j += 1
+        if j - 1 >= 0 and j < len(base): E[j - 1] = True                 # E は合図の足(j-1)に立てる → j で約定
+    if yasumi: E = E & ~yasumi_mask(base.index)
+    XC, KC = EXITS['219'](mk, small, '1D', d)
+    fh = np.r_[base.index.hour.values[1:], -1]; XC = np.asarray(XC, bool) & ~(fh == avoid)
+    y = mk.on(small, '1D', ['l', 'h', 'md', 'sd'])
+    SLV = _mae1(y.l.values if d > 0 else y.h.values)                     # 前の日足のひげ先(網の値は売り値で持つ。売りの買い戻しのスプレッドは試験機が足す:11-10 鏡で二重に足していたのを直した)
+    TPV = _mae1((y.md + tpk * y.sd * d).values)
+    return simulate(base, d, E, XC, KC, None, None, SLV, maxpos, spr, True, TPV, 0.0, True, 0.0, 0.0), base
+
+def run_shiawase(mk, d, small='1h', spr=0.003, nflip=3, win=30, kar=3, tame_max=5, tpk=2.0, tamek=3.5, naka=1.0, avoid=0, yasumi=True, ok=None, shuu_muki=False):
+    """11-11 たくちん「1」(しあわせセットを決まった形に B=1単位0.01ロットで入れる)。研鑽7回目(kenkyu/shiawase_hako2.py)をエンジンに移した【置き換え】
+    レンジ=日足の遅行スパン(終値と21本前の終値の上下)が直近 win 日で nflip 回以上入れ替わる/921・219は見ない
+    箱=レンジに入ってからの高値・安値(続いているレンジの1日目の win 日前から。レンジでない日は win 日)
+    入り:レンジの間、前の日足の −2σ(売りは+2σ)に値が届いたら、その値で kar+1 単位(kar=刈る・1=ため)。日足200の上下 naka×1σ の中では入らない(箱の真ん中)。0時は入らない
+    降り:刈る=反対の ±tpk σ で利確/ため=±tamek σ で利確/全部=日足の終値が入った時の箱の外で閉じたら次の足(0時は1時)
+    次のセットは前の刈るが全部降りた後/ためは tame_max まで/休み(GW)は新しく入らない(決まった形と同じ)。ok=小さい足ごとの真偽(ok[i-1] が偽の足では入らない。上の足の縛りを外から渡す:11-11 売りの研鑽)。
+    shuu_muki=True(11-12 たくちん「ご」):週足(月曜0時からの7日足・閉じた週だけ)の並びが入る向きの時だけ入る。売りは週足219の間だけ(週足921=上げの大山の途中では売らない)、買いは週足921の間だけ(鏡うつし)。決まった形では売りだけに使う1単位=0.01ロットで数える"""
+    P = 0.01; D = mk.feat('1D')
+    if 'sh_rng' not in D.columns:
+        sg = np.sign(D.c - D.c.shift(21)); fl = (sg != sg.shift(1)) & sg.shift(1).notna() & (sg != 0)
+        rg = (fl.astype(int).rolling(win).sum() >= nflip).values; h_, l_ = D.h.values, D.l.values
+        bh = np.full(len(D), np.nan); bl = np.full(len(D), np.nan); st = None
+        for k in range(len(D)):
+            if rg[k]:
+                if st is None: st = max(0, k - win + 1)
+                a = st
+            else: st = None; a = max(0, k - win + 1)
+            bh[k] = h_[a:k + 1].max(); bl[k] = l_[a:k + 1].min()
+        mk._f['1D'] = D.assign(sh_rng=rg, sh_bhi=bh, sh_blo=bl)
+    x = mk.feat(small); n = len(x); O, H, L = x.o.values, x.h.values, x.l.values; idx = x.index; hr = idx.hour.values
+    y = mk.on(small, '1D', ['c', 'md', 'sd', 'e200', 'sh_rng', 'sh_bhi', 'sh_blo']); kd = y['k_1D'].values
+    md, sd, dc, e2 = y.md.values, y.sd.values, y.c.values, y.e200.values
+    rg = y.sh_rng.fillna(False).values.astype(bool); bhi, blo = y.sh_bhi.values, y.sh_blo.values
+    if shuu_muki:
+        W = mk.raw.resample('W-MON', label='left', closed='left').agg(dict(o='first', h='max', l='min', c='last')).dropna()
+        W['k'] = W.index + pd.Timedelta('7D'); W['w219'] = (W.c.ewm(span=9, adjust=False).mean() - W.c.ewm(span=21, adjust=False).mean()) * d > 0   # 入る向きの並び(売り=219・買い=921)
+        wk = pd.merge_asof(pd.DataFrame({'kb': idx + (idx[1] - idx[0] if n > 1 else pd.Timedelta('1h'))}), W[['k', 'w219']], left_on='kb', right_on='k', direction='backward').w219.fillna(False).values.astype(bool)
+        ok = wk if ok is None else (np.asarray(ok, bool) & wk)
+    newday = np.r_[False, kd[1:] != kd[:-1]]; ym = yasumi_mask(idx) if yasumi else np.zeros(n, bool)   # ym[i-1]=足 i が休みの日
+    pos = []; out = []; pair = False; camp = 0
+    for i in range(1, n - 1):
+        lv = md[i-1] - 2 * d * sd[i-1]; tp2 = md[i-1] + tpk * d * sd[i-1]; tp35 = md[i-1] + tamek * d * sd[i-1]
+        keep = []
+        for p in pos:
+            ex = None
+            if i > p['j']:
+                if p['brk'] and hr[i] != avoid: ex = (O[i] + (0 if d > 0 else spr), '芯の降り')   # 箱割れ
+                else:
+                    tv = tp2 if p['r'] == '刈る' else tp35
+                    if not np.isnan(tv) and ((d > 0 and tv > p['e'] and H[i] >= tv) or (d < 0 and tv < p['e'] - spr and L[i] <= tv)):
+                        ex = (max(O[i], tv) if d > 0 else min(O[i], tv) + spr, '利確')
+            if ex:
+                seg = slice(p['j'], i + 1)
+                mfe = ((H[seg].max() - p['e']) if d > 0 else (p['e'] - L[seg].min() - spr)) / P
+                mae = ((p['e'] - L[seg].min()) if d > 0 else (H[seg].max() + spr - p['e'])) / P
+                out.append(dict(ent=idx[p['j']], e=p['e'], ext=idx[i], x=ex[0], pips=(ex[0] - p['e']) / P * d, why=ex[1], r=p['r'], n=p['n'], camp=p['c'], mfe=mfe, mae=mae))
+            else: keep.append(p)
+        pos = keep
+        if newday[i]:
+            for p in pos:
+                if (d > 0 and dc[i] < p['bx']) or (d < 0 and dc[i] > p['bx']): p['brk'] = True
+        if pair and not any(p['r'] == '刈る' for p in pos): pair = False
+        if rg[i-1] and not ym[i-1] and (ok is None or ok[i-1]) and not pair and hr[i] != avoid and sum(1 for p in pos if p['r'] == 'ため') < tame_max and not np.isnan(lv) and ((d > 0 and L[i] <= lv) or (d < 0 and H[i] >= lv)):
+            e = (min(O[i], lv) + spr) if d > 0 else max(O[i], lv); bx = blo[i-1] if d > 0 else bhi[i-1]
+            if ((d > 0 and e > bx) or (d < 0 and e < bx)) and abs(e - e2[i-1]) > naka * sd[i-1]:
+                camp += 1
+                for k, r in enumerate(['刈る'] * kar + ['ため']): pos.append(dict(j=i, e=e, r=r, n=k + 1, c=camp, bx=bx, brk=False))
+                pair = True
+    t = pd.DataFrame(out, columns=['ent', 'e', 'ext', 'x', 'pips', 'why', 'r', 'n', 'camp', 'mfe', 'mae'])
+    t = t.sort_values(['ent', 'n'], kind='stable').reset_index(drop=True); t.attrs['open_left'] = len(pos)
+    return t, x
