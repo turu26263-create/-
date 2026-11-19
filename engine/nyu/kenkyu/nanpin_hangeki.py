@@ -6,24 +6,30 @@ import sys, json, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0
 from nyu import *; from tai_parts import *
 cfg = json.load(open('/home/user/-/engine/nyu/settei_kimari.json')); f = cfg['形']; k = cfg['口座']
 KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
-def run_nanpin(mk, d, maxpos=2, sig=2.0):
+def run_nanpin(mk, d, maxpos=2, sig=2.0, ami=False):
+    # ami=True(11-19 候補1):ナンピン玉に網=差し込みで届いた一番の安値(売りは高値)の5p外。反撃が崩れたらナンピン玉だけ切る
     KB = {**KW, 'narabi': f.get('narabi', False) and d > 0}
     main, base = run_tai(mk, '1D', '4h', '1h', d, ('1D', '219'), **KB)
     idx = base.index; n = len(idx); C = base.c.values; L = base.l.values; Hh = base.h.values
     pos = {t: i for i, t in enumerate(idx)}; worst = np.full(n, np.nan)
-    for e, a, b in zip(main.e.values, pd.to_datetime(main.ent), pd.to_datetime(main.ext)):
+    # 買いの入り値はスプレッド込み(売りは降りる時に払う)。含み損かどうかは中値で比べる(11-19 鏡の×で見つけた)
+    for e, a, b in zip(main.e.values - (0.003 if d > 0 else 0.0), pd.to_datetime(main.ent), pd.to_datetime(main.ext)):
         i0, i1 = pos.get(a), pos.get(b)
         if i0 is None or i1 is None: continue
         seg = worst[i0:i1]; worst[i0:i1] = np.where(np.isnan(seg), e, np.minimum(seg, e) if d > 0 else np.maximum(seg, e))
     band = tp_sigma(mk, '1h', '4h', sig, -d); band = np.r_[np.nan, band[:-1]]          # 4時間の-2σ(売りは+2σ)。1本前の足が閉じた時の線
     S = mk.feat('1h'); up = (S.e9 > S.e21).values; up1 = np.r_[up[0], up[:-1]]; cr = (~up1 & up) if d > 0 else (up1 & ~up)
-    E = np.zeros(n, bool); armed = False; nk = 0
+    E = np.zeros(n, bool); armed = False; nk = 0; SL = np.full(n, np.nan); ext = np.nan; cur = np.nan
     for i in range(n):
         held = not np.isnan(worst[i])
-        if not held: armed = False; continue
+        if not held: armed = False; SL[i] = cur; continue
         loss = C[i] < worst[i] if d > 0 else C[i] > worst[i]
-        if loss and ((L[i] <= band[i]) if d > 0 else (Hh[i] >= band[i])): armed = True; nk += 1
-        if armed and cr[i] and loss: E[i] = True; armed = False
+        if loss and ((L[i] <= band[i]) if d > 0 else (Hh[i] >= band[i])):
+            if not armed: ext = L[i] if d > 0 else Hh[i]
+            armed = True; nk += 1
+        if armed: ext = min(ext, L[i]) if d > 0 else max(ext, Hh[i])
+        if armed and cr[i] and loss: E[i] = True; armed = False; cur = ext - d * 0.05
+        SL[i] = cur
     E &= ~yasumi_mask(idx)
     fh = np.r_[idx.hour.values[1:], -1]; bad = np.isin(fh, (0,))
     for i in np.where(E & bad)[0]:
@@ -31,7 +37,7 @@ def run_nanpin(mk, d, maxpos=2, sig=2.0):
         while j < n - 1 and bad[j]: j += 1
         E[j] = True
     XC, KC = exit_219(mk, '1h', '1D', d); XC = np.asarray(XC, bool) & ~bad
-    t = simulate(base, d, E, XC, KC, None, None, None, maxpos, 0.003, True, make_tp(mk, '1h', d, tuple(f['tp'])), 0.0, True, f['ts'], 0.0)
+    t = simulate(base, d, E, XC, KC, None, None, SL if ami else None, maxpos, 0.003, True, make_tp(mk, '1h', d, tuple(f['tp'])), 0.0, True, f['ts'], 0.0)
     t.attrs['構え'] = nk; return t, base
 if __name__ == '__main__':
     srv = Market(load_cached(sys.argv[1]), 'server')
@@ -44,10 +50,11 @@ if __name__ == '__main__':
     t0 = pd.concat(P, ignore_index=True)
     sh = pd.concat([run_shiawase(srv, d, yasumi=f.get('yasumi', False), shuu_muki=d in f['shiawase'].get('shuu_muki', []), **sz)[0].assign(d=d, kind='しあわせ') for d in f['shiawase'].get('dirs', [1, -1])], ignore_index=True)
     t0 = pd.concat([t0, sh[sh.ent >= t0.ent.min()]], ignore_index=True)
-    NP = [run_nanpin(srv, d) for d in (1, -1)]
+    AMI = len(sys.argv) > 2 and sys.argv[2] == 'ami'
+    NP = [run_nanpin(srv, d, ami=AMI) for d in (1, -1)]
     np_ = pd.concat([NP[0][0].assign(d=1, kind='ナンピン反撃'), NP[1][0].assign(d=-1, kind='ナンピン反撃')], ignore_index=True)
     print('決め方(先に決めた):確かめる年の合計が上がり、落ち込み率が上がらなければ残す')
-    for nm, tt in (('今の決まった形', t0), ('ナンピン反撃を足した形', pd.concat([t0, np_], ignore_index=True))):
+    for nm, tt in (('今の決まった形', t0), ('ナンピン反撃(網つき)を足した形' if AMI else 'ナンピン反撃を足した形', pd.concat([t0, np_], ignore_index=True))):
         T, s = lot_sizing(tt, b, 1, k['資金'], margin_cap=k['証拠金の上限'], leverage=k['レバレッジ'], fixed_lot=k['決め打ちのロット'], stopout=k['強制決済の維持率'])
         y = pd.to_datetime(T.ent).dt.year; ta = ~y.between(2022, 2024)
         print(f"\n{nm}: {len(T)}玉 {T.pips.sum():+,.0f}p / 確かめる年 {T.pips[ta].sum():+,.0f} / 選22-24 {T.pips[~ta].sum():+,.0f} / 落ち込み率 {s['落ち込み率']}% / 最後の資金 {s['最後の資金']:,} / 入れなかった合図 {s['入れなかった合図']}")
