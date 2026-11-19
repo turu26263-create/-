@@ -15,6 +15,7 @@
 - ×にした物:ドテン売り(−839p)・段を部品ごと(強制決済)・売りにも日足の並び(112玉 選+150p だが確かめる年 −411p)
 
 ## まだ
+- 11-19 shynet の MT4 Experts につないだパソコンのClaude(セッション session_014B7FRoUf64Zjrk8ZibB24r・環境 env_01B2vFkCzXKYLxoxmtaC1fX5)に、Kujira3_v4 の中身を渡してコンパイルさせ中。結果はまだ
 - **MT4 でのコンパイル・テスター・研究台とのあわせ**(クラウドから shynet に届かない。Remote Control の「Experts」は shynet が出さない(AppData の中)。Pテラスは混ぜない。クラウドに wine で MT4 を入れてコンパイルするのは自動の見張りに止められた)
 - エントリー同期の残り:値の更新停止・stops/freeze level の検査
 
