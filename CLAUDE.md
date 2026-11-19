@@ -12,7 +12,7 @@
 - 宝物ターンテーブル(Drive 1nEZiljc3ykWuG6HJb4pmRQ4CqUYf3fG1)
   - 4_武器の皿(1RjjuxI12esw-peMUXfy_ubF66_5xzpd7):EA。最新=Kujira3_v4.mq4・CounterHangeki.mqh・Kujira3_v4_手法の決まり帳・README・設定・MT4あわせ用csv。古い版も同じ皿。ぶん回しエンジンは中の「ぶん回しエンジン」フォルダ(部品zip・動かし方・設定・USDJPY60.csv)
   - 12_エントリー手法の皿(1xOPhH3E3Q9IwHgmQiOehZlzq8UkLNiQ3):入り方の決まり帳。カウンター反撃_元帳.md が正本
-  - 0_実行テーブル(1izpPoOGTy6yW2eeNR8-0RKUcXN5vYKHV):引き継ぎ(00_引き継ぎ_)・パソコン側のClaude(Pテラス)への依頼(00_依頼_Pテラスへ_)と報告。MT4のコンパイル・テスターはこの依頼書でPテラスにやってもらう(クラウドからMT4には届かない)
+  - 0_実行テーブル(1izpPoOGTy6yW2eeNR8-0RKUcXN5vYKHV):引き継ぎ(00_引き継ぎ_)。Pテラス(パソコン側のClaude)は混ぜない(11-19 たくちん)
 - かきこチャート=https://claude.ai/artifact/3Xp367cAgeuUXQ4AExy3Q8 だけ(作る道具 engine/nyu/kakiko_template.html・kakiko_make.py、手の印は db te)。ほかのかきこチャートは作らない
 - リポジトリ:engine/nyu(エンジン)・ea/(EA)・engine/kekka_tai/nyu(結果)。データ /home/user/data/mt4/USDJPY60.csv(Drive 1TkE0f6bu-QXOU-5BJT_Jnr14of6vCjDv)
 - 入れる時の決まり(11-19 たくちん「あっちこっちにきおくせんと 整理しろ 入れるときに整理記憶」):新しい皿・新しいメモの置き場を作らない。今ある皿に入れ、古い版は同じ皿で入れ替える。置き場が変わったらこの地図だけ直す
@@ -41,6 +41,7 @@
 - 名前のリセット: 「消せ」と言われたのに残った。→ 開く・開き直す・裏から戻す・読み直すの全部の場面で消えるか、たどって確かめてから「直した」と言う。
 - 聞き直しが多い: あいまいでも、筋の通る読みを決めて動き、読み違いだけ一言そえる。
 - 2か所(アプリの中とGitHub Pages)があるのに片方だけ直して終わった。→ 両方同じにする。できない時はできない理由をすぐ言う。
+- Pテラス(11-19):コンパイルをPテラスへの依頼書に回して止めた。→ Pテラスは混ぜない。自分で届く道(Remote Control のフォルダ)でやる。届かない時は届かない所だけ短く言う
 - うざい(11-19): 新しい皿を次々作り、置き場のメモを CLAUDE.md・HANDOFF・Drive にばらばらに書き、毎回最後に聞いた。→ 今ある皿に入れて地図1か所だけ直す・聞かずにやる。
 
 # アプリができたら整理整頓(2026-11-14 たくちん「記憶固定」)
