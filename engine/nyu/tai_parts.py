@@ -2,17 +2,20 @@
 import numpy as np, pandas as pd
 from nyu import Market, simulate
 
-def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0, big21_up=False, narabi=False):
-    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up, narabi)            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
+def tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, lag21=True, kai_k9=0, big21_up=False, narabi=False, mon=None):
+    # mon(11-19 門の研究・初期値=今と同じ):kai=許しの入り perm=日足9+4h21 kawa=川の幅σ chi=遅行21 qq=許しの日足21
+    mon = {**dict(kai=True, perm=True, kawa=1.0, chi=True, qq=True), **(mon or {})}
+    key = ('tai_entry', big, mid, small, d, sao, n8, kawa_chi, kai_k9, big21_up, narabi) + (() if mon == dict(kai=True, perm=True, kawa=1.0, chi=True, qq=True) else tuple(sorted(mon.items())))            # 合図のしまい場所(ぶん回しで同じ合図を作り直さない)
     if key in mk._f: return mk._f[key]
-    E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9)
+    E = _tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9, mon)
     if big21_up:   # 大きい足の21が向きの方へ傾いている時だけ(下向きの21で買わない)
         a = mk.on(small, big, ['ang']).ang.values; E = E & ((a > 0) if d > 0 else (a < 0))
     if narabi:   # 11-10:大きい足の青(9)と赤(21)の並びが向きと同じ時だけ入る(買いは日足921の並び)。逆の並びで入ると、次の日足が閉じた時に「日足219」ですぐ降ろされる(前から続く合図)
         u = mk.on(small, big, ['up921']).up921; E = E & ((u == True).values if d > 0 else (u == False).values)
     mk._f[key] = E; return E
 
-def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=0):
+def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=0, mon=None):
+    mon = mon or dict(kai=True, perm=True, kawa=1.0, chi=True, qq=True); kw_ = mon['kawa']
     """縄1 big の9上 / 縄2 mid の21上 / 縄3 small の921 / 縄3改 許しが出た時にもう921済み / 縄4 川の外+遅行21本前 / 縄4改 big の21上 / 縄5 竿先で入らない / 縄8 big の角度55度超で入らない"""
     S = mk.feat(small); x = S
     M = mk.on(mid, big, ['c', 'e9']).join(mk.feat(mid)[['c', 'e21', 'k']].rename(columns={'c': 'cm'}))
@@ -24,10 +27,13 @@ def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=
     up = x.e9 > x.e21; up1 = up.shift(1, fill_value=False)
     if d > 0:
         p = perm.pb.fillna(False).astype(bool); cross = up & ~up1; side = up
-        kawa = x.c > x.md + x.sd; chi = x.c > x.h21; qq = q.c > q.e21; ns = x.c <= x.md + sao * x.sd; ang = q.ang
+        kawa = x.c > x.md + kw_ * x.sd; chi = x.c > x.h21; qq = q.c > q.e21; ns = x.c <= x.md + sao * x.sd; ang = q.ang
     else:
         p = perm.ps.fillna(False).astype(bool); cross = ~up & up1; side = ~up
-        kawa = x.c < x.md - x.sd; chi = x.c < x.l21; qq = q.c < q.e21; ns = x.c >= x.md - sao * x.sd; ang = -q.ang
+        kawa = x.c < x.md - kw_ * x.sd; chi = x.c < x.l21; qq = q.c < q.e21; ns = x.c >= x.md - sao * x.sd; ang = -q.ang
+    if not mon['perm']: p = pd.Series(True, index=x.index)
+    if not mon['chi']: chi = True
+    if not mon['qq']: qq = True
     e921 = cross & p; kai = p & ~p.shift(1, fill_value=False) & side & ~cross
     if kai_k9:   # 許しが出た瞬間の入りは、大きい足の終値が9の向こうに kai_k9 本続いてから(たくちん「9のってからロウソク3本目まで竿先」)
         B = mk.feat(big); kc = 'k9b' if d > 0 else 'k9s'                  # 買いと売りで数え方を分ける(11-06 直したミス:同じ列名で買いの数えが売りに残っていた)
@@ -38,6 +44,7 @@ def _tai_entry(mk, big, mid, small, d, sao=2.0, n8=False, kawa_chi=True, kai_k9=
         # 許しが出た瞬間を4本目まで待った時は、4本目になった最初の足で入る(その時もまだ許しの中・9>21)
         first = pd.Series(kk >= kai_k9, index=x.index) & ~pd.Series(kk >= kai_k9, index=x.index).shift(1, fill_value=False)
         kai = kai | (first & p_ok & side & ~cross & (kk == kai_k9))
+    if not mon['kai']: kai = pd.Series(False, index=x.index)
     filt = (kawa & chi) if kawa_chi else True
     ent = ((e921 & filt) | (kai & qq)) & ns
     if n8: ent = ent & ~(ang > 55)
@@ -100,9 +107,9 @@ def yasumi_mask(idx, ys=None):
     return m
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False, ng_hours=(), e_mask=None):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False, ng_hours=(), e_mask=None, mon=None):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
-    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, narabi=narabi)
+    E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, narabi=narabi, mon=mon)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
     if add_exit: XA, KA = EXITS[add_exit[1]](mk, small, add_exit[0], d)
     else: XA, KA = XC, KC
