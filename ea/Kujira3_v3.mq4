@@ -1,6 +1,7 @@
 //+------------------------------------------------------------------+
 //| Kujira3_v3.mq4  今の決まった形(11-19)+カウンター反撃7段 を MT4 に     |
 //| 11-19 v2 から:買いと鯛は日足921の並びの時だけ(たくちん「ご」)       |
+//|              鯛は NY時間(約定16〜23時)は入らない(たくちん「ご」)   |
 //|              ロットはカウンター反撃(CounterHangeki.mqh・段は全部で1本) |
 //| 2026-11-12 たくちん「mt4で回して」                                  |
 //| 中身:クジラの刺身(売り買い)+ドテン買い+鯛の刺身+日足の押し目巡航    |
@@ -18,6 +19,7 @@
 input double Lots          = 0.01;   // クジラ・ドテン・鯛・押し目の1玉のロット(決め打ち)
 input int    MaxPos        = 5;      // クジラの同じ向きの玉の上限(5発)。無限リーチの照らし:6以上は同じ台地(11-19・ご待ち)
 input bool   UseCounter     = true;   // カウンター反撃(7段回収)。false で Lots・ShLots の決め打ち
+input bool   TaiNoNY       = true;   // 11-19「ご」:鯛は約定の足が16〜23時(サーバー=NY時間)なら入らない
 input bool   UseNarabi     = true;   // 11-19「ご」:買いと鯛は日足が921の並び(9>21)の時だけ
 input int    KaiK9         = 3;      // 許しの入りは日足の終値が9の向こうに何本続いてから
 input double SaoSigma      = 2.0;    // 竿先:1時間の帯 ±2σ の外では入らない
@@ -577,7 +579,7 @@ void OnTick()
       if(avoid) { if(sig) { if(d > 0) pendBuy = true; else pendSell = true; Log("0時をよけて次の足へ", T, d, 0, 0, ""); } }
       else { go = sig || pend; if(d > 0) pendBuy = false; else pendSell = false; }
       if(go && CountPos(mg) < MaxPos) Open(d, mg, Lots, T, sig ? "入り" : "0時をよけた入り", 0);
-      if(go && d > 0 && UseTai && CountPos(MagicTai) < 1) Open(1, MagicTai, Lots, T, "鯛の刺身", 0);
+      if(go && d > 0 && UseTai && CountPos(MagicTai) < 1 && !(TaiNoNY && TimeHour(T) >= 16)) Open(1, MagicTai, Lots, T, "鯛の刺身", 0);
    }
 
    // 2b. 日足の押し目巡航

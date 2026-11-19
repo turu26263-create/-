@@ -11,7 +11,7 @@ if f.get('uri'):   # 売りも同じ決まりの鏡うつし(11-06)。0.01ロッ
 if f.get('doten'):   # 11-07 決まった形3:売りの利確の後921待ちドテン買い
     dz = f['doten']; dt_, _ = run_doten(srv, dz['d'], xtf=dz.get('xtf'), **KW); dt_['d'] = dz['d']; t = pd.concat([t, dt_], ignore_index=True)
 if f.get('tai'):   # 11-09 鯛の刺身(買いだけ)
-    tz = f['tai']; KT = {**KW, 'narabi': f.get('narabi', False), 'maxpos': tz['maxpos'], 'tp': None, 'ts': tz['ts']}; tt_, _ = run_tai(srv, f['big'], f['mid'], f['small'], tz['d'], tuple(tz['exit']), **KT); tt_['d'] = tz['d']; t = pd.concat([t, tt_], ignore_index=True)
+    tz = f['tai']; KT = {**KW, 'narabi': f.get('narabi', False), 'maxpos': tz['maxpos'], 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))}; tt_, _ = run_tai(srv, f['big'], f['mid'], f['small'], tz['d'], tuple(tz['exit']), **KT); tt_['d'] = tz['d']; t = pd.concat([t, tt_], ignore_index=True)
 if f.get('oshime'):   # 11-10 ブレンド:かがみ無限の日足巡航・押し目
     for dz in (1, -1):
         oo, _ = run_oshime_d(srv, dz, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False)); oo['d'] = dz; t = pd.concat([t, oo], ignore_index=True)

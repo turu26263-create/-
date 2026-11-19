@@ -100,7 +100,7 @@ def yasumi_mask(idx, ys=None):
     return m
 
 def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, maxpos=1, sao=2.0, n8=False, spr=0.003, reenter=False, kawa_chi=True,
-            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False):
+            sl=None, tp=None, lock=0.0, lockcore=True, ts=0.0, ts_start=0.0, fine=False, avoid_in=(), avoid_out=(), kai_k9=0, big21_up=False, yasumi=False, narabi=False, ng_hours=(), e_mask=None):
     """鯛・クジラを1回まわす。sl=None/'prevday'/(足,線) tp=None/(足,σ) lock=しあわせセットの pips(0=なし)"""
     E = tai_entry(mk, big, mid, small, d, sao, n8, kawa_chi, kai_k9=kai_k9, big21_up=big21_up, narabi=narabi)
     XC, KC = EXITS[core_exit[1]](mk, small, core_exit[0], d)
@@ -118,6 +118,9 @@ def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, 
                 E[k] = True
         if avoid_out:
             bad = np.isin(fh, avoid_out); XC = np.asarray(XC, bool) & ~bad; XA = np.asarray(XA, bool) & ~bad   # 降りの合図は続く(219 など)ので、次の足で降りる
+    if e_mask is not None: E = np.asarray(E, bool) & np.asarray(e_mask, bool)   # 研究用:入りを外から絞る
+    if ng_hours:   # 11-19 たくちん「ご」:約定の足の時刻(サーバー)が ng_hours の時は入らない(鯛の NY15-24時=約定16〜23時)
+        fh2 = np.r_[base.index.hour.values[1:], -1]; E = np.asarray(E, bool) & ~np.isin(fh2, ng_hours)
     return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None), base
 
 # ---- 小魚(11-06)

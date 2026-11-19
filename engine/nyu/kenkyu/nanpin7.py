@@ -14,7 +14,7 @@ P = []
 x, b = run_tai(srv, '1D', '4h', '1h', 1, tuple(f['core_exit']), **NB); P.append(x.assign(d=1,bu='kujira_kai'))
 x, _ = run_tai(srv, '1D', '4h', '1h', -1, tuple(f['core_exit']), **KW); P.append(x.assign(d=-1,bu='kujira_uri'))
 x, _ = run_doten(srv, 1, xtf='4h', **KW); P.append(x.assign(d=1,bu='doten'))
-tz = f['tai']; x, _ = run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts']}); P.append(x.assign(d=1,bu='tai'))
+tz = f['tai']; x, _ = run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))}); P.append(x.assign(d=1,bu='tai'))
 for d in (1, -1): x, _ = run_oshime_d(srv, d, maxpos=OM, yasumi=f.get('yasumi', False)); P.append(x.assign(d=d,bu='oshime'))
 t = pd.concat(P, ignore_index=True)
 sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}

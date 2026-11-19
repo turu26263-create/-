@@ -123,7 +123,8 @@ DOT = doten()
 
 # ====================================================== 3) 鯛(クジラ買いと同じ入り・1玉・4時間9割れ・TS550)
 w4 = (((H4.o + H4.c) / 2 < H4.e9) & (H4.c < H4.e9)).values
-TAI = aruku(1, kujira_E(1, True), np.where(fi >= 0, w4[np.clip(fi, 0, None)], False), fk, 1, None, None, 550, 0)
+TAI_E = kujira_E(1, True) & ~np.isin(nxh, [16, 17, 18, 19, 20, 21, 22, 23])   # 11-19「ご」:約定16〜23時(NY)は入らない
+TAI = aruku(1, TAI_E, np.where(fi >= 0, w4[np.clip(fi, 0, None)], False), fk, 1, None, None, 550, 0)
 
 # ====================================================== 4) 押し目(かがみ無限 抜1・無1・出1:日足)
 def oshime(d, pk=10, wk=3):
@@ -210,7 +211,7 @@ sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shu
 ENG = {'クジラ買い': run_tai(srv, '1D', '4h', '1h', 1, tuple(f['core_exit']), **NB)[0],
        'クジラ売り': run_tai(srv, '1D', '4h', '1h', -1, tuple(f['core_exit']), **KW)[0],
        'ドテン買い': run_doten(srv, 1, xtf='4h', **KW)[0],
-       '鯛': run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts']})[0],
+       '鯛': run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))})[0],
        '押し目買い': run_oshime_d(srv, 1, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False))[0],
        '押し目売り': run_oshime_d(srv, -1, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False))[0],
        'しあわせ買い': run_shiawase(srv, 1, yasumi=f.get('yasumi', False), shuu_muki=False, **sz)[0],

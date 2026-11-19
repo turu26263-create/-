@@ -11,7 +11,7 @@ NB = {**KW, 'narabi': f.get('narabi', False)}
 DAN = [0.01, 0.03, 0.06, 0.15, 0.30, 0.60, 1.20]
 base_parts = []
 x, _ = run_doten(srv, 1, xtf='4h', **KW); base_parts.append(x.assign(d=1, bu='ドテン買い'))
-tz = f['tai']; x, _ = run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts']}); base_parts.append(x.assign(d=1, bu='鯛'))
+tz = f['tai']; x, _ = run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))}); base_parts.append(x.assign(d=1, bu='鯛'))
 for d in (1, -1): x, _ = run_oshime_d(srv, d, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False)); base_parts.append(x.assign(d=d, bu='押し目'))
 sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}
 SH = pd.concat([run_shiawase(srv, d, yasumi=f.get('yasumi', False), shuu_muki=d in f['shiawase'].get('shuu_muki', []), **sz)[0].assign(d=d, bu='しあわせ') for d in f['shiawase'].get('dirs', [1, -1])], ignore_index=True)

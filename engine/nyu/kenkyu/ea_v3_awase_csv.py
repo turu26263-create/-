@@ -9,7 +9,7 @@ NB = {**KW, 'narabi': f.get('narabi', False)}
 P = [run_tai(srv, '1D', '4h', '1h', 1, tuple(f['core_exit']), **NB)[0].assign(d=1, 部品='クジラ買い'),
      run_tai(srv, '1D', '4h', '1h', -1, tuple(f['core_exit']), **KW)[0].assign(d=-1, 部品='クジラ売り'),
      run_doten(srv, 1, xtf='4h', **KW)[0].assign(d=1, 部品='ドテン買い')]
-tz = f['tai']; P.append(run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts']})[0].assign(d=1, 部品='鯛'))
+tz = f['tai']; P.append(run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))})[0].assign(d=1, 部品='鯛'))
 for d in (1, -1): P.append(run_oshime_d(srv, d, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False))[0].assign(d=d, 部品='押し目買い' if d > 0 else '押し目売り'))
 t = pd.concat(P, ignore_index=True)
 sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}
