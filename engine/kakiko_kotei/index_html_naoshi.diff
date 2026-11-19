@@ -1,5 +1,9 @@
 4a5
 > <script src="kakiko_data/engine.js"></script>
+150c151
+< buildYear('2017',OHLC2017);
+---
+> buildYear('2017',OHLC2017);addEngine('2017');   // 11-19 2017年は本体の中で作るので、ここでもエンジンの玉を足す
 155c156,158
 < window.KAKIKO_YEAR=(Y,O)=>{YEAR_DATA[Y]={'240':[],'60':[],'5':[]};buildYear(Y,O);if(Y==='2025'){for(const tf of ['240','60'])for(const v of (DATA[tf]||[])){const w=YEAR_DATA[Y][tf].find(x=>x.month===v.month);if(w)w.cands=v.cands||[];}}(yearWait[Y]||[]).forEach(f=>f());delete yearWait[Y];};
 ---
