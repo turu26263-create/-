@@ -5,9 +5,9 @@ cfg = json.load(open('/home/user/-/engine/nyu/settei_kimari.json')); f = cfg['�
 srv = Market(load_cached(sys.argv[1]), 'server')
 KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
 P = []
-for d in (1, -1): x, b = run_tai(srv, f['big'], f['mid'], f['small'], d, tuple(f['core_exit']), **KW); P.append(x.assign(d=d, 部品='クジラ買い' if d > 0 else 'クジラ売り'))
+for d in (1, -1): x, b = run_tai(srv, f['big'], f['mid'], f['small'], d, tuple(f['core_exit']), **{**KW, 'narabi': f.get('narabi', False) and d > 0}); P.append(x.assign(d=d, 部品='クジラ買い' if d > 0 else 'クジラ売り'))
 x, _ = run_doten(srv, 1, xtf='4h', **KW); P.append(x.assign(d=1, 部品='ドテン買い'))
-tz = f['tai']; x, _ = run_tai(srv, f['big'], f['mid'], f['small'], 1, tuple(tz['exit']), **{**KW, 'maxpos': 1, 'tp': None, 'ts': tz['ts']}); P.append(x.assign(d=1, 部品='鯛'))
+tz = f['tai']; x, _ = run_tai(srv, f['big'], f['mid'], f['small'], 1, tuple(tz['exit']), **{**KW, 'narabi': f.get('narabi', False), 'maxpos': 1, 'tp': None, 'ts': tz['ts']}); P.append(x.assign(d=1, 部品='鯛'))
 for d in (1, -1): x, _ = run_oshime_d(srv, d, maxpos=5, yasumi=True); P.append(x.assign(d=d, 部品='押し目買い' if d > 0 else '押し目売り'))
 sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}
 for d in f['shiawase']['dirs']:

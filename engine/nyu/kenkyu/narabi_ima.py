@@ -1,7 +1,7 @@
 # 11-19 引き継ぎのご待ち①を今の決まった形(しあわせ入り)で照らす:買いと鯛は日足が921の並びの時だけ入る。形は変えない(比べるだけ)
-import sys, json, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0, '/home/user/eng/engine/nyu')
+import sys, json, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0, '/home/user/-/engine/nyu')
 from nyu import *; from tai_parts import *
-cfg = json.load(open('/home/user/eng/engine/nyu/settei_kimari.json')); f = cfg['形']; k = cfg['口座']
+cfg = json.load(open('/home/user/-/engine/nyu/settei_kimari.json')); f = cfg['形']; k = cfg['口座']
 srv = Market(load_cached(sys.argv[1]), 'server')
 KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
 sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}

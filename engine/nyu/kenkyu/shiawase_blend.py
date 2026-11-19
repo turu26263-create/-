@@ -8,10 +8,10 @@ D = sys.argv[1]; here = '/home/user/-/engine/nyu'
 cfg = json.load(open(here + '/settei_kimari.json')); f = cfg['形']
 srv = Market(load_cached(D), 'server')
 KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
-t, b = run_tai(srv, f['big'], f['mid'], f['small'], 1, tuple(f['core_exit']), **KW); t['d'] = 1
+t, b = run_tai(srv, f['big'], f['mid'], f['small'], 1, tuple(f['core_exit']), **{**KW, 'narabi': f.get('narabi', False)}); t['d'] = 1
 if f.get('uri'): u, _ = run_tai(srv, f['big'], f['mid'], f['small'], -1, tuple(f['core_exit']), **KW); u['d'] = -1; t = pd.concat([t, u], ignore_index=True)
 if f.get('doten'): dz = f['doten']; dt_, _ = run_doten(srv, dz['d'], xtf=dz.get('xtf'), **KW); dt_['d'] = dz['d']; t = pd.concat([t, dt_], ignore_index=True)
-if f.get('tai'): tz = f['tai']; KT = {**KW, 'maxpos': tz['maxpos'], 'tp': None, 'ts': tz['ts']}; tt_, _ = run_tai(srv, f['big'], f['mid'], f['small'], tz['d'], tuple(tz['exit']), **KT); tt_['d'] = tz['d']; t = pd.concat([t, tt_], ignore_index=True)
+if f.get('tai'): tz = f['tai']; KT = {**KW, 'narabi': f.get('narabi', False), 'maxpos': tz['maxpos'], 'tp': None, 'ts': tz['ts']}; tt_, _ = run_tai(srv, f['big'], f['mid'], f['small'], tz['d'], tuple(tz['exit']), **KT); tt_['d'] = tz['d']; t = pd.concat([t, tt_], ignore_index=True)
 if f.get('oshime'):
     for dz in (1, -1): oo, _ = run_oshime_d(srv, dz, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False)); oo['d'] = dz; t = pd.concat([t, oo], ignore_index=True)
 K = pd.DataFrame(dict(ent=pd.to_datetime(t.ent), ext=pd.to_datetime(t.ext), pips=t.pips.astype(float)))
