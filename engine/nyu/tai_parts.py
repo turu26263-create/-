@@ -123,6 +123,26 @@ def run_tai(mk, big, mid, small, d, core_exit=('1h', '9割れ'), add_exit=None, 
         fh2 = np.r_[base.index.hour.values[1:], -1]; E = np.asarray(E, bool) & ~np.isin(fh2, ng_hours)
     return simulate(base, d, E, XC, KC, XA, KA, make_sl(mk, small, d, sl), maxpos, spr, reenter, make_tp(mk, small, d, tp), lock, lockcore, ts, ts_start, mk.hl_order(small) if fine else None), base
 
+
+# ---- 11-19 たくちん「最適化検証したea」:クジラを週足逆向き(週足の9と21の並びが入る向きと逆)の時は別の枠で上限なしに(最適化の台地)
+def shuu_up(mk, small='1h'):
+    key = ('shuu_up', small)
+    if key in mk._f: return mk._f[key]
+    idx = mk.feat(small).index
+    W = mk.raw.resample('W-MON', label='left', closed='left').agg(dict(o='first', h='max', l='min', c='last')).dropna(); W['k'] = W.index + pd.Timedelta('7D')
+    W['up'] = W.c.ewm(span=9, adjust=False).mean() > W.c.ewm(span=21, adjust=False).mean()
+    wi = np.searchsorted(W.k.values, (idx + (idx[1] - idx[0])).values, side='right') - 1
+    v = np.where(wi >= 0, W.up.values[np.clip(wi, 0, None)], False).astype(bool); mk._f[key] = v; return v
+
+def run_kujira(mk, d, core_exit, rev_maxpos=None, **kw):
+    """クジラ。rev_maxpos があれば、週足が入る向きと同じ時は kw の maxpos、逆の時は別の枠で rev_maxpos 発まで"""
+    if not rev_maxpos: return run_tai(mk, '1D', '4h', '1h', d, core_exit, **kw)
+    up = shuu_up(mk); same = up if d > 0 else ~up
+    a, base = run_tai(mk, '1D', '4h', '1h', d, core_exit, **{**kw, 'e_mask': same})
+    b, _ = run_tai(mk, '1D', '4h', '1h', d, core_exit, **{**kw, 'maxpos': rev_maxpos, 'e_mask': ~same})
+    t = pd.concat([a.assign(waku='同じ'), b.assign(waku='逆')], ignore_index=True).sort_values(['ent', 'ext']).reset_index(drop=True)
+    return t, base
+
 # ---- 小魚(11-06)
 def kozakana_ue(mk, d=1, maxpos=5, spr=0.003, lock=0.0):
     """上の小魚(クジラと同じ向き):4h終値が21の向き側の間に、1hの終値が4h21をまたいだ足/1hの921で入る(最大 maxpos 発)。4h終値が21の逆側で全部降り【置き換え】"""
@@ -147,7 +167,8 @@ def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
     決まった形の -d 向きの玉が利確(4h ±3.5σ)したら構えて、small の足で向きの方の9と21の交わり(買いなら921)が出た次の足で、d 向きにドテン1玉。
     降り:small の足で 9 と 21 の並びが、入った後に向きと逆へ新しく交わった時(買いなら219が新しく出た時。前から続く並びでは降りない)+TS ts pips。
     連鎖:ドテンの玉を降りた後は、決まった形の入りがそのまま続く(この部品はドテンの玉だけを返す)"""
-    main, base = run_tai(mk, '1D', '4h', small, -d, ('1D', '219'), ts=ts, **kw)   # 11-10 元の売りにも同じ TS を渡す(ts がここで止まって、元の売りが TS なしで作られていた。数字は変わらなかったが、つながりの切れ)
+    rv = kw.pop('rev_maxpos', None)
+    main, base = run_kujira(mk, -d, ('1D', '219'), rev_maxpos=rv, ts=ts, **kw)   # 11-19 週足逆の枠の利確でも構える   # 11-10 元の売りにも同じ TS を渡す(ts がここで止まって、元の売りが TS なしで作られていた。数字は変わらなかったが、つながりの切れ)
     idx = base.index; E = np.zeros(len(idx), bool)
     tp = main[main.why == '利確']
     if len(tp): E[np.searchsorted(idx.values, pd.to_datetime(tp.ext).values)] = True   # 利確した足(その足の中で届いた)で構える

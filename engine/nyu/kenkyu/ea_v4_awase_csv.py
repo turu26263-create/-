@@ -6,9 +6,9 @@ cfg = json.load(open('/home/user/-/engine/nyu/settei_kimari.json')); f = cfg['�
 srv = Market(load_cached('/home/user/data/mt4'), 'server')
 KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
 NB = {**KW, 'narabi': f.get('narabi', False)}
-P = [run_tai(srv, '1D', '4h', '1h', 1, tuple(f['core_exit']), **NB)[0].assign(d=1, 部品='クジラ買い'),
-     run_tai(srv, '1D', '4h', '1h', -1, tuple(f['core_exit']), **KW)[0].assign(d=-1, 部品='クジラ売り'),
-     run_doten(srv, 1, xtf='4h', **KW)[0].assign(d=1, 部品='ドテン買い')]
+P = [run_kujira(srv, 1, tuple(f['core_exit']), rev_maxpos=f.get('rev_maxpos'), **NB)[0].assign(d=1, 部品='クジラ買い'),
+     run_kujira(srv, -1, tuple(f['core_exit']), rev_maxpos=f.get('rev_maxpos'), **KW)[0].assign(d=-1, 部品='クジラ売り'),
+     run_doten(srv, 1, xtf='4h', rev_maxpos=f.get('rev_maxpos'), **KW)[0].assign(d=1, 部品='ドテン買い')]
 tz = f['tai']; P.append(run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))})[0].assign(d=1, 部品='鯛'))
 for d in (1, -1): P.append(run_oshime_d(srv, d, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False))[0].assign(d=d, 部品='押し目買い' if d > 0 else '押し目売り'))
 t = pd.concat(P, ignore_index=True)
@@ -24,5 +24,5 @@ for _, kind, i in sorted([(t.ext[i], 1, i) for i in range(len(t))] + [(t.ent[i],
 out = pd.DataFrame({'部品': t['部品'], '向き': np.where(t.d > 0, '買い', '売り'), '入り(サーバー時刻)': t.ent.dt.strftime('%Y.%m.%d %H:%M'), '入り値': t.e.round(3),
                     '降り(サーバー時刻)': t.ext.dt.strftime('%Y.%m.%d %H:%M'), '降り値': t.x.round(3), 'pips': t.pips.round(1), '降りた訳': t.why,
                     'ロット(カウンター反撃)': L, '円': (t.pips * L * 1000).round(0)})
-out.to_csv('/home/user/-/ea/Kujira3_v3_研究台の玉_MT4あわせ用.csv', index=False, encoding='utf-8-sig')
+out.to_csv('/home/user/-/ea/Kujira3_v4_研究台の玉_MT4あわせ用.csv', index=False, encoding='utf-8-sig')
 print(len(out), '玉', round(t.pips.sum(), 1), 'p', f"{out['円'].sum():+,.0f}円", '段ごと', {d: int((L == d).sum()) for d in DAN})

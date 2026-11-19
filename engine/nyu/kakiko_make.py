@@ -5,11 +5,11 @@ from nyu import *; from tai_parts import *
 here = __file__.rsplit('/', 1)[0]; cfg = json.load(open(here + '/settei_kimari.json')); f = cfg['形']; k = cfg['口座']
 srv = Market(load_cached(sys.argv[1]), 'server')
 KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
-t, b = run_tai(srv, f['big'], f['mid'], f['small'], 1, tuple(f['core_exit']), **{**KW, 'narabi': f.get('narabi', False)}); t['d'] = 1
+t, b = run_kujira(srv, 1, tuple(f['core_exit']), rev_maxpos=f.get('rev_maxpos'), **{**KW, 'narabi': f.get('narabi', False)}); t['d'] = 1
 if f.get('uri'):   # 売りも同じ決まりの鏡うつし(11-06)。0.01ロット決め打ちなので円は pips×10 を玉ごとに足す
-    u, _ = run_tai(srv, f['big'], f['mid'], f['small'], -1, tuple(f['core_exit']), **KW); u['d'] = -1; t = pd.concat([t, u], ignore_index=True)
+    u, _ = run_kujira(srv, -1, tuple(f['core_exit']), rev_maxpos=f.get('rev_maxpos'), **KW); u['d'] = -1; t = pd.concat([t, u], ignore_index=True)
 if f.get('doten'):   # 11-07 決まった形3:売りの利確の後921待ちドテン買い
-    dz = f['doten']; dt_, _ = run_doten(srv, dz['d'], xtf=dz.get('xtf'), **KW); dt_['d'] = dz['d']; t = pd.concat([t, dt_], ignore_index=True)
+    dz = f['doten']; dt_, _ = run_doten(srv, dz['d'], xtf=dz.get('xtf'), rev_maxpos=f.get('rev_maxpos'), **KW); dt_['d'] = dz['d']; t = pd.concat([t, dt_], ignore_index=True)
 if f.get('tai'):   # 11-09 鯛の刺身(買いだけ)
     tz = f['tai']; KT = {**KW, 'narabi': f.get('narabi', False), 'maxpos': tz['maxpos'], 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))}; tt_, _ = run_tai(srv, f['big'], f['mid'], f['small'], tz['d'], tuple(tz['exit']), **KT); tt_['d'] = tz['d']; t = pd.concat([t, tt_], ignore_index=True)
 if f.get('oshime'):   # 11-10 ブレンド:かがみ無限の日足巡航・押し目

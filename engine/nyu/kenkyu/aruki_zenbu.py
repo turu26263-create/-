@@ -105,7 +105,15 @@ def x219_D(d):   # 日足の219(売りは921)の並び
     return np.nan_to_num(v).astype(bool) & (di >= 0), dk
 TP4 = lambda d: mae1(fmd + 4.0 * fsd * d)
 
-KUJ = {d: aruku(d, kujira_E(d, d > 0), *x219_D(d), 5, None, TP4(d), 550, 0) for d in (1, -1)}
+# 11-19 週足逆の枠:週足(月曜からの7日足・閉じた週)の9と21の並びが入る向きと逆なら別の枠で上限なし
+Wk = RAW.resample('W-MON', label='left', closed='left').agg(AG).dropna(); Wk['k'] = Wk.index + pd.Timedelta('7D')
+Wk['up'] = Wk.c.ewm(span=9, adjust=False).mean() > Wk.c.ewm(span=21, adjust=False).mean()
+wix = np.searchsorted(Wk.k.values, K1, side='right') - 1; WUP = np.where(wix >= 0, Wk.up.values[np.clip(wix, 0, None)], False).astype(bool)
+def kuj(d):
+    E = kujira_E(d, d > 0); same = WUP if d > 0 else ~WUP
+    a = aruku(d, E & same, *x219_D(d), 5, None, TP4(d), 550, 0); b = aruku(d, E & ~same, *x219_D(d), 99, None, TP4(d), 550, 0)
+    return pd.concat([a, b], ignore_index=True).sort_values(['ent', 'ext']).reset_index(drop=True)
+KUJ = {d: kuj(d) for d in (1, -1)}
 
 # ====================================================== 2) ドテン買い(売りの利確で構え、1時間921の足が閉じたら次の足で1玉)
 def doten():
@@ -201,16 +209,16 @@ SHI = {1: shiawase(1), -1: shiawase(-1, shuu=True)}
 # ====================================================== エンジンの玉(比べられる側)
 sys.path.insert(0, '/home/user/-/engine/nyu')
 from nyu import Market, load_cached
-from tai_parts import run_tai, run_doten, run_oshime_d, run_shiawase
+from tai_parts import run_tai, run_kujira, run_doten, run_oshime_d, run_shiawase
 cfg = json.load(open('/home/user/-/engine/nyu/settei_kimari.json')); f = cfg['形']
 srv = Market(load_cached(D_), 'server')
 KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']),
           kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
 NB = {**KW, 'narabi': f.get('narabi', False)}; tz = f['tai']
 sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}
-ENG = {'クジラ買い': run_tai(srv, '1D', '4h', '1h', 1, tuple(f['core_exit']), **NB)[0],
-       'クジラ売り': run_tai(srv, '1D', '4h', '1h', -1, tuple(f['core_exit']), **KW)[0],
-       'ドテン買い': run_doten(srv, 1, xtf='4h', **KW)[0],
+ENG = {'クジラ買い': run_kujira(srv, 1, tuple(f['core_exit']), rev_maxpos=f.get('rev_maxpos'), **NB)[0],
+       'クジラ売り': run_kujira(srv, -1, tuple(f['core_exit']), rev_maxpos=f.get('rev_maxpos'), **KW)[0],
+       'ドテン買い': run_doten(srv, 1, xtf='4h', rev_maxpos=f.get('rev_maxpos'), **KW)[0],
        '鯛': run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))})[0],
        '押し目買い': run_oshime_d(srv, 1, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False))[0],
        '押し目売り': run_oshime_d(srv, -1, maxpos=f['oshime']['maxpos'], yasumi=f.get('yasumi', False))[0],
