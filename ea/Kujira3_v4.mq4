@@ -18,6 +18,9 @@
 //--- 決まった形(研究台と同じ値。変える時はたくちんの「ご」)
 input double Lots          = 0.01;   // クジラ・ドテン・鯛・押し目の1玉のロット(決め打ち)
 input int    MaxPos        = 99;     // クジラの同じ向きの玉の上限。11-19 固定の無限リーチ(上限なし=99)に合わせた
+input int    MaxTai        = 99;     // 11-19「エントリーは全部 無限リーチ」:鯛の上限(99=なし)
+input int    MaxDoten      = 99;     // ドテン買いの上限(99=なし)
+input int    MaxOsh        = 99;     // 押し目巡航の上限(99=なし)
 input bool   UseCounter     = true;   // カウンター反撃(7段回収)。false で Lots・ShLots の決め打ち
 input bool   UseShuuRev    = true;   // 11-19 最適化:クジラは週足が逆向きの時は別の枠(MagicBuyW/SellW)で MaxPosRev 発まで
 input int    MaxPosRev     = 99;     // 週足逆の枠の上限(99=上限なし)
@@ -30,7 +33,7 @@ input double TsPips        = 550;    // TS:一番伸びた所から 550p
 input bool   UseSell       = true;   // クジラの売り
 input bool   UseDoten      = true;   // 売りの利確の後、1時間921を待ってドテン買い
 input bool   UseTai        = true;   // 鯛の刺身(買いだけ)
-input bool   UseOshime     = true;   // 日足の押し目巡航(売り買い・最大5玉)
+input bool   UseOshime     = true;   // 日足の押し目巡航(売り買い・上限は MaxOsh)
 input bool   UseShiawase   = true;   // しあわせセット(レンジの箱)
 input double ShLots        = 0.01;   // しあわせセットの1単位のロット(1セット=刈る3+ため1)
 input bool   ShUseSell     = true;   // しあわせセットの売り(週足219の間だけ)
@@ -55,7 +58,7 @@ input int    MagicShST     = 26111204;   // しあわせ 売り ため
 #define SH_NFLIP 3      // レンジ:日足の遅行スパン(終値と21本前の終値の上下)が直近30日で3回以上入れ替わる
 #define SH_WIN   30
 #define SH_KAR   3      // 刈る3単位+ため1単位
-#define SH_TAME  5      // ためは最大5
+#define SH_TAME  99     // ためは上限なし(11-19 全部 無限リーチ)
 #define SH_TPK   2.0    // 刈る=反対の ±2σ
 #define SH_TAMEK 3.5    // ため=±3.5σ
 #define SH_NAKA  1.0    // 日足200の上下 1σ の中では入らない
@@ -594,7 +597,7 @@ void OnTick()
          if(w9 > 0 && w21 > 0 && (d > 0 ? !wup : wup)) { mg = d > 0 ? MagicBuyW : MagicSellW; cap = MaxPosRev; }
       }
       if(go && CountPos(mg) < cap) Open(d, mg, Lots, T, sig ? "入り" : "0時をよけた入り", 0);
-      if(go && d > 0 && UseTai && CountPos(MagicTai) < 1 && !(TaiNoNY && TimeHour(T) >= 16)) Open(1, MagicTai, Lots, T, "鯛の刺身", 0);
+      if(go && d > 0 && UseTai && CountPos(MagicTai) < MaxTai && !(TaiNoNY && TimeHour(T) >= 16)) Open(1, MagicTai, Lots, T, "鯛の刺身", 0);
    }
 
    // 2b. 日足の押し目巡航
@@ -605,7 +608,7 @@ void OnTick()
          if(!oPend[k]) continue;
          oPend[k] = false;
          int d = k == 0 ? 1 : -1; int mg = d > 0 ? MagicOshB : MagicOshS;
-         if(yas || CountPos(mg) >= 5) continue;
+         if(yas || CountPos(mg) >= MaxOsh) continue;
          int dl = Done(PERIOD_D1, TS1);
          RefreshRates();
          double sl = d > 0 ? iLow(NULL, PERIOD_D1, dl) : iHigh(NULL, PERIOD_D1, dl) + (Ask - Bid);
@@ -621,7 +624,7 @@ void OnTick()
       if(e9a > 0 && e9b > 0 && (e9a > e21a) && !(e9b > e21b))
       {
          armDoten = false;
-         if(!yas && CountPos(MagicDoten) < 1) Open(1, MagicDoten, Lots, T, "ドテン買い", 0);
+         if(!yas && CountPos(MagicDoten) < MaxDoten) Open(1, MagicDoten, Lots, T, "ドテン買い", 0);
       }
    }
 

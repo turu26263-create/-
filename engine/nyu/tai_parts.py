@@ -174,7 +174,7 @@ def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
     決まった形の -d 向きの玉が利確(4h ±3.5σ)したら構えて、small の足で向きの方の9と21の交わり(買いなら921)が出た次の足で、d 向きにドテン1玉。
     降り:small の足で 9 と 21 の並びが、入った後に向きと逆へ新しく交わった時(買いなら219が新しく出た時。前から続く並びでは降りない)+TS ts pips。
     連鎖:ドテンの玉を降りた後は、決まった形の入りがそのまま続く(この部品はドテンの玉だけを返す)"""
-    rv = kw.pop('rev_maxpos', None)
+    rv = kw.pop('rev_maxpos', None); dmax = kw.pop('doten_maxpos', 1)   # 11-19 たくちん「エントリーは全部 無限リーチ」
     main, base = run_kujira(mk, -d, ('1D', '219'), rev_maxpos=rv, ts=ts, **kw)   # 11-19 週足逆の枠の利確でも構える   # 11-10 元の売りにも同じ TS を渡す(ts がここで止まって、元の売りが TS なしで作られていた。数字は変わらなかったが、つながりの切れ)
     idx = base.index; E = np.zeros(len(idx), bool)
     tp = main[main.why == '利確']
@@ -192,7 +192,7 @@ def run_doten(mk, d, small='1h', ts=550.0, xtf=None, **kw):
         F = mk.feat(xtf); u = F.e9 > F.e21; u1 = u.shift(1, fill_value=False); kc = 'x219' if d > 0 else 'x921'
         if kc not in F.columns: mk._f[xtf] = F.assign(x219=u1 & ~u, x921=~u1 & u)
         y = mk.on(small, xtf, [kc]); X = y[kc].fillna(False).astype(bool).values; K = y['k_' + xtf].values
-    t = simulate(base, d, E, X, K, None, None, None, 1, kw.get('spr', 0.003), True, None, 0.0, True, ts, 0.0)
+    t = simulate(base, d, E, X, K, None, None, None, dmax, kw.get('spr', 0.003), True, None, 0.0, True, ts, 0.0)
     return t, base
 
 def run_oshime_d(mk, d, small='1h', maxpos=5, spr=0.003, pk=10, wk=3, tpk=3.5, avoid=0, yasumi=True):

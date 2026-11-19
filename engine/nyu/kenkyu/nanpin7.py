@@ -5,7 +5,8 @@
 # 段は決まった形の全部の玉で1本(降りた順に数え、入る時の段で入る)。資金10.2万円・レバレッジ2000・維持率20%で強制決済
 import sys, json, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0, '/home/user/-/engine/nyu')
 from nyu import *; from tai_parts import *
-OM = int(sys.argv[2]) if len(sys.argv) > 2 else 5
+f_osh = __import__('json').load(open('/home/user/-/engine/nyu/settei_kimari.json'))['形']['oshime']['maxpos']
+OM = int(sys.argv[2]) if len(sys.argv) > 2 else f_osh
 cfg = json.load(open('/home/user/-/engine/nyu/settei_kimari.json')); f = cfg['形']; k = cfg['口座']
 srv = Market(load_cached(sys.argv[1]), 'server')
 KW = dict(maxpos=f['maxpos'], n8=f['n8'], sao=f['sao'], reenter=True, tp=tuple(f['tp']), ts=f['ts'], avoid_in=tuple(f['avoid_in']), avoid_out=tuple(f['avoid_out']), kai_k9=f.get('kai_k9', 0), big21_up=f.get('big21_up', False), yasumi=f.get('yasumi', False))
@@ -13,8 +14,8 @@ NB = {**KW, 'narabi': f.get('narabi', False)}
 P = []
 x, b = run_kujira(srv, 1, tuple(f['core_exit']), rev_maxpos=f.get('rev_maxpos'), **NB); P.append(x.assign(d=1,bu='kujira_kai'))
 x, _ = run_kujira(srv, -1, tuple(f['core_exit']), rev_maxpos=f.get('rev_maxpos'), **KW); P.append(x.assign(d=-1,bu='kujira_uri'))
-x, _ = run_doten(srv, 1, xtf='4h', rev_maxpos=f.get('rev_maxpos'), **KW); P.append(x.assign(d=1,bu='doten'))
-tz = f['tai']; x, _ = run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))}); P.append(x.assign(d=1,bu='tai'))
+x, _ = run_doten(srv, 1, xtf='4h', rev_maxpos=f.get('rev_maxpos'), doten_maxpos=f['doten'].get('maxpos', 1), **KW); P.append(x.assign(d=1,bu='doten'))
+tz = f['tai']; x, _ = run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': tz.get('maxpos', 1), 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz.get('ng_hours', ()))}); P.append(x.assign(d=1,bu='tai'))
 for d in (1, -1): x, _ = run_oshime_d(srv, d, maxpos=OM, yasumi=f.get('yasumi', False)); P.append(x.assign(d=d,bu='oshime'))
 t = pd.concat(P, ignore_index=True)
 sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}

@@ -12,8 +12,8 @@ def build(o):
     NB = {**KW, 'narabi': o.get('narabi', f['narabi'])}; rv = f['rev_maxpos']; tz = f['tai']
     P = [run_kujira(srv, 1, tuple(f['core_exit']), rev_maxpos=rv, **NB)[0].assign(d=1, bu='クジラ買い'),
          run_kujira(srv, -1, tuple(f['core_exit']), rev_maxpos=rv, **KW)[0].assign(d=-1, bu='クジラ売り'),
-         run_doten(srv, 1, xtf='4h', rev_maxpos=rv, **KW)[0].assign(d=1, bu='ドテン'),
-         run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': 1, 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz['ng_hours'])})[0].assign(d=1, bu='鯛')]
+         run_doten(srv, 1, xtf='4h', rev_maxpos=rv, doten_maxpos=f['doten'].get('maxpos', 1), **KW)[0].assign(d=1, bu='ドテン'),
+         run_tai(srv, '1D', '4h', '1h', 1, tuple(tz['exit']), **{**NB, 'maxpos': tz.get('maxpos', 1), 'tp': None, 'ts': tz['ts'], 'ng_hours': tuple(tz['ng_hours'])})[0].assign(d=1, bu='鯛')]
     for d in (1, -1): P.append(run_oshime_d(srv, d, maxpos=f['oshime']['maxpos'], yasumi=f['yasumi'])[0].assign(d=d, bu='押し目'))
     t = pd.concat(P, ignore_index=True)
     sz = {a: v for a, v in f['shiawase'].items() if a not in ('説明', 'dirs', 'shuu_muki')}
