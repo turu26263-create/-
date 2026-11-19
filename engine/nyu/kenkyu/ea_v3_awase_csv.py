@@ -1,4 +1,4 @@
-# 11-19 たくちん「エンジンとリアル合わすように」:Kujira3_v3(並び+ナンピン反撃7段)と同じ決まりで研究台を回し、
+# 11-19 たくちん「エンジンとリアル合わすように」:Kujira3_v3(並び+カウンター反撃7段)と同じ決まりで研究台を回し、
 # 1玉ずつ(入り・降り・段のロット・円)を MT4 のテスターの記録と合わせる用に書き出す
 import sys, json, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0, '/home/user/-/engine/nyu')
 from nyu import *; from tai_parts import *
@@ -23,6 +23,6 @@ for _, kind, i in sorted([(t.ext[i], 1, i) for i in range(len(t))] + [(t.ent[i],
     else: lv = 0 if t.pips[i] > 0 else min(lv + 1, 6)
 out = pd.DataFrame({'部品': t['部品'], '向き': np.where(t.d > 0, '買い', '売り'), '入り(サーバー時刻)': t.ent.dt.strftime('%Y.%m.%d %H:%M'), '入り値': t.e.round(3),
                     '降り(サーバー時刻)': t.ext.dt.strftime('%Y.%m.%d %H:%M'), '降り値': t.x.round(3), 'pips': t.pips.round(1), '降りた訳': t.why,
-                    'ロット(ナンピン反撃)': L, '円': (t.pips * L * 1000).round(0)})
+                    'ロット(カウンター反撃)': L, '円': (t.pips * L * 1000).round(0)})
 out.to_csv('/home/user/-/ea/Kujira3_v3_研究台の玉_MT4あわせ用.csv', index=False, encoding='utf-8-sig')
 print(len(out), '玉', round(t.pips.sum(), 1), 'p', f"{out['円'].sum():+,.0f}円", '段ごと', {d: int((L == d).sum()) for d in DAN})

@@ -1,7 +1,7 @@
 //+------------------------------------------------------------------+
-//| Kujira3_v3.mq4  今の決まった形(11-19)+ナンピン反撃7段 を MT4 に     |
+//| Kujira3_v3.mq4  今の決まった形(11-19)+カウンター反撃7段 を MT4 に     |
 //| 11-19 v2 から:買いと鯛は日足921の並びの時だけ(たくちん「ご」)       |
-//|              ロットはナンピン反撃(NanpinHangeki.mqh・段は全部で1本) |
+//|              ロットはカウンター反撃(CounterHangeki.mqh・段は全部で1本) |
 //| 2026-11-12 たくちん「mt4で回して」                                  |
 //| 中身:クジラの刺身(売り買い)+ドテン買い+鯛の刺身+日足の押し目巡航    |
 //|       +しあわせセット(レンジの箱。買い/売りは週足219の間だけ)       |
@@ -11,13 +11,13 @@
 //+------------------------------------------------------------------+
 #property copyright "takuchin"
 #property version   "3.00"
-#include "NanpinHangeki.mqh"
+#include "CounterHangeki.mqh"
 #property strict
 
 //--- 決まった形(研究台と同じ値。変える時はたくちんの「ご」)
 input double Lots          = 0.01;   // クジラ・ドテン・鯛・押し目の1玉のロット(決め打ち)
 input int    MaxPos        = 5;      // クジラの同じ向きの玉の上限(5発)。無限リーチの照らし:6以上は同じ台地(11-19・ご待ち)
-input bool   UseNanpin     = true;   // ナンピン反撃(7段回収)。false で Lots・ShLots の決め打ち
+input bool   UseCounter     = true;   // カウンター反撃(7段回収)。false で Lots・ShLots の決め打ち
 input bool   UseNarabi     = true;   // 11-19「ご」:買いと鯛は日足が921の並び(9>21)の時だけ
 input int    KaiK9         = 3;      // 許しの入りは日足の終値が9の向こうに何本続いてから
 input double SaoSigma      = 2.0;    // 竿先:1時間の帯 ±2σ の外では入らない
@@ -83,8 +83,8 @@ int OnInit()
    lastHist = GlobalVariableCheck(GVName("lh")) ? (datetime)GlobalVariableGet(GVName("lh")) : TimeCurrent();
    int mags[10]; mags[0] = MagicBuy; mags[1] = MagicSell; mags[2] = MagicDoten; mags[3] = MagicTai; mags[4] = MagicOshB;
    mags[5] = MagicOshS; mags[6] = MagicShBK; mags[7] = MagicShBT; mags[8] = MagicShSK; mags[9] = MagicShST;
-   NH_SetMagics(mags, 10);
-   Log("起動", 0, 0, 0, 0, "arm=" + (string)armDoten + " nanpin=" + (string)UseNanpin);
+   CH_SetMagics(mags, 10);
+   Log("起動", 0, 0, 0, 0, "arm=" + (string)armDoten + " counter=" + (string)UseCounter);
    return(INIT_SUCCEEDED);
 }
 
@@ -180,13 +180,17 @@ void Log(string kind, datetime bar, int dir, double req, double fill, string not
 //+------------------------------------------------------------------+
 int Open(int d, int magic, double lots, datetime bar, string why, int unit)
 {
-   if(UseNanpin) { lots = NH_Lot(bar); why = why + StringFormat(" 段%.2f", lots); }   // ナンピン反撃:この足の始まりより前に閉じた玉で段を決める
+   if(UseCounter) { lots = CH_Lot(bar); why = why + StringFormat(" 段%.2f", lots); }   // カウンター反撃:この足の始まりより前に閉じた玉で段を決める
    string sid = StringFormat("K3v3_%d_%d_%d_%d", (int)bar, d, magic, unit);
    if(GlobalVariableCheck(sid)) { cntSkipDup++; Log("二重を止めた", bar, d, 0, 0, sid); return(-1); }
    RefreshRates();
    double spr = (Ask - Bid) / PIP;
    if(spr > MaxSpreadPips) { cntSkipSpr++; Log("スプレッドで見送り", bar, d, 0, 0, DoubleToString(spr, 1)); return(-1); }
    double px = d > 0 ? Ask : Bid;
+   // 11-19 エントリー同期:段が上がると玉が重くなるので、注文の前に証拠金を見る(足りなければ見送り・名札は付けない)
+   ResetLastError();
+   double fm = AccountFreeMarginCheck(Symbol(), d > 0 ? OP_BUY : OP_SELL, lots);
+   if(fm <= 0 || GetLastError() == 134) { Log("証拠金で見送り", bar, d, px, 0, why + StringFormat(" lots=%.2f 余力=%.0f", lots, fm)); return(-1); }
    GlobalVariableSet(sid, (double)TimeCurrent());            // 送る前に名札(失敗しても同じ合図で打ち直さない)
    int tk = OrderSend(Symbol(), d > 0 ? OP_BUY : OP_SELL, lots, px, SlipPoints, 0, 0, why, magic, 0, d > 0 ? clrBlue : clrRed);
    double fill = 0; if(tk >= 0 && OrderSelect(tk, SELECT_BY_TICKET)) fill = OrderOpenPrice();

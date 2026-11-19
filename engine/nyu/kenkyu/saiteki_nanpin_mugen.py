@@ -1,6 +1,6 @@
-# 11-19 たくちん「ナンピン反撃いれて 無限リーチとナンピンのかけあわせで最適化検証」
+# 11-19 たくちん「カウンター反撃いれて 無限リーチとナンピンのかけあわせで最適化検証」
 # ミナデインの進め方:【置き換え】を1つずつ動かす(全部のかけ合わせはしない)。決め方は 落ち込み・強制決済・選22-24・確かめる年。
-# 動かす物:①無限リーチ=クジラの最大発数(今5) ②ナンピン反撃を掛ける部品(全部/当たる部品だけ) ③資金(段の重さに耐える資金)
+# 動かす物:①無限リーチ=クジラの最大発数(今5) ②カウンター反撃を掛ける部品(全部/当たる部品だけ) ③資金(段の重さに耐える資金)
 # 7段(0.01/0.03/0.06/0.15/0.3/0.6/1.2・負けで1段上げ・1.2で止める・勝ちで0.01)はたくちんの固定なので動かさない
 import sys, json, warnings; warnings.filterwarnings('ignore'); sys.path.insert(0, '/home/user/-/engine/nyu')
 from nyu import *; from tai_parts import *
@@ -45,10 +45,10 @@ T = {M: tama(M) for M in (3, 4, 5, 6, 8, 99)}
 print('① 無限リーチ:クジラの最大発数(ほかは今のまま)。資金100万円')
 for M, t in T.items():
     for mode in ('0.01固定', '全部'): rows.append(dict(調べ='①発数', 発数=M, 段='段なし' if mode == '0.01固定' else '7段 全部', 資金=1000000, **kane(t, lots(t, mode), 1000000)))
-print('② ナンピン反撃を掛ける部品(発数5)・資金100万円')
+print('② カウンター反撃を掛ける部品(発数5)・資金100万円')
 for mode in ('全部', '当たる部品だけ'): rows.append(dict(調べ='②掛ける部品', 発数=5, 段='7段 ' + mode, 資金=1000000, **kane(T[5], lots(T[5], mode), 1000000)))
 print('③ 資金(発数5・7段 全部)')
 for sk in (102000, 300000, 500000, 1000000, 2000000, 3000000):
     rows.append(dict(調べ='③資金', 発数=5, 段='7段 全部', 資金=sk, **kane(T[5], lots(T[5], '全部'), sk)))
 R = pd.DataFrame(rows); print(R.to_string(index=False))
-R.to_csv('/home/user/-/engine/kekka_tai/nyu/最適化_ナンピン反撃x無限リーチ_20261119.csv', index=False)
+R.to_csv('/home/user/-/engine/kekka_tai/nyu/最適化_カウンター反撃x無限リーチ_20261119.csv', index=False)
